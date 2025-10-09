@@ -17,6 +17,11 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            // เพิ่มสำหรับระบบแจ้งซ่อม
+            $table->string('department', 100)->nullable();
+            $table->enum('role', ['admin','technician','staff'])->default('staff');
+
             $table->rememberToken();
             $table->timestamps();
         });

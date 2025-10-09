@@ -48,37 +48,38 @@ class MaintenanceRequestController extends Controller
         return response()->json(['message'=>'created','data'=>$req], 201);
     }
 
-    public function show(MaintenanceRequest $maintenanceRequest)
+    // IMPORTANT: ชื่อพารามิเตอร์ต้องตรงกับ {req} ใน routes -> ใช้ Model Binding
+    public function show(MaintenanceRequest $req)
     {
         return response()->json(
-            $maintenanceRequest->load(['asset','reporter','technician','attachments','logs'])
+            $req->load(['asset','reporter','technician','attachments','logs'])
         );
     }
 
-    public function update(Request $request, MaintenanceRequest $maintenanceRequest)
+    public function update(Request $request, MaintenanceRequest $req)
     {
         $data = $request->validate([
-            'status'        => 'sometimes|in:pending,in_progress,completed,cancelled',
-            'technician_id' => 'nullable|exists:users,id',
-            'remark'        => 'nullable|string',
-            'assigned_date' => 'nullable|date',
-            'completed_date'=> 'nullable|date',
+            'status'         => 'sometimes|in:pending,in_progress,completed,cancelled',
+            'technician_id'  => 'nullable|exists:users,id',
+            'remark'         => 'nullable|string',
+            'assigned_date'  => 'nullable|date',
+            'completed_date' => 'nullable|date',
         ]);
 
-        $maintenanceRequest->update($data);
+        $req->update($data);
 
         MaintenanceLog::create([
-            'request_id' => $maintenanceRequest->id,
+            'request_id' => $req->id,
             'user_id'    => $request->user()->id ?? null,
             'action'     => 'update_request',
-            'note'       => $maintenanceRequest->status,
+            'note'       => $req->status,
             'created_at' => now(),
         ]);
 
         return response()->json(['message'=>'updated']);
     }
 
-    // === Actions เฉพาะกิจ ===
+    // === Actions แบบเดิมของพี่ (คงไว้ให้ใช้ได้) ===
     public function assign(Request $request, $id)
     {
         $data = $request->validate([
@@ -122,9 +123,87 @@ class MaintenanceRequestController extends Controller
         return response()->json(['message'=>'completed']);
     }
 
-    public function destroy(MaintenanceRequest $maintenanceRequest)
+    public function destroy(MaintenanceRequest $req)
     {
-        $maintenanceRequest->delete();
+        $req->delete();
         return response()->json(['message'=>'deleted']);
+    }
+
+    /**
+     * === รองรับเส้นทาง /repair-requests/{req}/transition ===
+     * body:
+     *   - action: assign | start | complete | cancel
+     *   - technician_id (required when action=assign)
+     *   - remark (optional)
+     */
+    public function transition(Request $request, MaintenanceRequest $req)
+    {
+        $data = $request->validate([
+            'action'        => 'required|in:assign,start,complete,cancel',
+            'technician_id' => 'nullable|exists:users,id',
+            'remark'        => 'nullable|string',
+        ]);
+
+        $action = $data['action'];
+        $note   = $data['remark'] ?? null;
+
+        switch ($action) {
+            case 'assign':
+                if (empty($data['technician_id'])) {
+                    return response()->json(['message'=>'technician_id is required for assign'], 422);
+                }
+                $req->update([
+                    'technician_id' => $data['technician_id'],
+                    'status'        => 'in_progress',   // ตามโค้ด assign เดิมของพี่
+                    'assigned_date' => now(),
+                    'remark'        => $note ?: $req->remark,
+                ]);
+                $this->log($req->id, $request->user()->id ?? null, 'assign_technician', (string)$data['technician_id']);
+                break;
+
+            case 'start':
+                if (!in_array($req->status, ['pending','in_progress'])) {
+                    return response()->json(['message'=>'Invalid state to start'], 422);
+                }
+                $req->update([
+                    'status' => 'in_progress',
+                    'remark' => $note ?: $req->remark,
+                ]);
+                $this->log($req->id, $request->user()->id ?? null, 'start_request', $note);
+                break;
+
+            case 'complete':
+                if (!in_array($req->status, ['in_progress'])) {
+                    return response()->json(['message'=>'Invalid state to complete'], 422);
+                }
+                $req->update([
+                    'status'         => 'completed',
+                    'completed_date' => now(),
+                    'remark'         => $note ?: $req->remark,
+                ]);
+                $this->log($req->id, $request->user()->id ?? null, 'complete_request', $note);
+                break;
+
+            case 'cancel':
+                $req->update([
+                    'status' => 'cancelled',
+                    'remark' => $note ?: $req->remark,
+                ]);
+                $this->log($req->id, $request->user()->id ?? null, 'cancel_request', $note);
+                break;
+        }
+
+        return response()->json(['message'=>'transition_ok','data'=>$req->fresh(['asset','reporter','technician'])]);
+    }
+
+    private function log(int $requestId, ?int $userId, string $action, ?string $note = null): void
+    {
+        MaintenanceLog::create([
+            'request_id' => $requestId,
+            'user_id'    => $userId,
+            'action'     => $action,
+            'note'       => $note,
+            'created_at' => now(),
+        ]);
     }
 }

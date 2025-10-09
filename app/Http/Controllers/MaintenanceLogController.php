@@ -3,17 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\MaintenanceLog;
+use App\Models\MaintenanceRequest;
 use Illuminate\Http\Request;
 
 class MaintenanceLogController extends Controller
 {
-    public function index()
+    /**
+     * GET /repair-requests/{req}/logs
+     * คืน logs ของคำขอซ่อม (ไม่ใช่ทุกอัน)
+     */
+    public function index(MaintenanceRequest $req)
     {
         return response()->json(
-            MaintenanceLog::with('user')->latest('created_at')->paginate(50)
+            $req->logs()
+                ->with('user')
+                ->latest('created_at')
+                ->paginate(50)
         );
     }
 
+    /**
+     * (มีไว้เผื่อใช้งาน) POST /logs หรือ /repair-requests/{req}/logs
+     * ถ้าจะใช้แบบอ้างอิง {req} ให้เพิ่ม route เองภายหลังได้
+     */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -27,9 +39,10 @@ class MaintenanceLogController extends Controller
             'created_at' => now(),
         ]);
 
-        return response()->json(['message'=>'created','data'=>$log], 201);
+        return response()->json(['message' => 'created', 'data' => $log], 201);
     }
 
+    /** GET /logs/{maintenanceLog} (ถ้ามี route แยก) */
     public function show(MaintenanceLog $maintenanceLog)
     {
         return response()->json($maintenanceLog->load('user'));

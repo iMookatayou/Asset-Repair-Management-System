@@ -11,8 +11,20 @@ class Asset extends Model
         'serial_number','location','purchase_date','warranty_expire','status'
     ];
 
-    public function requests() {
+    protected $casts = [
+        'purchase_date'   => 'date',
+        'warranty_expire' => 'date',
+    ];
+
+    // ความสัมพันธ์ไปใบแจ้งซ่อม
+    public function requests()
+    {
         return $this->hasMany(MaintenanceRequest::class);
     }
-}
 
+    // เผื่อในอนาคตจะผูกไฟล์แนบของทรัพย์สิน (optional)
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class, 'asset_id');
+    }
+}

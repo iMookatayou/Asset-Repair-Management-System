@@ -2,17 +2,31 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AssetController;
-use App\Http\Controllers\MaintenanceRequestController;
-use App\Http\Controllers\AttachmentController;
-use App\Http\Controllers\MaintenanceLogController;
+use App\Http\Controllers\{AssetController, MaintenanceRequestController, AttachmentController, MaintenanceLogController};
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::apiResource('assets', AssetController::class);
-    Route::apiResource('maintenance-requests', MaintenanceRequestController::class);
-    Route::apiResource('attachments', AttachmentController::class)->only(['store','destroy','index','show']);
-    Route::apiResource('maintenance-logs', MaintenanceLogController::class)->only(['index','store','show']);
+    
+  //Userinfo
+  Route::get('/user', fn(Request $r) => $r->user());
 
-    Route::post('maintenance-requests/{id}/assign', [MaintenanceRequestController::class, 'assign']);
-    Route::post('maintenance-requests/{id}/complete', [MaintenanceRequestController::class, 'complete']);
+  // Assets
+  Route::get('/assets', [AssetController::class, 'index']);
+  Route::post('/assets', [AssetController::class, 'store']);
+  Route::get('/assets/{asset}', [AssetController::class, 'show']);
+  Route::put('/assets/{asset}', [AssetController::class, 'update']);
+
+  // Maintenance Requests
+  Route::get('/repair-requests', [MaintenanceRequestController::class, 'index']);
+  Route::post('/repair-requests', [MaintenanceRequestController::class, 'store']);
+  Route::get('/repair-requests/{req}', [MaintenanceRequestController::class, 'show']);
+  Route::put('/repair-requests/{req}', [MaintenanceRequestController::class, 'update']);
+
+  // Transitions (state machine)
+  Route::post('/repair-requests/{req}/transition', [MaintenanceRequestController::class, 'transition']);
+  // Logs (optional read)
+  Route::get('/repair-requests/{req}/logs', [MaintenanceLogController::class, 'index']);
+
+  // Attachments
+  Route::post('/attachments', [AttachmentController::class, 'store']);  
+  Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy']);
 });
