@@ -2,64 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Models\MaintenanceLog;
 use Illuminate\Http\Request;
 
 class MaintenanceLogController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return response()->json(
+            MaintenanceLog::with('user')->latest('created_at')->paginate(50)
+        );
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'request_id' => 'required|exists:maintenance_requests,id',
+            'action'     => 'required|string|max:100',
+            'note'       => 'nullable|string',
+        ]);
+
+        $log = MaintenanceLog::create($data + [
+            'user_id'    => $request->user()->id ?? null,
+            'created_at' => now(),
+        ]);
+
+        return response()->json(['message'=>'created','data'=>$log], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(MaintenanceLog $maintenanceLog)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json($maintenanceLog->load('user'));
     }
 }

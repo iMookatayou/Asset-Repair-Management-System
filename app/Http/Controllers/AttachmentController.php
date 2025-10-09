@@ -2,64 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Models\Attachment;
 use Illuminate\Http\Request;
 
 class AttachmentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return response()->json(
+            Attachment::latest('uploaded_at')->paginate(20)
+        );
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'request_id' => 'required|exists:maintenance_requests,id',
+            'file_path'  => 'required|string|max:255', 
+            'file_type'  => 'nullable|string|max:50',
+        ]);
+
+        $att = Attachment::create($data + ['uploaded_at'=>now()]);
+        return response()->json(['message'=>'created','data'=>$att], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Attachment $attachment)
     {
-        //
+        return response()->json($attachment);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function destroy(Attachment $attachment)
     {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        $attachment->delete();
+        return response()->json(['message'=>'deleted']);
     }
 }
