@@ -1,0 +1,32 @@
+{
+  "name": "asset-repair-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Asset Repair Management System - Laravel with Vite setup",
+  "main": "postcss.config.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iMookatayou/Asset-Repair-Management-System.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/iMookatayou/Asset-Repair-Management-System/issues"
+  },
+  "homepage": "https://github.com/iMookatayou/Asset-Repair-Management-System#readme",
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "laravel-vite-plugin": "^2.0.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.13",
+    "vite": "^7.1.9"
+  }
+}

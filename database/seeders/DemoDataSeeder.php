@@ -3,43 +3,54 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\User;
-use App\Models\{Asset, MaintenanceRequest};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Models\User;
+use App\Models\Asset;
+use App\Models\MaintenanceRequest;
 use Carbon\Carbon;
 
 class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1) สร้างผู้ใช้กลุ่มผู้แจ้ง + ช่าง
-        $reporters = User::factory()->count(15)->create([
-            'role' => 'staff',
-        ]);
+        // ============= Tuning =============
+        DB::connection()->disableQueryLog();          // กันเมมบวม
+        $countRequests = (int) env('DEMO_SEED_COUNT', 300);
+        $assetCount    = (int) env('DEMO_ASSET_COUNT', rand(80,120));
+        $chunkSize     = 500;                         // ปรับได้: 200–1000
+        // ==================================
 
-        $technicians = User::factory()->count(6)->create([
-            'role' => 'technician',
-        ]);
+        // 1) Users
+        $reporters    = User::factory(15)->create(['role' => 'staff']);
+        $technicians  = User::factory(6)->create(['role' => 'technician']);
 
-        // 2) สร้างทรัพย์สิน
-        $types = ['เครื่องใช้ไฟฟ้า','อุปกรณ์สำนักงาน','คอมพิวเตอร์','เครื่องมือแพทย์'];
-        $categories = ['คอมพิวเตอร์','เครื่องพิมพ์','เครื่องปรับอากาศ','โต๊ะทำงาน','หลอดไฟ','เตียงคนไข้'];
-        $locations = ['ER','OPD','Ward','Admin','IT Room','Lab'];
+        // เก็บ id ไว้ใน array เพื่อลด memory จาก Eloquent Collection หนา ๆ
+        $reporterIds   = $reporters->pluck('id')->all();
+        $technicianIds = $technicians->pluck('id')->all();
 
-        $assets = Asset::factory()
-            ->count(rand(80,120))
-            ->create()
-            ->each(function($a) use ($types,$categories,$locations) {
-                // ถ้า schema มีคอลัมน์เหล่านี้ จะอัปเดตให้สมจริง
-                $dirty = false;
-                if (Schema::hasColumn('assets','type')) { $a->type = collect($types)->random(); $dirty=true; }
-                if (Schema::hasColumn('assets','category')) { $a->category = collect($categories)->random(); $dirty=true; }
-                if (Schema::hasColumn('assets','location')) { $a->location = collect($locations)->random(); $dirty=true; }
-                if ($dirty) $a->save();
-            });
+        // 2) Assets
+        $assets = Asset::factory($assetCount)->create();
 
-        // 3) ใบงาน ~300 รายการ กระจาย 12 เดือน และ "มี reporter_id/technician_id เสมอ"
+        $assetIds = $assets->pluck('id')->all();
+        $types       = ['เครื่องใช้ไฟฟ้า','อุปกรณ์สำนักงาน','คอมพิวเตอร์','เครื่องมือแพทย์'];
+        $categories  = ['คอมพิวเตอร์','เครื่องพิมพ์','เครื่องปรับอากาศ','โต๊ะทำงาน','หลอดไฟ','เตียงคนไข้'];
+        $locations   = ['ER','OPD','Ward','Admin','IT Room','Lab'];
+
+        // เติมฟิลด์เสริมให้ assets เท่าที่ schema มี (แบบเบา ๆ)
+        $hasType      = Schema::hasColumn('assets','type');
+        $hasCategory  = Schema::hasColumn('assets','category');
+        $hasLocation  = Schema::hasColumn('assets','location');
+
+        foreach ($assets as $a) {
+            $dirty = false;
+            if ($hasType)     { $a->type = $types[array_rand($types)]; $dirty = true; }
+            if ($hasCategory) { $a->category = $categories[array_rand($categories)]; $dirty = true; }
+            if ($hasLocation) { $a->location = $locations[array_rand($locations)]; $dirty = true; }
+            if ($dirty) $a->save();
+        }
+
+        // 3) Maintenance Requests — ใช้ bulk insert
         $statuses = [
             MaintenanceRequest::STATUS_PENDING,
             MaintenanceRequest::STATUS_IN_PROGRESS,
@@ -52,31 +63,53 @@ class DemoDataSeeder extends Seeder
             MaintenanceRequest::PRIORITY_URGENT,
         ];
 
-        foreach (range(1,300) as $i) {
-            $createdAt = Carbon::now()->subMonths(rand(0,11))->subDays(rand(0,28));
-            $status = collect($statuses)->random();
+        $now = Carbon::now();
+        $rows = [];
+        $hasRemark        = Schema::hasColumn('maintenance_requests', 'remark');
+        $hasAssignedDate  = Schema::hasColumn('maintenance_requests', 'assigned_date');
+        $hasCompletedDate = Schema::hasColumn('maintenance_requests', 'completed_date');
 
-            $asset = $assets->random();
-            $reporter = $reporters->random();     // << สำคัญ: ต้องมีค่า
-            $technician = $technicians->random(); // << สำคัญ: ต้องมีค่า
+        DB::transaction(function () use (
+            $countRequests, $assetIds, $reporterIds, $technicianIds,
+            $statuses, $priorities, $now, $hasRemark, $hasAssignedDate, $hasCompletedDate, &$rows, $chunkSize
+        ) {
+            for ($i = 0; $i < $countRequests; $i++) {
+                $createdAt = (clone $now)->subMonths(random_int(0, 11))->subDays(random_int(0, 28));
+                $status    = $statuses[array_rand($statuses)];
+                $assetId   = $assetIds[array_rand($assetIds)];
+                $reporter  = $reporterIds[array_rand($reporterIds)];
+                $tech      = $technicianIds[array_rand($technicianIds)];
 
-            MaintenanceRequest::create([
-                'asset_id'       => $asset->id,
-                'reporter_id'    => $reporter->id,    // << ห้าม null
-                'title'          => 'แจ้งซ่อม '.$asset->name,
-                'description'    => 'รายละเอียดปัญหาของ '.($asset->category ?? 'อุปกรณ์'),
-                'priority'       => collect($priorities)->random(),
-                'status'         => $status,
-                'technician_id'  => $technician->id,  // << ห้าม null ถ้า schema บังคับ
-                'request_date'   => $createdAt,
-                'assigned_date'  => $createdAt->copy()->addDays(rand(0,5)),
-                'completed_date' => $status === MaintenanceRequest::STATUS_COMPLETED
-                    ? $createdAt->copy()->addDays(rand(3,15))
-                    : null,
-                'remark'         => $status === MaintenanceRequest::STATUS_COMPLETED ? 'ดำเนินการแล้วเสร็จ' : null,
-                'created_at'     => $createdAt,
-                'updated_at'     => $createdAt,
-            ]);
-        }
+                $row = [
+                    'asset_id'      => $assetId,
+                    'reporter_id'   => $reporter,
+                    'technician_id' => $tech,
+                    'title'         => 'แจ้งซ่อม #'.($i+1),
+                    'description'   => 'รายละเอียดปัญหาเบื้องต้น',
+                    'priority'      => $priorities[array_rand($priorities)],
+                    'status'        => $status,
+                    'request_date'  => $createdAt,
+                    'created_at'    => $createdAt,
+                    'updated_at'    => $createdAt,
+                ];
+
+                if ($hasAssignedDate)  $row['assigned_date']  = (clone $createdAt)->addDays(random_int(0,5));
+                if ($hasCompletedDate) $row['completed_date'] = ($status === MaintenanceRequest::STATUS_COMPLETED)
+                    ? (clone $createdAt)->addDays(random_int(3,15))
+                    : null;
+                if ($hasRemark)        $row['remark'] = $status === MaintenanceRequest::STATUS_COMPLETED ? 'ดำเนินการแล้วเสร็จ' : null;
+
+                $rows[] = $row;
+
+                if (count($rows) >= $chunkSize) {
+                    DB::table('maintenance_requests')->insert($rows);
+                    $rows = [];
+                }
+            }
+
+            if (!empty($rows)) {
+                DB::table('maintenance_requests')->insert($rows);
+            }
+        });
     }
 }

@@ -4,8 +4,89 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "268c928fae317d75e7c7aef973527e8e",
+    "content-hash": "fd488b2cd0032b79aeb2273c1da1a643",
     "packages": [
+        {
+            "name": "blade-ui-kit/blade-icons",
+            "version": "1.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/driesvints/blade-icons.git",
+                "reference": "7b743f27476acb2ed04cb518213d78abe096e814"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/driesvints/blade-icons/zipball/7b743f27476acb2ed04cb518213d78abe096e814",
+                "reference": "7b743f27476acb2ed04cb518213d78abe096e814",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/contracts": "^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/filesystem": "^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/view": "^8.0|^9.0|^10.0|^11.0|^12.0",
+                "php": "^7.4|^8.0",
+                "symfony/console": "^5.3|^6.0|^7.0",
+                "symfony/finder": "^5.3|^6.0|^7.0"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.5.1",
+                "orchestra/testbench": "^6.0|^7.0|^8.0|^9.0|^10.0",
+                "phpunit/phpunit": "^9.0|^10.5|^11.0"
+            },
+            "bin": [
+                "bin/blade-icons-generate"
+            ],
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "BladeUI\\Icons\\BladeIconsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/helpers.php"
+                ],
+                "psr-4": {
+                    "BladeUI\\Icons\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dries Vints",
+                    "homepage": "https://driesvints.com"
+                }
+            ],
+            "description": "A package to easily make use of icons in your Laravel Blade views.",
+            "homepage": "https://github.com/blade-ui-kit/blade-icons",
+            "keywords": [
+                "blade",
+                "icons",
+                "laravel",
+                "svg"
+            ],
+            "support": {
+                "issues": "https://github.com/blade-ui-kit/blade-icons/issues",
+                "source": "https://github.com/blade-ui-kit/blade-icons"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/driesvints",
+                    "type": "github"
+                },
+                {
+                    "url": "https://www.paypal.com/paypalme/driesvints",
+                    "type": "paypal"
+                }
+            ],
+            "time": "2025-02-13T20:35:06+00:00"
+        },
         {
             "name": "brick/math",
             "version": "0.14.0",
@@ -1055,16 +1136,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v12.32.5",
+            "version": "v12.33.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "77b2740391cd2a825ba59d6fada45e9b8b9bcc5a"
+                "reference": "124efc5f09d4668a4dc13f94a1018c524a58bcb1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/77b2740391cd2a825ba59d6fada45e9b8b9bcc5a",
-                "reference": "77b2740391cd2a825ba59d6fada45e9b8b9bcc5a",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/124efc5f09d4668a4dc13f94a1018c524a58bcb1",
+                "reference": "124efc5f09d4668a4dc13f94a1018c524a58bcb1",
                 "shasum": ""
             },
             "require": {
@@ -1270,7 +1351,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2025-09-30T17:39:22+00:00"
+            "time": "2025-10-07T14:30:39+00:00"
         },
         {
             "name": "laravel/prompts",

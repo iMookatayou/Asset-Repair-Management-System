@@ -1,9 +1,4 @@
-@props(['title' => '', 'value' => '-', 'hint' => null])
-
-<div class="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
-  <div class="text-sm text-zinc-500 dark:text-zinc-400">{{ $title }}</div>
-  <div class="mt-1 text-3xl font-bold text-zinc-900 dark:text-white">
-    {{ $value }}
-    @if($hint) <span class="ml-1 text-xs font-normal text-zinc-500 dark:text-zinc-400">{{ $hint }}</span> @endif
-  </div>
+<div class="rounded-xl bg-zinc-800/50 p-4 text-center">
+  <div class="text-zinc-400 text-sm">{{ $label }}</div>
+  <div class="text-2xl font-semibold text-emerald-400">{{ $value }}</div>
 </div>

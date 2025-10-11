@@ -56,11 +56,20 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/requests/{request}', [MaintenanceRequestController::class, 'update'])->name('requests.update');
         Route::delete('/requests/{request}', [MaintenanceRequestController::class, 'destroy'])->name('requests.destroy');
     });
+
+    // ====== Assets (placeholder ให้เมนูไม่พัง) ======
+    Route::prefix('assets')->name('assets.')->group(function () {
+        // แค่ให้มีชื่อ route ก่อน คลิกแล้วค่อยไปทำ view/controller ต่อภายหลัง
+        Route::view('/', 'assets.index')->name('index');     // resources/views/assets/index.blade.php (ทำภายหลังได้)
+        // ถ้าจะทำเต็มภายหลัง: Route::resource('/', AssetController::class)->names('assets');
+    });
+
+    // ====== Users (placeholder ให้เมนูไม่พัง) ======
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::view('/', 'users.index')->name('index');      // resources/views/users/index.blade.php (ทำภายหลังได้)
+        // ภายหลังจะเปลี่ยนเป็น Route::resource('users', UserController::class)->names('users');
+    });
 });
 
-// =====================
-// (Optional) Fallback
-// =====================
-// Route::fallback(function () {
-//     return redirect()->route('repair.dashboard');
-// });
+// (optional) fallback
+// Route::fallback(fn () => redirect()->route('repair.dashboard'));

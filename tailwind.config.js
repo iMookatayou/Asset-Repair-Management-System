@@ -1,10 +1,11 @@
-/** @type {import('tailwindcss').Config} */
+// tailwind.config.js  (ESM)
 export default {
-  darkMode: 'class',
   content: [
     './resources/views/**/*.blade.php',
-    './resources/js/**/*.js',
+    './resources/**/*.{js,ts,vue}',
+    './resources/js/**/*.{js,ts,tsx}',
+    './storage/framework/views/*.php',
   ],
   theme: { extend: {} },
   plugins: [],
-}
+};
