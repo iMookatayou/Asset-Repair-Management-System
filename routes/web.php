@@ -1,21 +1,33 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
+// Auth / Profile
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\PasswordController;
+
+// App Modules
 use App\Http\Controllers\MaintenanceRequestController;
 use App\Http\Controllers\Repair\DashboardController as RepairDashboardController;
 
 require __DIR__.'/auth.php';
 
+// หน้าแรก → ไปหน้า login
 Route::redirect('/', '/login');
 
+// =====================
+// Guest-only routes
+// =====================
 Route::middleware('guest')->group(function () {
+    // Register
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store']);
 });
 
+// =====================
+// Authenticated routes
+// =====================
 Route::middleware(['auth'])->group(function () {
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -25,15 +37,15 @@ Route::middleware(['auth'])->group(function () {
     // Password
     Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
 
-    // === Repair Dashboard (ของจริง) ===
+    // ===== Repair Dashboard (Light) =====
     Route::get('/repair/dashboard', [RepairDashboardController::class, 'index'])
         ->name('repair.dashboard');
 
-    // === คง URL เดิมไว้: /dashboard → redirect ไปของจริง ===
+    // คง URL เดิมไว้: /dashboard → redirect ไปของจริง
     Route::get('/dashboard', fn () => redirect()->route('repair.dashboard'))
         ->name('dashboard');
 
-    // Maintenance Requests
+    // ===== Maintenance Requests =====
     Route::prefix('maintenance')->name('maintenance.')->group(function () {
         Route::get('/requests', [MaintenanceRequestController::class, 'index'])->name('requests.index');
         Route::get('/requests/create', [MaintenanceRequestController::class, 'create'])->name('requests.create');
@@ -45,3 +57,10 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/requests/{request}', [MaintenanceRequestController::class, 'destroy'])->name('requests.destroy');
     });
 });
+
+// =====================
+// (Optional) Fallback
+// =====================
+// Route::fallback(function () {
+//     return redirect()->route('repair.dashboard');
+// });
