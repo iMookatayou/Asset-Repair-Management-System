@@ -1,11 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\MaintenanceRequestController;
+use App\Http\Controllers\Repair\DashboardController as RepairDashboardController;
 
 require __DIR__.'/auth.php';
 
@@ -25,9 +25,15 @@ Route::middleware(['auth'])->group(function () {
     // Password
     Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
 
-    // Dashboard (หลัก)
-    Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard');
+    // === Repair Dashboard (ของจริง) ===
+    Route::get('/repair/dashboard', [RepairDashboardController::class, 'index'])
+        ->name('repair.dashboard');
 
+    // === คง URL เดิมไว้: /dashboard → redirect ไปของจริง ===
+    Route::get('/dashboard', fn () => redirect()->route('repair.dashboard'))
+        ->name('dashboard');
+
+    // Maintenance Requests
     Route::prefix('maintenance')->name('maintenance.')->group(function () {
         Route::get('/requests', [MaintenanceRequestController::class, 'index'])->name('requests.index');
         Route::get('/requests/create', [MaintenanceRequestController::class, 'create'])->name('requests.create');
