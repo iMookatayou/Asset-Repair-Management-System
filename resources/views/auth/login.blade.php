@@ -1,66 +1,65 @@
-<x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+@extends('layouts.auth')
+@section('title', 'Sign in')
 
-    <form method="POST" action="{{ route('login') }}">
+@section('content')
+    @if (session('status'))
+        <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
+            {{ session('status') }}
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('login') }}" class="space-y-4">
         @csrf
 
-        <!-- Email -->
+        {{-- Email --}}
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full"
-                          type="email" name="email" :value="old('email')"
-                          required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <label for="email" class="block text-sm font-medium text-slate-700">Email</label>
+            <input id="email" type="email" name="email" required autofocus autocomplete="username"
+                   class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2
+                          focus:border-[#0E2B51] focus:ring-[#0E2B51]">
+            @error('email')
+            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
+            @enderror
         </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-            <x-text-input id="password" class="block mt-1 w-full"
-                          type="password" name="password" required
-                          autocomplete="current-password" />
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        {{-- Password --}}
+        <div>
+            <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+            <input id="password" type="password" name="password" required autocomplete="current-password"
+                   class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2
+                          focus:border-[#0E2B51] focus:ring-[#0E2B51]">
+            @error('password')
+            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
+            @enderror
         </div>
 
-        <!-- Remember -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox"
-                       class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
-                       name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">
-                    {{ __('Remember me') }}
-                </span>
+        {{-- Remember + Forgot --}}
+        <div class="mt-2 flex items-center justify-between">
+            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" name="remember"
+                       class="rounded border-slate-300 text-[#0E2B51] focus:ring-[#0E2B51]">
+                Remember me
             </label>
+
+            @if (Route::has('password.request'))
+                <a href="{{ route('password.request') }}" class="text-sm text-[#0E2B51] hover:underline">
+                    Forgot password?
+                </a>
+            @endif
         </div>
 
-        <!-- Actions -->
-        <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <!-- ซ้าย: ลิงก์ Forgot / Register -->
-            <div class="flex items-center justify-center sm:justify-start gap-3">
-                @if (Route::has('password.request'))
-                    <a href="{{ route('password.request') }}"
-                    class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
-                        {{ __('Forgot your password?') }}
-                    </a>
-                @endif
+        {{-- Submit --}}
+        <button class="mt-2 w-full h-11 rounded-lg bg-[#0E2B51] text-white font-medium
+                       hover:opacity-95 focus:ring-2 focus:ring-offset-2 focus:ring-[#0E2B51]">
+            Sign in
+        </button>
 
-                @if (Route::has('register'))
-                    <span class="text-gray-400 dark:text-gray-600">›</span>
-                    <a href="{{ route('register') }}"
-                    class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
-                        {{ __('Register') }}
-                    </a>
-                @endif
-            </div>
-
-            <!-- ขวา: ปุ่ม Log in -->
-            <div class="flex items-center justify-center sm:justify-end">
-                <x-primary-button class="h-10 px-5">
-                    {{ __('Log in') }}
-                </x-primary-button>
-            </div>
-        </div>
+        {{-- Register (optional) --}}
+        @if (Route::has('register'))
+            <p class="text-center text-sm text-slate-600">
+                Don’t have an account?
+                <a href="{{ route('register') }}" class="text-[#0E2B51] hover:underline">Register</a>
+            </p>
+        @endif
     </form>
-</x-guest-layout>
+@endsection

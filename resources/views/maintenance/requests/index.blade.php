@@ -4,7 +4,6 @@
 
 @section('page-header')
   <div class="flex items-center justify-between">
-    <h1 class="text-xl font-semibold">Maintenance Requests</h1>
     <a href="{{ route('maintenance.requests.create') }}"
        class="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-2 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
       + New Request

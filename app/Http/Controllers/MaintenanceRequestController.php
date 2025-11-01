@@ -335,4 +335,13 @@ class MaintenanceRequestController extends Controller
             'note'       => $note,
         ]);
     }
+
+    public function createPage()
+    {
+        // โหลดรายการ asset และ user (ช่าง)
+        $assets = \App\Models\Asset::orderBy('name')->get();
+        $users  = \App\Models\User::where('role','technician')->orderBy('name')->get();
+
+        return view('maintenance.requests.create', compact('assets','users'));
+    }
 }

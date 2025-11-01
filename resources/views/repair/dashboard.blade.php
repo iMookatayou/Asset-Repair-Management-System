@@ -3,38 +3,30 @@
 
 @section('title', 'Asset Repair Dashboard Compact')
 
-{{-- ===== Topbar header (แทน x-slot header) ===== --}}
-@section('page-header')
-  <div class="flex items-center gap-3 w-full">
-    <h2 class="font-semibold text-lg sm:text-xl text-gray-100 leading-tight">
-      {{ __('Asset Repair Dashboard Compact') }}
-    </h2>
-
-    @php
-      $stats = array_replace(['total'=>0,'pending'=>0,'inProgress'=>0,'completed'=>0,'monthCost'=>0], $stats ?? []);
-    @endphp
-    <div class="ml-auto hidden md:flex items-center gap-2 text-xs">
-      <span class="px-2 py-0.5 rounded bg-zinc-800/70 text-zinc-300">Total: {{ number_format($stats['total']) }}</span>
-      <span class="px-2 py-0.5 rounded bg-yellow-900/30 text-yellow-200">Pending: {{ number_format($stats['pending']) }}</span>
-      <span class="px-2 py-0.5 rounded bg-sky-900/30 text-sky-200">In progress: {{ number_format($stats['inProgress']) }}</span>
-      <span class="px-2 py-0.5 rounded bg-emerald-900/30 text-emerald-200">Completed: {{ number_format($stats['completed']) }}</span>
-    </div>
-  </div>
+{{-- ===== Badges บน Topbar ===== --}}
+@section('topbadges')
+  @php
+    $stats = array_replace(['total'=>0,'pending'=>0,'inProgress'=>0,'completed'=>0,'monthCost'=>0], $stats ?? []);
+  @endphp
+  <span class="status-badge status-total">Total: <strong>{{ number_format($stats['total']) }}</strong></span>
+  <span class="status-badge status-pending">Pending: <strong>{{ number_format($stats['pending']) }}</strong></span>
+  <span class="status-badge status-progress">In&nbsp;progress: <strong>{{ number_format($stats['inProgress']) }}</strong></span>
+  <span class="status-badge status-done">Completed: <strong>{{ number_format($stats['completed']) }}</strong></span>
 @endsection
 
 @section('content')
-  {{-- ===== Page-only styles (เบา ๆ) ===== --}}
+  {{-- ===== Page-only styles (light) ===== --}}
   <style>
     .chart-card { position: relative; height: 220px; }
     @media (min-width: 1024px) { .chart-card { height: 260px; } }
-    .section-card { border-radius: .875rem; }
-    .section-head { padding:.6rem .9rem; font-weight:600; }
+    .section-card { border-radius: .875rem; background:#fff; border:1px solid #e5e7eb; }
+    .section-head { padding:.6rem .9rem; font-weight:600; border-bottom:1px solid #e5e7eb; color:#111827; }
     .section-body { padding:.9rem; }
-    .kpi { border-radius:.875rem; padding:.8rem; }
-    .kpi-title { font-size:.7rem; color:#9ca3af; }
-    .kpi-value { font-size:1.35rem; font-weight:700; line-height:1.1; }
-    .tbl th, .tbl td { padding:.5rem .6rem; font-size:.82rem; }
-    .tbl thead th { font-size:.68rem; letter-spacing:.02em; }
+    .kpi { border-radius:.875rem; padding:.8rem; background:#fff; border:1px solid #e5e7eb; }
+    .kpi-title { font-size:.72rem; color:#6b7280; }
+    .kpi-value { font-size:1.35rem; font-weight:700; line-height:1.1; color:#111827; }
+    .tbl th, .tbl td { padding:.5rem .6rem; font-size:.82rem; color:#111827; }
+    .tbl thead th { font-size:.68rem; letter-spacing:.02em; color:#6b7280; }
     .empty-state { display:flex; align-items:center; justify-content:center; height:220px; color:#9ca3af; font-size:.9rem }
     @media (min-width:1024px){ .empty-state{ height:260px; } }
   </style>
@@ -72,13 +64,13 @@
   <div class="py-4">
     <div class="max-w-7xl mx-auto sm:px-4 lg:px-6 space-y-4">
 
-      {{-- ===== Filters Row ===== --}}
-      <form method="GET" class="section-card border border-zinc-800 bg-[#0f1a2a]" aria-label="Filters">
-        <div class="section-head border-b border-zinc-700 text-zinc-100">Filters</div>
+      {{-- ===== Filters Row (light) ===== --}}
+      <form method="GET" class="section-card" aria-label="Filters">
+        <div class="section-head">Filters</div>
         <div class="section-body grid grid-cols-2 md:grid-cols-5 gap-3">
           <div>
-            <label for="f_status" class="block text-xs text-zinc-400 mb-1">Status</label>
-            <select id="f_status" name="status" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm">
+            <label for="f_status" class="block text-xs text-gray-600 mb-1">Status</label>
+            <select id="f_status" name="status" class="w-full bg-white border border-gray-300 rounded p-2 text-sm">
               <option value="">All</option>
               <option value="pending"     {{ request('status')==='pending'?'selected':'' }}>Pending</option>
               <option value="in_progress" {{ request('status')==='in_progress'?'selected':'' }}>In progress</option>
@@ -86,39 +78,39 @@
             </select>
           </div>
           <div>
-            <label for="f_from" class="block text-xs text-zinc-400 mb-1">From date</label>
-            <input id="f_from" type="date" name="from" value="{{ e(request('from','')) }}" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm" />
+            <label for="f_from" class="block text-xs text-gray-600 mb-1">From date</label>
+            <input id="f_from" type="date" name="from" value="{{ e(request('from','')) }}" class="w-full bg-white border border-gray-300 rounded p-2 text-sm" />
           </div>
           <div>
-            <label for="f_to" class="block text-xs text-zinc-400 mb-1">To date</label>
-            <input id="f_to" type="date" name="to" value="{{ e(request('to','')) }}" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm" />
+            <label for="f_to" class="block text-xs text-gray-600 mb-1">To date</label>
+            <input id="f_to" type="date" name="to" value="{{ e(request('to','')) }}" class="w-full bg-white border border-gray-300 rounded p-2 text-sm" />
           </div>
           <div class="md:col-span-2 flex items-end gap-2">
             <button class="px-3 py-2 rounded bg-sky-600 hover:bg-sky-500 text-white text-sm">Apply</button>
-            <a href="{{ route('repair.dashboard') }}" class="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm">Reset</a>
+            <a href="{{ route('repair.dashboard') }}" class="px-3 py-2 rounded bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-sm">Reset</a>
           </div>
         </div>
       </form>
 
       {{-- ===== KPIs ===== --}}
       <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        <div class="kpi border border-zinc-800 bg-[#0f1a2a] text-zinc-100">
+        <div class="kpi">
           <div class="kpi-title">Total</div>
           <div class="kpi-value">{{ number_format($stats['total']) }}</div>
         </div>
-        <div class="kpi border border-zinc-800 bg-[#0f1a2a] text-yellow-200">
-          <div class="kpi-title">Pending</div>
-          <div class="kpi-value">{{ number_format($stats['pending']) }}</div>
+        <div class="kpi">
+          <div class="kpi-title text-yellow-700">Pending</div>
+          <div class="kpi-value text-yellow-700">{{ number_format($stats['pending']) }}</div>
         </div>
-        <div class="kpi border border-zinc-800 bg-[#0f1a2a] text-sky-200">
-          <div class="kpi-title">In progress</div>
-          <div class="kpi-value">{{ number_format($stats['inProgress']) }}</div>
+        <div class="kpi">
+          <div class="kpi-title text-sky-700">In progress</div>
+          <div class="kpi-value text-sky-700">{{ number_format($stats['inProgress']) }}</div>
         </div>
-        <div class="kpi border border-zinc-800 bg-[#0f1a2a] text-emerald-200">
-          <div class="kpi-title">Completed</div>
-          <div class="kpi-value">{{ number_format($stats['completed']) }}</div>
+        <div class="kpi">
+          <div class="kpi-title text-emerald-700">Completed</div>
+          <div class="kpi-value text-emerald-700">{{ number_format($stats['completed']) }}</div>
         </div>
-        <div class="kpi border border-zinc-800 bg-[#0f1a2a] text-zinc-100">
+        <div class="kpi">
           <div class="kpi-title">Monthly cost</div>
           <div class="kpi-value">{{ number_format($stats['monthCost'], 2) }}</div>
         </div>
@@ -126,8 +118,8 @@
 
       {{-- ===== CHARTS ===== --}}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="section-card border border-zinc-800 bg-[#0f1a2a]">
-          <div class="section-head border-b border-zinc-700 text-zinc-100">Monthly trend 6 months</div>
+        <div class="section-card">
+          <div class="section-head">Monthly trend 6 months</div>
           <div class="section-body">
             @if (count($trendLabels) && count($trendCounts))
               <div class="chart-card">
@@ -141,8 +133,8 @@
           </div>
         </div>
 
-        <div class="section-card border border-zinc-800 bg-[#0f1a2a]">
-          <div class="section-head border-b border-zinc-700 text-zinc-100">Asset types Top 8 plus others</div>
+        <div class="section-card">
+          <div class="section-head">Asset types Top 8 plus others</div>
           <div class="section-body">
             @if (count($typeLabels) && count($typeCounts))
               <div class="chart-card">
@@ -157,8 +149,8 @@
         </div>
       </div>
 
-      <div class="section-card border border-zinc-800 bg-[#0f1a2a]">
-        <div class="section-head border-b border-zinc-700 text-zinc-100">By department Top 8</div>
+      <div class="section-card">
+        <div class="section-head">By department Top 8</div>
         <div class="section-body">
           @if (count($deptLabels) && count($deptCounts))
             <div class="chart-card">
@@ -173,34 +165,34 @@
       </div>
 
       {{-- ===== RECENT TABLE ===== --}}
-      <div class="section-card border border-zinc-800 bg-[#0f1a2a] overflow-hidden">
-        <div class="section-head border-b border-zinc-700 text-zinc-100 flex items-center">
+      <div class="section-card overflow-hidden">
+        <div class="section-head flex items-center">
           <span>Recent jobs</span>
-          <span class="ml-2 text-xs text-zinc-400">up to 12 items</span>
+          <span class="ml-2 text-xs text-gray-500">up to 12 items</span>
         </div>
 
         <div class="section-body p-0">
           <div class="overflow-x-auto">
-            <table class="tbl min-w-full divide-y divide-zinc-800 text-zinc-100" role="table" aria-label="Recent jobs">
-              <thead class="bg-[#0b1422]">
+            <table class="tbl min-w-full divide-y divide-gray-200" role="table" aria-label="Recent jobs">
+              <thead class="bg-gray-50">
                 <tr>
-                  <th class="text-left uppercase text-zinc-400">Reported at</th>
-                  <th class="text-left uppercase text-zinc-400">Asset</th>
-                  <th class="text-left uppercase text-zinc-400">Reporter</th>
-                  <th class="text-left uppercase text-zinc-400">Status</th>
-                  <th class="text-left uppercase text-zinc-400">Assignee</th>
-                  <th class="text-left uppercase text-zinc-400">Completed at</th>
+                  <th class="text-left uppercase">Reported at</th>
+                  <th class="text-left uppercase">Asset</th>
+                  <th class="text-left uppercase">Reporter</th>
+                  <th class="text-left uppercase">Status</th>
+                  <th class="text-left uppercase">Assignee</th>
+                  <th class="text-left uppercase">Completed at</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-zinc-800">
+              <tbody class="divide-y divide-gray-200">
                 @forelse($recent as $t)
                   @php
                     $status = (string) $get($t,'status','');
                     $badgeClass =
-                      $status === \App\Models\MaintenanceRequest::STATUS_PENDING     ? 'bg-yellow-200/20 text-yellow-300' :
-                      ($status === \App\Models\MaintenanceRequest::STATUS_IN_PROGRESS ? 'bg-sky-200/20 text-sky-300' :
-                      ($status === \App\Models\MaintenanceRequest::STATUS_COMPLETED   ? 'bg-emerald-200/20 text-emerald-300' :
-                                                                                         'bg-zinc-200/20 text-zinc-300'));
+                      $status === \App\Models\MaintenanceRequest::STATUS_PENDING     ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
+                      ($status === \App\Models\MaintenanceRequest::STATUS_IN_PROGRESS ? 'bg-sky-50 text-sky-700 border border-sky-200' :
+                      ($status === \App\Models\MaintenanceRequest::STATUS_COMPLETED   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                                                         'bg-gray-50 text-gray-700 border border-gray-200'));
                     $assetId   = $get($t,'asset_id','-');
                     $assetName = $get($t,'asset_name') ?: $get($t,'asset.name','-');
                     $reporter  = $get($t,'reporter')   ?: $get($t,'reporter.name','-');
@@ -208,19 +200,21 @@
                     $reqAt     = $get($t,'request_date','-');
                     $doneAt    = $get($t,'completed_at') ?: $get($t,'completed_date','-');
                   @endphp
-                  <tr class="hover:bg-[#0b1422]">
+                  <tr class="hover:bg-gray-50">
                     <td>{{ is_string($reqAt) ? $reqAt : optional($reqAt)->format('Y-m-d H:i') }}</td>
                     <td>#{{ e((string)$assetId) }} — {{ e((string)$assetName) }}</td>
                     <td>{{ e((string)$reporter) }}</td>
-                    <td><span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] {{ $badgeClass }}">
-                      {{ ucfirst(str_replace('_',' ', $status)) }}</span>
+                    <td>
+                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] {{ $badgeClass }}">
+                        {{ ucfirst(str_replace('_',' ', $status)) }}
+                      </span>
                     </td>
                     <td>{{ e((string)$tech) }}</td>
                     <td>{{ is_string($doneAt) ? $doneAt : (optional($doneAt)->format('Y-m-d H:i') ?? '-') }}</td>
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="6" class="text-center text-zinc-400 py-10">
+                    <td colspan="6" class="text-center text-gray-500 py-10">
                       No recent data to display
                     </td>
                   </tr>
@@ -234,7 +228,7 @@
     </div>
   </div>
 
-  {{-- ===== Charts and UX helpers ===== --}}
+  {{-- ===== Charts and UX helpers (light-friendly) ===== --}}
   <script>
     function loadChartJsOnce(cb){
       if (window.Chart) return cb();
@@ -251,23 +245,36 @@
         const values = JSON.parse(el.dataset.values || '[]');
         if (!labels.length || !values.length) return;
 
+        const axisStyle = {
+          ticks: { color: '#374151' },                  // text-gray-700
+          grid:  { color: '#e5e7eb' }                   // border-gray-200
+        };
+
         const cfg = (type === 'pie') ? {
           type:'pie',
           data:{ labels, datasets:[{ data: values }] },
-          options:{ responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10 } } } }
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{
+              legend:{ position:'bottom', labels:{ boxWidth:10, color:'#111827' } } // text-gray-900
+            }
+          }
         } : (type === 'bar') ? {
           type:'bar',
           data:{ labels, datasets:[{ data: values }] },
-          options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
-            scales:{ y:{ beginAtZero:true, grid:{ color:'rgba(255,255,255,.06)' } },
-                     x:{ grid:{ display:false } } } }
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:false } },
+            scales:{ y: axisStyle, x: { ...axisStyle, grid:{ display:false } } }
+          }
         } : {
           type:'line',
           data:{ labels, datasets:[{ data: values, tension:.35, pointRadius:2, borderWidth:2 }] },
-          options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
-            scales:{ y:{ beginAtZero:true, grid:{ color:'rgba(255,255,255,.06)' } },
-                     x:{ grid:{ color:'rgba(255,255,255,.04)' } } } }
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:false } },
+            scales:{ y: axisStyle, x: axisStyle }
+          }
         };
         new Chart(el, cfg);
       }catch(e){ console.warn('[ChartJS] render error', e); }
@@ -293,7 +300,7 @@
 
 {{-- ===== Footer (แทน x-slot footer) ===== --}}
 @section('footer')
-  <div class="text-xs text-zinc-400">
+  <div class="text-xs text-gray-500">
     © {{ date('Y') }} {{ config('app.name','Asset Repair') }} — Dashboard
   </div>
 @endsection

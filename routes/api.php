@@ -16,17 +16,18 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::put('/assets/{asset}', [AssetController::class, 'update']);
 
   // Maintenance Requests
-  Route::get('/repair-requests', [MaintenanceRequestController::class, 'index']);
-  Route::post('/repair-requests', [MaintenanceRequestController::class, 'store']);
-  Route::get('/repair-requests/{req}', [MaintenanceRequestController::class, 'show']);
-  Route::put('/repair-requests/{req}', [MaintenanceRequestController::class, 'update']);
+  Route::prefix('repair-requests')->name('repair-requests.')->group(function () {
+    Route::get('/',          [MaintenanceRequestController::class, 'index'])->name('index');
+    Route::post('/',         [MaintenanceRequestController::class, 'store'])->name('store');
+    Route::get('/{req}',     [MaintenanceRequestController::class, 'show'])->name('show');
+    Route::put('/{req}',     [MaintenanceRequestController::class, 'update'])->name('update');
+    Route::post('/{req}/transition', [MaintenanceRequestController::class, 'transition'])->name('transition');
+    Route::get('/{req}/logs', [MaintenanceLogController::class, 'index'])->name('logs');
+  });
 
-  // Transitions (state machine)
-  Route::post('/repair-requests/{req}/transition', [MaintenanceRequestController::class, 'transition']);
-  // Logs (optional read)
-  Route::get('/repair-requests/{req}/logs', [MaintenanceLogController::class, 'index']);
-
+  
   // Attachments
   Route::post('/attachments', [AttachmentController::class, 'store']);  
   Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy']);
 });
+

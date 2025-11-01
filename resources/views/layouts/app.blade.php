@@ -9,13 +9,13 @@
 
   <style>
     /* =========================
-       Base Layout
+       Base Layout (Light theme)
        ========================= */
     .layout { display:grid; grid-template-columns: 260px 1fr; min-height:100dvh; transition:grid-template-columns .2s ease; }
-    .sidebar { background:#0b1422; border-right:1px solid #1f2937; width:260px; transition:width .2s ease; }
-    .topbar  { background:#0b1422; border-bottom:1px solid #1f2937; position:sticky; top:0; z-index:30; }
+    .sidebar { background:#ffffff; border-right:1px solid #e5e7eb; width:260px; transition:width .2s ease; }
+    .topbar  { position:sticky; top:0; z-index:30; }
     .content { padding:1rem; }
-    .footer  { border-top:1px solid #1f2937; padding:.75rem 1rem; color:#9ca3af; }
+    .footer  { border-top:1px solid #e5e7eb; padding:.75rem 1rem; color:#6b7280; }
 
     @media (min-width: 1024px){
       .sidebar.collapsed { width:76px !important; }
@@ -35,127 +35,132 @@
       .sidebar.collapsed.hover-expand { width: 260px !important; }
       .sidebar.collapsed.hover-expand .menu-text { display: inline !important; }
       .sidebar.collapsed.hover-expand .menu-item { justify-content: flex-start; gap: .75rem; }
-      .sidebar.hover-expand { box-shadow: 4px 0 12px rgba(0,0,0,.4); }
+      .sidebar.hover-expand { box-shadow: 4px 0 12px rgba(0,0,0,.06); }
     }
 
     .sidebar .menu { padding: .5rem 0; }
     .sidebar .menu-item {
-      display: grid;
-      grid-template-columns: 48px 1fr;
-      align-items: center;
-      gap: .75rem;
-      height: 44px;
-      line-height: 1;
-      padding: 0 .75rem;
-      white-space: nowrap;
-      overflow: hidden;
-      transition: grid-template-columns .25s ease, padding .25s ease;
+      display: grid; grid-template-columns: 48px 1fr; align-items: center;
+      gap: .75rem; height: 44px; line-height: 1; padding: 0 .75rem;
+      white-space: nowrap; overflow: hidden;
+      transition: grid-template-columns .25s ease, padding .25s ease, background .15s ease;
+      color:#374151;
     }
-    .sidebar .menu-item .icon-wrap {
-      width: 48px;
-      height: 44px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .sidebar .menu-item .menu-text {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      opacity: 1;
-      transition: opacity .18s ease;
-    }
+    .sidebar .menu-item:hover{ background:#f9fafb; }
+    .sidebar .menu-item .icon-wrap { width: 48px; height: 44px; display:inline-flex; align-items:center; justify-content:center; color:#6b7280; }
+    .sidebar .menu-item .menu-text { overflow: hidden; text-overflow: ellipsis; opacity: 1; transition: opacity .18s ease; }
 
     @media (min-width: 1024px){
-      .sidebar.collapsed .menu-item {
-        grid-template-columns: 48px 0px;
-        gap: 0;
-        padding-right: .5rem;
-        padding-left: .5rem;
-      }
-      .sidebar.collapsed .menu-item .menu-text {
-        opacity: 0;
-        pointer-events: none;
-      }
-      .sidebar.collapsed.hover-expand .menu-item {
-        grid-template-columns: 48px 1fr;
-        gap: .75rem;
-        padding-left: .75rem;
-        padding-right: .75rem;
-      }
-      .sidebar.collapsed.hover-expand .menu-item .menu-text {
-        opacity: 1;
-      }
+      .sidebar.collapsed .menu-item { grid-template-columns: 48px 0px; gap:0; padding-inline:.5rem; }
+      .sidebar.collapsed .menu-item .menu-text { opacity:0; pointer-events:none; }
+      .sidebar.collapsed.hover-expand .menu-item { grid-template-columns:48px 1fr; gap:.75rem; padding-inline:.75rem; }
+      .sidebar.collapsed.hover-expand .menu-item .menu-text { opacity:1; }
     }
 
-    .topbar--frost{
-      background: linear-gradient(90deg, #0b1422 0%, #122136 55%, #0b1422 100%);
-      border-bottom: 1px solid rgba(31,41,55,.8);
-      position: sticky; top: 0; z-index: 30;
-      backdrop-filter: saturate(130%) blur(6px);
-      box-shadow:
-          0 1px 0 rgba(0,0,0,.35),
-          0 8px 24px rgba(0,0,0,.25);
+    /* =========================
+       NAVBAR THEME: BLUE + WHITE
+       ========================= */
+    .topbar--hero{
+      background: #0D294A; /* โทนเดียว */
+      color:#f6fbff;
+      border-bottom:none;
+      box-shadow: 0 10px 30px rgba(0,0,0,.18);
+      backdrop-filter: saturate(120%) blur(6px);
+      position: relative;
     }
 
-    .nav-brand{ display:inline-flex; align-items:center; gap:.6rem; text-decoration:none; }
+    .topbar--inner{ min-height: 96px; }
     .brand-logo{
-      width: 28px; height: 28px; border-radius:.5rem;
-      filter: drop-shadow(0 0 10px rgba(239,68,68,.30))
-              drop-shadow(0 0 18px rgba(239,68,68,.18));
-      animation: glowPulse 3.6s ease-in-out infinite;
+      width: 60px; /* จาก 44px → เพิ่มขนาด */
+      height: 60px;
+      border-radius: 0; /* ไม่มีโค้ง */
+      background: transparent !important; /* ตัดพื้นหลังออก */
+      padding: 0; /* เอา padding ออก */
+      box-shadow: none !important; /* ตัดเงา */
+      object-fit: contain;
     }
-    .nav-title{ font-weight:700; letter-spacing:.2px; color:#e5e7eb; }
-    @keyframes glowPulse{
-      0%,100%{ filter: drop-shadow(0 0 6px rgba(239,68,68,.25)) drop-shadow(0 0 16px rgba(239,68,68,.12)); }
-      50%    { filter: drop-shadow(0 0 14px rgba(239,68,68,.45)) drop-shadow(0 0 26px rgba(239,68,68,.25)); }
+    .brand-title{ font-weight: 900; letter-spacing:.2px; line-height:1; color:#ffffff; }
+    .brand-sub{ font-size:.82rem; color:#d8e7f9; margin-top:2px; }
+
+    /* ปุ่มโปร่งแก้วโทนขาวฟ้า */
+    .glass-btn{
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.28);
+      color:#f6fbff;
     }
+    .glass-btn:hover{ background: rgba(255,255,255,.18); }
+
+    /* Badges โทนขาวฟ้า */
+    .status-badge{
+      font-size:.75rem; font-weight:700; border-radius:999px; padding:.22rem .6rem;
+      background:#ffffff; color:#0b1220; border:1px solid #e5edf8;
+      display:inline-flex; gap:.25rem; align-items:center;
+    }
+    .status-total   { background:#f3f7ff; color:#0b1220; }
+    .status-pending { background:#eef5ff; color:#1e3a8a; }
+    .status-progress{ background:#e6f0ff; color:#1d4ed8; }
+    .status-done    { background:#eaf4ff; color:#0f3dbd; }
   </style>
 </head>
 
-<body class="bg-zinc-900 text-zinc-100">
+<body class="bg-gray-50 text-gray-900">
 
-  {{-- ======= TOPBAR: DASHBOARD + BADGES + LOGIN LINK ======= --}}
-    <div class="topbar px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 bg-[#0b1422] border-b border-zinc-800">
-    {{-- Left: Brand + Stats --}}
-    <div class="flex items-center gap-3 flex-wrap">
-        <a href="{{ url('/') }}" class="flex items-center gap-2 text-zinc-100 no-underline">
-        <img src="https://laravel.com/img/logomark.min.svg" alt="Laravel" class="w-7 h-7 opacity-90">
-        <span class="font-semibold text-[15px] tracking-wide">
-            {{ config('app.name','Asset Repair Dashboard') }}
-        </span>
+  {{-- ======= TOPBAR (BLUE + WHITE) ======= --}}
+  <div class="topbar topbar--hero">
+    <div class="topbar--inner px-4 flex items-center justify-between gap-4 flex-wrap">
+
+      {{-- ซ้าย: โลโก้ + ชื่อระบบ + Badges (ตัด segbar ออกแล้ว) --}}
+      <div class="flex items-center gap-4 flex-wrap">
+        <a href="{{ url('/') }}" class="flex items-center gap-3 no-underline">
+          {{-- ใช้โลโก้ PPK จาก public/logoppk.png --}}
+          <img src="{{ asset('/images/logoppk.png') }}" alt="PPK" class="brand-logo">
+          <div class="leading-tight">
+            <div class="brand-title text-xl md:text-2xl">
+              {{ config('app.name','Asset Repair Dashboard') }}
+            </div>
+            <div class="brand-sub">Asset Repair Management</div>
+          </div>
         </a>
 
-        {{-- Stats badges --}}
-        <div class="flex items-center gap-1.5 text-[13px] font-medium">
-        @yield('topbadges')
+        {{-- Badges --}}
+        <div class="hidden md:flex items-center gap-2 text-[13px]">
+          @hasSection('topbadges')
+            @yield('topbadges')
+          @else
+            <span class="status-badge status-total">Total: <strong>300</strong></span>
+            <span class="status-badge status-pending">Pending: <strong>103</strong></span>
+            <span class="status-badge status-progress">In&nbsp;progress: <strong>107</strong></span>
+            <span class="status-badge status-done">Completed: <strong>90</strong></span>
+          @endif
         </div>
-    </div>
+      </div>
 
-    {{-- Right: Sidebar toggle + Login redirect --}}
-    <div class="flex items-center gap-2 ml-auto">
+      {{-- ขวา: ปุ่มเมนูมือถือ + Logout (POST) --}}
+      <div class="flex items-center gap-2 ml-auto">
         <button id="btnSidebar"
-                class="lg:hidden inline-flex items-center px-2 py-1 rounded-md border border-white/20 text-zinc-100/90 bg-white/5 hover:bg-white/10 transition-colors"
+                class="lg:hidden inline-flex items-center px-2 py-1 rounded-md glass-btn transition-colors"
                 aria-controls="side" aria-expanded="false" title="เมนู">
-        ☰
+          ☰
         </button>
 
-        {{-- ปุ่มออกจากระบบ (แค่ไปหน้า login) --}}
-        <a href="{{ route('login') }}"
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 border border-white/20 text-zinc-100 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
-            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
-        </svg>
-        <span class="hidden md:inline">Logout</span>
-        </a>
+        <form method="POST" action="{{ route('logout') }}">
+          @csrf
+          <button type="submit"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md glass-btn transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
+            </svg>
+            <span class="hidden md:inline">Logout</span>
+          </button>
+        </form>
+      </div>
     </div>
-    </div>
+  </div>
 
   {{-- ======= LAYOUT GRID ======= --}}
   <div id="layout" class="layout">
-    {{-- Sidebar --}}
     <aside id="side" class="sidebar" aria-label="Sidebar">
       @hasSection('sidebar')
         @yield('sidebar')
@@ -166,14 +171,13 @@
 
     <div id="backdrop" class="backdrop lg:hidden" aria-hidden="true"></div>
 
-    {{-- Main content area --}}
     <main class="content">
       @hasSection('page-header')
         <div class="mb-4">@yield('page-header')</div>
       @endif
 
       @if (session('ok'))
-        <div class="mb-4 p-3 rounded bg-emerald-900/40 text-emerald-100">
+        <div class="mb-4 p-3 rounded border border-emerald-200 bg-emerald-50 text-emerald-800">
           {{ session('ok') }}
         </div>
       @endif
@@ -182,7 +186,6 @@
     </main>
   </div>
 
-  {{-- Footer --}}
   <div class="footer text-xs">
     @hasSection('footer')
       @yield('footer')

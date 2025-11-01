@@ -64,4 +64,27 @@ class AttachmentController extends Controller
 
         return response()->json(['message' => 'deleted']);
     }
+
+    public function storeForRequest(Request $request, MaintenanceRequest $req)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:before,after,other',
+            'file' => 'required|file|max:10240', // 10 MB
+        ]);
+
+        // เก็บไฟล์จริงลง storage แบบ public
+        // $path จะเป็นเช่น: "maintenance/abc123.jpg"
+        $path = $request->file('file')->store('maintenance', 'public');
+
+        // บันทึกลงตาราง Attachment ตามสคีมเดิมของคุณ
+        $att = Attachment::create([
+            'request_id'  => $req->id,
+            'file_path'   => $path,                 // <<== map ไป field เดิม
+            'file_type'   => $validated['type'],    // <<== map ไป field เดิม
+            'uploaded_at' => now(),
+        ]);
+
+        // กลับไปหน้าเดิม + flash message ให้ Chip สีเขียวขึ้น
+        return back()->with('ok', 'อัปโหลดไฟล์เรียบร้อย');
+    }
 }
