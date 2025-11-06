@@ -14,7 +14,8 @@
   };
 @endphp
 
-<div class="max-w-6xl mx-auto space-y-5">
+{{-- คอนเทนต์เต็มกว้าง/เต็มสูง: header + filters คงที่, ตารางเลื่อนเอง --}}
+<div class="w-full px-4 md:px-6 lg:px-8 py-5 min-h-[calc(100vh-6rem)] flex flex-col gap-5">
 
   {{-- Header card --}}
   <div class="rounded-xl border bg-base-100/80 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-base-100/60">
@@ -42,7 +43,7 @@
   </div>
 
   {{-- Filters --}}
-  <form method="GET" class="rounded-xl border bg-white shadow-sm p-4">
+  <form method="GET" class="rounded-xl border bg-white shadow-sm p-4" role="search" aria-label="Filter assets">
     <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
       <div class="md:col-span-2">
         <label for="q" class="block text-sm text-zinc-700">Search</label>
@@ -89,17 +90,17 @@
     </div>
   </form>
 
-  {{-- Table (desktop) --}}
-  <div class="hidden md:block rounded-xl border bg-white shadow-sm">
-    <div class="overflow-x-auto">
+  {{-- ===== Desktop table: ยืดเต็มสูงและเลื่อนเฉพาะรายการ ===== --}}
+  <div class="hidden md:flex flex-col rounded-xl border bg-white shadow-sm flex-1 overflow-hidden">
+    <div class="overflow-x-auto overflow-y-auto flex-1">
       <table class="min-w-full divide-y divide-zinc-200 text-sm">
         <thead class="sticky top-0 z-10 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70">
           <tr class="text-left text-zinc-600">
             <th class="px-4 py-3">{!! $th('id','#') !!}</th>
             <th class="px-4 py-3">{!! $th('asset_code','Asset Code') !!}</th>
             <th class="px-4 py-3">{!! $th('name','Name') !!}</th>
-            <th class="px-4 py-3 hidden md:table-cell">{!! $th('category','Category') !!}</th>
-            <th class="px-4 py-3 hidden md:table-cell">Location</th>
+            <th class="px-4 py-3 hidden xl:table-cell">{!! $th('category','Category') !!}</th>
+            <th class="px-4 py-3 hidden lg:table-cell">Location</th>
             <th class="px-4 py-3">{!! $th('status','Status') !!}</th>
             <th class="px-4 py-3 text-right">Action</th>
           </tr>
@@ -113,8 +114,8 @@
                 <a class="text-emerald-700 hover:underline" href="{{ route('assets.show',$a) }}">{{ $a->name }}</a>
                 <div class="text-xs text-zinc-500">S/N: {{ $a->serial_number ?? '—' }}</div>
               </td>
-              <td class="px-4 py-3 hidden md:table-cell">{{ $a->category ?? '—' }}</td>
-              <td class="px-4 py-3 hidden md:table-cell">{{ $a->location ?? '—' }}</td>
+              <td class="px-4 py-3 hidden xl:table-cell">{{ $a->category ?? '—' }}</td>
+              <td class="px-4 py-3 hidden lg:table-cell">{{ $a->location ?? '—' }}</td>
               <td class="px-4 py-3">
                 @php
                   $badge = [
@@ -127,7 +128,7 @@
                   {{ ucfirst(str_replace('_',' ',$a->status)) }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-right">
+              <td class="px-4 py-3 text-right whitespace-nowrap">
                 <a href="{{ route('assets.edit',$a) }}" class="text-emerald-700 hover:underline">Edit</a>
               </td>
             </tr>
@@ -139,13 +140,17 @@
         </tbody>
       </table>
     </div>
-    <div class="px-4 py-3">
-      {{ $assets->withQueryString()->links() }}
+
+    {{-- Pagination ติดขอบล่างกล่อง --}}
+    <div class="px-4 py-3 border-t bg-white">
+      <div class="flex justify-center">
+        {{ $assets->withQueryString()->links() }}
+      </div>
     </div>
   </div>
 
-  {{-- Cards (mobile) --}}
-  <div class="grid grid-cols-1 gap-3 md:hidden">
+  {{-- ===== Mobile cards: เลื่อนเฉพาะเนื้อหาในมือถือ ===== --}}
+  <div class="grid grid-cols-1 gap-3 md:hidden flex-1 overflow-y-auto">
     @forelse($assets as $a)
       <div class="rounded-xl border bg-white shadow-sm p-4">
         <div class="flex items-start justify-between gap-3">
@@ -186,7 +191,7 @@
       </div>
     @endforelse
 
-    <div>
+    <div class="flex justify-center pb-2">
       {{ $assets->withQueryString()->links() }}
     </div>
   </div>

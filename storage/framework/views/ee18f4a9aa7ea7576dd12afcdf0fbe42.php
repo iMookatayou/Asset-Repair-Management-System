@@ -14,7 +14,8 @@
   };
 ?>
 
-<div class="max-w-6xl mx-auto space-y-5">
+
+<div class="w-full px-4 md:px-6 lg:px-8 py-5 min-h-[calc(100vh-6rem)] flex flex-col gap-5">
 
   
   <div class="rounded-xl border bg-base-100/80 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-base-100/60">
@@ -42,7 +43,7 @@
   </div>
 
   
-  <form method="GET" class="rounded-xl border bg-white shadow-sm p-4">
+  <form method="GET" class="rounded-xl border bg-white shadow-sm p-4" role="search" aria-label="Filter assets">
     <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
       <div class="md:col-span-2">
         <label for="q" class="block text-sm text-zinc-700">Search</label>
@@ -90,16 +91,16 @@
   </form>
 
   
-  <div class="hidden md:block rounded-xl border bg-white shadow-sm">
-    <div class="overflow-x-auto">
+  <div class="hidden md:flex flex-col rounded-xl border bg-white shadow-sm flex-1 overflow-hidden">
+    <div class="overflow-x-auto overflow-y-auto flex-1">
       <table class="min-w-full divide-y divide-zinc-200 text-sm">
         <thead class="sticky top-0 z-10 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70">
           <tr class="text-left text-zinc-600">
             <th class="px-4 py-3"><?php echo $th('id','#'); ?></th>
             <th class="px-4 py-3"><?php echo $th('asset_code','Asset Code'); ?></th>
             <th class="px-4 py-3"><?php echo $th('name','Name'); ?></th>
-            <th class="px-4 py-3 hidden md:table-cell"><?php echo $th('category','Category'); ?></th>
-            <th class="px-4 py-3 hidden md:table-cell">Location</th>
+            <th class="px-4 py-3 hidden xl:table-cell"><?php echo $th('category','Category'); ?></th>
+            <th class="px-4 py-3 hidden lg:table-cell">Location</th>
             <th class="px-4 py-3"><?php echo $th('status','Status'); ?></th>
             <th class="px-4 py-3 text-right">Action</th>
           </tr>
@@ -113,8 +114,8 @@
                 <a class="text-emerald-700 hover:underline" href="<?php echo e(route('assets.show',$a)); ?>"><?php echo e($a->name); ?></a>
                 <div class="text-xs text-zinc-500">S/N: <?php echo e($a->serial_number ?? '—'); ?></div>
               </td>
-              <td class="px-4 py-3 hidden md:table-cell"><?php echo e($a->category ?? '—'); ?></td>
-              <td class="px-4 py-3 hidden md:table-cell"><?php echo e($a->location ?? '—'); ?></td>
+              <td class="px-4 py-3 hidden xl:table-cell"><?php echo e($a->category ?? '—'); ?></td>
+              <td class="px-4 py-3 hidden lg:table-cell"><?php echo e($a->location ?? '—'); ?></td>
               <td class="px-4 py-3">
                 <?php
                   $badge = [
@@ -128,7 +129,7 @@
 
                 </span>
               </td>
-              <td class="px-4 py-3 text-right">
+              <td class="px-4 py-3 text-right whitespace-nowrap">
                 <a href="<?php echo e(route('assets.edit',$a)); ?>" class="text-emerald-700 hover:underline">Edit</a>
               </td>
             </tr>
@@ -140,14 +141,18 @@
         </tbody>
       </table>
     </div>
-    <div class="px-4 py-3">
-      <?php echo e($assets->withQueryString()->links()); ?>
 
+    
+    <div class="px-4 py-3 border-t bg-white">
+      <div class="flex justify-center">
+        <?php echo e($assets->withQueryString()->links()); ?>
+
+      </div>
     </div>
   </div>
 
   
-  <div class="grid grid-cols-1 gap-3 md:hidden">
+  <div class="grid grid-cols-1 gap-3 md:hidden flex-1 overflow-y-auto">
     <?php $__empty_1 = true; $__currentLoopData = $assets; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
       <div class="rounded-xl border bg-white shadow-sm p-4">
         <div class="flex items-start justify-between gap-3">
@@ -189,7 +194,7 @@
       </div>
     <?php endif; ?>
 
-    <div>
+    <div class="flex justify-center pb-2">
       <?php echo e($assets->withQueryString()->links()); ?>
 
     </div>

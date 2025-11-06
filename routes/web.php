@@ -31,29 +31,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [RegisteredUserController::class, 'store']);
 });
 
+// ---------------------
+// Auth-only
+// ---------------------
 Route::middleware(['auth'])->group(function () {
-    // ... routes อื่น ๆ ของคุณ
 
-    // ===== Admin → Manage Users (เฉพาะคนที่มีสิทธิ์ manage-users) =====
-    Route::prefix('admin')
-        ->name('admin.')
-        ->middleware('can:manage-users')
-        ->group(function () {
-            Route::prefix('users')->name('users.')->group(function () {
-                Route::get('/',              [AdminUserController::class, 'index'])->name('index');
-                Route::get('/create',        [AdminUserController::class, 'create'])->name('create');
-                Route::post('/',             [AdminUserController::class, 'store'])->name('store');
-
-                // ใช้ implicit binding ของ {user} ได้เลย
-                Route::get('/{user}/edit',   [AdminUserController::class, 'edit'])->name('edit');
-                Route::put('/{user}',        [AdminUserController::class, 'update'])->name('update');
-                Route::delete('/{user}',     [AdminUserController::class, 'destroy'])->name('destroy');
-
-                // Bulk action: change_role / delete
-                Route::post('/bulk',         [AdminUserController::class, 'bulk'])->name('bulk');
-            });
-        });
-
+    // Debug
     Route::get('/debug/whoami', function (Request $request) {
         /** @var \App\Models\User|null $u */
         $u = $request->user();
@@ -65,16 +48,13 @@ Route::middleware(['auth'])->group(function () {
             'can_manage_users' => $u ? Gate::forUser($u)->allows('manage-users') : false,
             'guard' => Auth::getDefaultDriver(),
         ]);
-    })->middleware('auth');
+    });
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
-
+    // Dashboard
     Route::get('/repair/dashboard', [RepairDashboardController::class, 'index'])->name('repair.dashboard');
     Route::get('/dashboard', fn () => redirect()->route('repair.dashboard'))->name('dashboard');
 
+    // Maintenance
     Route::prefix('maintenance')->name('maintenance.')->group(function () {
         Route::prefix('requests')->name('requests.')->group(function () {
             Route::get('/',       [MaintenanceRequestController::class, 'indexPage'])->name('index');
@@ -89,20 +69,24 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
+    // Chat
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::post('/chat/threads', [ChatController::class, 'storeThread'])->name('chat.store');
     Route::get('/chat/threads/{thread}', [ChatController::class, 'show'])->name('chat.show');
     Route::get('/chat/threads/{thread}/messages', [ChatController::class, 'messages'])->name('chat.messages');
     Route::post('/chat/threads/{thread}/messages', [ChatController::class, 'storeMessage'])->name('chat.messages.store');
+    Route::get('/chat/my-updates', [\App\Http\Controllers\ChatController::class, 'myUpdates'])->name('chat.my_updates');
+  
+    // Assets
+    Route::get('/assets',                 [AssetController::class,'indexPage'])->name('assets.index');
+    Route::get('/assets/create',          [AssetController::class,'createPage'])->name('assets.create');
+    Route::post('/assets',                [AssetController::class,'storePage'])->name('assets.store');
+    Route::get('/assets/{asset}',         [AssetController::class,'showPage'])->name('assets.show');
+    Route::get('/assets/{asset}/edit',    [AssetController::class,'editPage'])->name('assets.edit');
+    Route::put('/assets/{asset}',         [AssetController::class,'updatePage'])->name('assets.update');
+    Route::delete('/assets/{asset}',      [AssetController::class,'destroyPage'])->name('assets.destroy');
 
-    Route::get('/assets', [AssetController::class, 'indexPage'])->name('assets.index');
-    Route::get('/assets/create', [AssetController::class, 'createPage'])->name('assets.create');
-    Route::post('/assets', [AssetController::class, 'storePage'])->name('assets.store');        
-    Route::get('/assets/{asset}', [AssetController::class, 'showPage'])->name('assets.show');
-    Route::get('/assets/{asset}/edit', [AssetController::class, 'editPage'])->name('assets.edit');
-    Route::put('/assets/{asset}', [AssetController::class, 'updatePage'])->name('assets.update');
-    Route::delete('/assets/{asset}', [AssetController::class, 'destroyPage'])->name('assets.destroy');
-
+    // ===== Admin → Manage Users (รวมเป็นกลุ่มเดียว) =====
     Route::prefix('admin')->name('admin.')->middleware('can:manage-users')->group(function () {
         Route::prefix('users')->name('users.')->group(function () {
             Route::get('/',            [AdminUserController::class, 'index'])->name('index');
@@ -111,13 +95,28 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{user}/edit', [AdminUserController::class, 'edit'])->name('edit');
             Route::put('/{user}',      [AdminUserController::class, 'update'])->name('update');
             Route::delete('/{user}',   [AdminUserController::class, 'destroy'])->name('destroy');
-
-            Route::post('/bulk', [AdminUserController::class, 'bulk'])->name('bulk');
+            Route::post('/bulk',       [AdminUserController::class, 'bulk'])->name('bulk');
         });
     });
 
+    // ===== Repairs (คืนเส้นทางที่หาย) =====
     Route::get('/repairs/my-jobs', [MaintenanceRequestController::class, 'myJobsPage'])->name('repairs.my_jobs');
     Route::get('/repairs/queue',   [MaintenanceRequestController::class, 'queuePage'])->name('repairs.queue');
+
+    // ===== Profile =====
+    // ดูโปรไฟล์ (ทุกคน)
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+
+    // แก้ไข/อัปเดต/ลบ (เฉพาะแอดมินผ่าน Gate manage-users)
+    Route::middleware('can:manage-users')->group(function () {
+        Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile',    [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile',   [ProfileController::class, 'destroy'])->name('profile.destroy');
+    });
+
+    // เปลี่ยนรหัสผ่าน (ให้ทุกคนทำเองได้)
+    Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
 });
 
+// Auth scaffolding routes
 require __DIR__ . '/auth.php';

@@ -87,7 +87,7 @@
 
   {{-- Profile --}}
   @php $active = $is('profile.*'); @endphp
-  <a href="{{ $rl('profile.edit', url('/profile')) }}" class="{{ $base }} {{ $active ? $on : $off }}">
+  <a href="{{ $rl('profile.show', url('/profile')) }}" class="{{ $base }} {{ $active ? $on : $off }}">
     <span class="{{ $dot($active) }}"></span>
     <span class="w-8 h-8 flex items-center justify-center">
       <svg class="{{ $ico($active) }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"

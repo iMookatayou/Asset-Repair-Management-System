@@ -1,55 +1,314 @@
 <?php $__env->startSection('title','Create Maintenance'); ?>
 
 <?php $__env->startSection('page-header'); ?>
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-xl font-semibold text-slate-800">Create Maintenance Request</h1>
-      <p class="text-sm text-slate-500">
-        Fill in the details below. Fields marked with <span class="text-rose-600">*</span> are required.
-      </p>
+  
+  <div class="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-5">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+            
+            <svg class="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Create Maintenance
+          </h1>
+          <p class="mt-1 text-sm text-slate-600">
+            สร้างคำขอซ่อมใหม่ — โปรดระบุทรัพย์สิน ปัญหา และผู้ติดต่อให้ครบถ้วน
+          </p>
+        </div>
+
+        <a href="<?php echo e(route('maintenance.requests.index')); ?>"
+           class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50 transition">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Back
+        </a>
+      </div>
     </div>
-    <a href="<?php echo e(route('maintenance.requests.index')); ?>"
-       class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 19.5L8.25 12l7.5-7.5" />
-      </svg>
-      Back
-    </a>
   </div>
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('content'); ?>
-  <div class="max-w-7xl mx-auto">
+  <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+
     
     <?php if($errors->any()): ?>
-      <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800">
-        <p class="font-medium">There were some problems with your submission:</p>
-        <ul class="list-disc pl-5 mt-2 space-y-1">
-          <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <li><?php echo e($error); ?></li>
-          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+      <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+        <p class="font-medium">มีข้อผิดพลาดในการบันทึกข้อมูล:</p>
+        <ul class="mt-2 list-disc pl-5 text-sm">
+          <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?> <li><?php echo e($error); ?></li> <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </ul>
       </div>
     <?php endif; ?>
 
-    <form method="POST" action="<?php echo e(route('maintenance.requests.store')); ?>" class="space-y-6" aria-label="Create maintenance request form">
+    
+    <form method="POST" action="<?php echo e(route('maintenance.requests.store')); ?>"
+          class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" novalidate
+          aria-label="แบบฟอร์มสร้างคำขอซ่อม">
       <?php echo csrf_field(); ?>
 
-      <?php echo $__env->make('maintenance.requests.form', [
-        'req'    => null,
-        'assets' => $assets,
-        'users'  => $users,
-      ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+      <div class="space-y-6">
+        
+        <div>
+          <h2 class="text-base font-semibold text-slate-900">ข้อมูลหลัก</h2>
+          <p class="text-sm text-slate-500">เลือกทรัพย์สิน และข้อมูลผู้แจ้ง</p>
 
-      <div class="flex items-center gap-3 pt-2">
+          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            
+            <?php $field='asset_id'; ?>
+            <div>
+              <label for="<?php echo e($field); ?>" class="block text-sm font-medium text-slate-700">
+                ทรัพย์สิน <span class="text-rose-600">*</span>
+              </label>
+              <select id="<?php echo e($field); ?>" name="<?php echo e($field); ?>" required
+                      class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-emerald-600 <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> border-rose-400 ring-rose-200 <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                      aria-invalid="<?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> true <?php else: ?> false <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                      <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> aria-describedby="<?php echo e($field); ?>_error" <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>>
+                <option value="">— เลือกทรัพย์สิน —</option>
+                <?php $__currentLoopData = $assets; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($a->id); ?>" <?php if(old($field) == $a->id): echo 'selected'; endif; ?>>
+                    <?php echo e($a->code ?? '—'); ?> — <?php echo e($a->name); ?>
+
+                  </option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              </select>
+              <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <p id="<?php echo e($field); ?>_error" class="mt-1 text-sm text-rose-600"><?php echo e($message); ?></p> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+            </div>
+
+            
+            <?php $field='reporter_id'; ?>
+            <div>
+              <label for="<?php echo e($field); ?>" class="block text-sm font-medium text-slate-700">
+                ผู้แจ้ง <span class="text-rose-600">*</span>
+              </label>
+              <select id="<?php echo e($field); ?>" name="<?php echo e($field); ?>" required
+                      class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-emerald-600 <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> border-rose-400 ring-rose-200 <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                      aria-invalid="<?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> true <?php else: ?> false <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                      <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> aria-describedby="<?php echo e($field); ?>_error" <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>>
+                <option value="">— เลือกผู้แจ้ง —</option>
+                <?php $__currentLoopData = $users; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $u): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($u->id); ?>" <?php if(old($field, auth()->id()) == $u->id): echo 'selected'; endif; ?>>
+                    <?php echo e($u->name); ?>
+
+                  </option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              </select>
+              <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <p id="<?php echo e($field); ?>_error" class="mt-1 text-sm text-rose-600"><?php echo e($message); ?></p> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+            </div>
+          </div>
+        </div>
+
+        
+        <div class="pt-4 border-t border-slate-200">
+          <h2 class="text-base font-semibold text-slate-900">รายละเอียดปัญหา</h2>
+          <p class="text-sm text-slate-500">สรุปหัวข้อและอธิบายอาการ เพื่อการคัดแยกที่รวดเร็ว</p>
+
+          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            
+            <?php $field='title'; ?>
+            <div class="md:col-span-2">
+              <label for="<?php echo e($field); ?>" class="block text-sm font-medium text-slate-700">
+                หัวข้อ <span class="text-rose-600">*</span>
+              </label>
+              <input id="<?php echo e($field); ?>" name="<?php echo e($field); ?>" type="text" required autocomplete="off"
+                     placeholder="สรุปสั้น ๆ ชัดเจน (เช่น แอร์รั่วน้ำ ห้อง 302)"
+                     class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-emerald-600 <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> border-rose-400 ring-rose-200 <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                     value="<?php echo e(old($field)); ?>"
+                     aria-invalid="<?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> true <?php else: ?> false <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                     <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> aria-describedby="<?php echo e($field); ?>_error" <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>>
+              <p class="mt-1 text-xs text-slate-500">ไม่เกิน 150 ตัวอักษร</p>
+              <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <p id="<?php echo e($field); ?>_error" class="mt-1 text-sm text-rose-600"><?php echo e($message); ?></p> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+            </div>
+
+            
+            <?php $field='description'; ?>
+            <div class="md:col-span-2">
+              <label for="<?php echo e($field); ?>" class="block text-sm font-medium text-slate-700">รายละเอียด</label>
+              <textarea id="<?php echo e($field); ?>" name="<?php echo e($field); ?>" rows="5"
+                        placeholder="ใส่รายละเอียด (อาการ เกิดเมื่อไร มีรูป/ลิงก์ประกอบ ฯลฯ)"
+                        class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-emerald-600 <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> border-rose-400 ring-rose-200 <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                        aria-invalid="<?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> true <?php else: ?> false <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                        <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> aria-describedby="<?php echo e($field); ?>_error" <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>><?php echo e(old($field)); ?></textarea>
+              <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <p id="<?php echo e($field); ?>_error" class="mt-1 text-sm text-rose-600"><?php echo e($message); ?></p> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+            </div>
+          </div>
+        </div>
+
+        
+        <div class="pt-4 border-t border-slate-200">
+          <h2 class="text-base font-semibold text-slate-900">ความสำคัญ</h2>
+          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <?php $field='priority'; $priorities=['low'=>'ต่ำ','medium'=>'ปานกลาง','high'=>'สูง','urgent'=>'ด่วน']; ?>
+            <div>
+              <label for="<?php echo e($field); ?>" class="block text-sm font-medium text-slate-700">
+                ระดับความสำคัญ <span class="text-rose-600">*</span>
+              </label>
+              <select id="<?php echo e($field); ?>" name="<?php echo e($field); ?>" required
+                      class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-emerald-600 <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> border-rose-400 ring-rose-200 <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                      aria-invalid="<?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> true <?php else: ?> false <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                      <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> aria-describedby="<?php echo e($field); ?>_error" <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>>
+                <?php $__currentLoopData = $priorities; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $k=>$label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($k); ?>" <?php if(old($field, 'medium') === $k): echo 'selected'; endif; ?>><?php echo e($label); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              </select>
+              <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <p id="<?php echo e($field); ?>_error" class="mt-1 text-sm text-rose-600"><?php echo e($message); ?></p> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+      <div class="mt-6 flex justify-end gap-2">
+        <a href="<?php echo e(route('maintenance.requests.index')); ?>"
+           class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50">
+          ยกเลิก
+        </a>
         <button type="submit"
-                class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
-            <path d="M17 3H7a2 2 0 0 0-2 2v14l7-3 7 3V5a2 2 0 0 0-2-2z" />
-          </svg>
-          Save
+                class="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">
+          บันทึก
         </button>
-        <a href="<?php echo e(route('maintenance.requests.index')); ?>" class="text-slate-600 hover:underline">Cancel</a>
       </div>
     </form>
   </div>

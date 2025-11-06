@@ -15,7 +15,44 @@
 
   @stack('head')
 
-    <style>
+  <style>
+    /* ===== เพิ่มฟอนต์ Sarabun (Local Fonts) ===== */
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 400;
+      src: url('{{ asset('fonts/Sarabun-Regular.woff2') }}') format('woff2'),
+           url('{{ asset('fonts/Sarabun-Regular.woff') }}') format('woff');
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 500;
+      src: url('{{ asset('fonts/Sarabun-Medium.woff2') }}') format('woff2'),
+           url('{{ asset('fonts/Sarabun-Medium.woff') }}') format('woff');
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 600;
+      src: url('{{ asset('fonts/Sarabun-SemiBold.woff2') }}') format('woff2'),
+           url('{{ asset('fonts/Sarabun-SemiBold.woff') }}') format('woff');
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 700;
+      src: url('{{ asset('fonts/Sarabun-Bold.woff2') }}') format('woff2'),
+           url('{{ asset('fonts/Sarabun-Bold.woff') }}') format('woff');
+    }
+
+    html, body {
+      font-family: 'Sarabun', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+    }
+
     :root{
       color-scheme: light;
       --topbar-h: 96px;
@@ -75,7 +112,7 @@
     /* Sidebar menu items */
     .sidebar .menu{ padding:.5rem 0; }
     .sidebar .menu-item{
-      display:grid; grid-template-columns:48px 1fr; align-items:center;  /* 2 คอลัมน์ */
+      display:grid; grid-template-columns:48px 1fr; align-items:center;
       gap:.75rem; height:44px; line-height:1; padding:0 .75rem;
       white-space:nowrap; overflow:hidden;
       transition: grid-template-columns .25s ease, padding .25s ease, background .15s ease;
@@ -91,11 +128,9 @@
 
     /* ปรับคอลัมน์ตามโหมด */
     @media (min-width:1024px){
-      /* collapsed: ซ่อนข้อความ */
       .sidebar.collapsed .menu-item{ grid-template-columns:48px 0px; gap:0; padding-inline:.5rem; }
       .sidebar.collapsed .menu-item .menu-text{ opacity:0; pointer-events:none; }
 
-      /* compact: แคบลง แต่ยังเห็นข้อความ */
       .sidebar.compact .menu-item{ grid-template-columns:48px 1fr; padding-inline:.5rem; }
       .sidebar.compact .menu-item .menu-text{ font-size: .92rem; }
     }
@@ -328,10 +363,12 @@
   @if (session('toast'))
     <script>
       const t = @json(session('toast'));
-      t.position = 'tc'; // บังคับบนกึ่งกลางจากฝั่ง layout อีกชั้น
+      t.position = 'tc';
       if (window.showToast) { window.showToast(t); }
       else { window.dispatchEvent(new CustomEvent('app:toast', { detail: t })); }
     </script>
   @endif
+
+  @includeWhen(Auth::check(), 'partials.chat-fab')
 </body>
 </html>

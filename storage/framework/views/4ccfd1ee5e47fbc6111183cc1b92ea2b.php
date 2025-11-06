@@ -87,7 +87,7 @@
 
   
   <?php $active = $is('profile.*'); ?>
-  <a href="<?php echo e($rl('profile.edit', url('/profile'))); ?>" class="<?php echo e($base); ?> <?php echo e($active ? $on : $off); ?>">
+  <a href="<?php echo e($rl('profile.show', url('/profile'))); ?>" class="<?php echo e($base); ?> <?php echo e($active ? $on : $off); ?>">
     <span class="<?php echo e($dot($active)); ?>"></span>
     <span class="w-8 h-8 flex items-center justify-center">
       <svg class="<?php echo e($ico($active)); ?>" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"

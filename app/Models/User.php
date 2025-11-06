@@ -2,19 +2,18 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\MaintenanceRequest;
 use App\Models\MaintenanceLog;
+use App\Models\Department;
 
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    // ===== Roles (ตรงกับ enum ใน migration) =====
     public const ROLE_ADMIN      = 'admin';
     public const ROLE_TECHNICIAN = 'technician';
     public const ROLE_STAFF      = 'staff';
@@ -23,7 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'department',
+        'department',  
         'role',
     ];
 
@@ -40,12 +39,10 @@ class User extends Authenticatable
         ];
     }
 
-    // ====== Helpers ใช้เช็ค role แบบสั้น ๆ ======
     public function isAdmin(): bool      { return $this->role === self::ROLE_ADMIN; }
     public function isTechnician(): bool { return $this->role === self::ROLE_TECHNICIAN; }
     public function isStaff(): bool      { return $this->role === self::ROLE_STAFF; }
 
-    // ====== Scopes สำหรับ query ======
     public function scopeRole($q, string $role)
     {
         return $q->where('role', $role);
@@ -56,7 +53,6 @@ class User extends Authenticatable
         return $q->whereIn('role', $roles);
     }
 
-    // ====== ความสัมพันธ์กับระบบซ่อม (non-breaking) ======
     public function reportedRequests()
     {
         return $this->hasMany(MaintenanceRequest::class, 'reporter_id');
@@ -70,5 +66,19 @@ class User extends Authenticatable
     public function logs()
     {
         return $this->hasMany(MaintenanceLog::class, 'user_id');
+    }
+    public function departmentRef()
+    {
+        return $this->belongsTo(Department::class, 'department', 'code');
+    }
+
+    public function getDepartmentNameAttribute(): ?string
+    {
+        return $this->departmentRef?->name;
+    }
+
+    public function scopeDepartment($q, ?string $code)
+    {
+        return $code ? $q->where('department', $code) : $q;
     }
 }

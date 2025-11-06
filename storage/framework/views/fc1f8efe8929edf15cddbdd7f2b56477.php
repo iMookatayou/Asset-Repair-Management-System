@@ -9,7 +9,7 @@
   $q = request('q');
   $status = request('status'); // null|pending|in_progress|completed
 
-  // Tabs class (ชัดๆ ไม่ใช้ concat สีแบบสุ่ม เพื่อให้ Tailwind ไม่ purge)
+  // Tabs (โทนเดียว-ชัด)
   $tab = function(?string $key) use ($status) {
     $active = ($status === $key) || (is_null($key) && empty($status));
     return $active
@@ -17,7 +17,7 @@
       : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50';
   };
 
-  // Priority badge โทนเดียวกัน
+  // Priority badge
   $priBadge = function(?string $p) {
     $p = strtolower((string)$p);
     return match (true) {
@@ -28,7 +28,8 @@
   };
 ?>
 
-<div class="mx-auto max-w-7xl py-6 space-y-5">
+
+<div class="w-full px-4 md:px-6 lg:px-8 py-5 min-h-[calc(100vh-6rem)] flex flex-col gap-5">
 
   
   <div class="sticky top-0 z-20 -mt-2 rounded-xl border border-zinc-200 bg-white/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -40,7 +41,7 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-lg font-semibold text-zinc-900">Pending Repair Requests</h1>
+          <h1 class="text-lg md:text-xl font-semibold text-zinc-900">Pending Repair Requests</h1>
           <p class="text-xs text-zinc-500">รอรับเข้าคิว / มอบหมาย / เริ่มทำงาน</p>
         </div>
       </div>
@@ -106,24 +107,24 @@
   </div>
 
   
-  <div class="rounded-xl border border-zinc-200 bg-white shadow-sm">
-    <div class="relative overflow-x-auto">
-      <table class="min-w-full text-sm border-separate border-spacing-0">
+  <div class="flex-1 rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
+    <div class="relative overflow-x-auto overflow-y-auto h-full">
+      <table class="min-w-full text-sm">
         <thead class="sticky top-0 z-10 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70">
-          <tr class="text-zinc-700">
-            <th class="p-3 text-left font-semibold shadow-[inset_0_-1px_0_rgba(0,0,0,0.06)] w-[40%]">Subject</th>
-            <th class="p-3 text-left font-semibold shadow-[inset_0_-1px_0_rgba(0,0,0,0.06)] w-[20%]">Asset</th>
-            <th class="p-3 text-left font-semibold shadow-[inset_0_-1px_0_rgba(0,0,0,0.06)] w-[18%]">Reporter</th>
-            <th class="p-3 text-left font-semibold shadow-[inset_0_-1px_0_rgba(0,0,0,0.06)] w-[14%]">Reported</th>
-            <th class="p-3 text-right font-semibold shadow-[inset_0_-1px_0_rgba(0,0,0,0.06)] w-[8%]">Actions</th>
+          <tr class="text-zinc-700 border-b">
+            <th class="p-3 text-left font-semibold w-[40%]">Subject</th>
+            <th class="p-3 text-left font-semibold w-[20%]">Asset</th>
+            <th class="p-3 text-left font-semibold w-[18%]">Reporter</th>
+            <th class="p-3 text-left font-semibold w-[14%]">Reported</th>
+            <th class="p-3 text-right font-semibold w-[8%]">Actions</th>
           </tr>
         </thead>
 
         <tbody>
         <?php $__empty_1 = true; $__currentLoopData = $list; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $r): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-          <tr class="align-top hover:bg-zinc-50/70">
+          <tr class="align-top hover:bg-zinc-50/70 border-b last:border-0">
             
-            <td class="p-3 border-t border-zinc-100">
+            <td class="p-3">
               <a href="<?php echo e(route('maintenance.requests.show', $r)); ?>"
                  class="block max-w-full truncate font-medium text-zinc-900 hover:underline">
                 <?php echo e(Str::limit($r->title, 90)); ?>
@@ -153,7 +154,7 @@
             </td>
 
             
-            <td class="p-3 border-t border-zinc-100">
+            <td class="p-3">
               <div class="font-medium text-zinc-800">#<?php echo e($r->asset_id); ?></div>
               <div class="max-w-full truncate text-xs text-zinc-500"><?php echo e($r->asset->name ?? '—'); ?></div>
               <?php if(!empty($r->asset?->location)): ?>
@@ -162,7 +163,7 @@
             </td>
 
             
-            <td class="p-3 border-t border-zinc-100">
+            <td class="p-3">
               <div class="max-w-full truncate text-zinc-800"><?php echo e($r->reporter->name ?? '—'); ?></div>
               <?php if(!empty($r->reporter?->department)): ?>
                 <div class="max-w-full truncate text-[11px] text-zinc-400"><?php echo e($r->reporter->department); ?></div>
@@ -170,7 +171,7 @@
             </td>
 
             
-            <td class="p-3 border-t border-zinc-100">
+            <td class="p-3">
               <div class="font-medium text-zinc-700">
                 <?php echo e(optional($r->request_date)->format('Y-m-d H:i')); ?>
 
@@ -181,7 +182,7 @@
             </td>
 
             
-            <td class="p-3 border-t border-zinc-100">
+            <td class="p-3">
               <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('tech-only')): ?>
                 <div class="hidden justify-end gap-2 sm:flex">
                   <form method="POST" action="<?php echo e(route('maintenance.requests.transition', $r)); ?>">
@@ -212,8 +213,8 @@
                 </div>
 
                 
-                <div class="relative sm:hidden">
-                  <details class="group">
+                <div class="relative sm:hidden text-right">
+                  <details class="group inline-block">
                     <summary class="flex cursor-pointer list-none justify-end">
                       <span class="inline-flex items-center rounded-lg px-2.5 py-1.5 text-xs border border-zinc-300">Actions ▾</span>
                     </summary>
@@ -248,7 +249,7 @@
     </div>
 
     
-    <div class="border-t border-zinc-200 px-4 py-3">
+    <div class="border-t border-zinc-200 px-4 py-3 bg-white">
       <div class="flex items-center justify-between">
         <p class="text-xs text-zinc-500">
           Showing <span class="font-medium text-zinc-800"><?php echo e($list->firstItem() ?? 0); ?></span>

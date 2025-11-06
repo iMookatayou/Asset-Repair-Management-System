@@ -11,58 +11,58 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
-    public function edit(Request $request): View
+    // ดูโปรไฟล์ (ทุกคน)
+    public function show(Request $request): View
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
-        ]);
+        $user = $request->user()->loadMissing('departmentRef');
+        return view('profile.show', compact('user'));
     }
 
-    /**
-     * Update the user's profile information.
-     */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    // แก้ไขโปรไฟล์ (เฉพาะแอดมิน) — ใช้ Union Type
+    public function edit(Request $request): View|RedirectResponse
     {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if (!$request->user()->isAdmin()) {
+            return Redirect::route('profile.show')
+                ->with('status', 'คุณไม่มีสิทธิ์แก้ไขโปรไฟล์');
         }
 
-        $request->user()->save();
+        $user = $request->user()->loadMissing('departmentRef');
+        return view('profile.edit', compact('user'));
+    }
+
+    // อัปเดตโปรไฟล์ (เฉพาะแอดมิน)
+    public function update(ProfileUpdateRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $user->fill($request->validated());
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
-    /**
-     * Delete the user's account.
-     */
+    // ลบบัญชี (ถ้าไม่ใช้ ตัด route และเมธอดนี้ออกได้)
     public function destroy(Request $request): RedirectResponse
     {
+        if (!$request->user()->isAdmin()) {
+            abort(403, 'Forbidden');
+        }
+
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
         ]);
 
         $user = $request->user();
-
         Auth::logout();
-
         $user->delete();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
-    }
-    public function show(Request $request): View
-    {
-        $user = $request->user();
-
-        // ถ้ายังไม่มีสถิติอื่น ใช้แค่ user ไปก่อน
-        // (ภายหลังจะใส่สถิติ my-jobs / created-requests ได้)
-        return view('profile.show', compact('user'));
     }
 }
