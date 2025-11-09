@@ -9,55 +9,28 @@
 @endphp
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-  {{-- Asset --}}
+  {{-- Asset (search-select) --}}
   <div>
-    <label for="asset_id" class="block text-sm font-medium text-slate-700">
-      Asset
-    </label>
-    <select
-      id="asset_id"
-      name="asset_id"
-      class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:ring-emerald-600
-             @error('asset_id') border-rose-400 ring-rose-200 @enderror"
-      aria-invalid="@error('asset_id') true @else false @enderror"
-      aria-describedby="@error('asset_id') asset_id_error @enderror"
-    >
-      <option value="" {{ old('asset_id', (string)($req->asset_id ?? '')) === '' ? 'selected' : '' }}>-- Choose Asset --</option>
-      @foreach ($assetList as $a)
-        <option
-          value="{{ $a->id }}"
-          @selected((string)old('asset_id', (string)($req->asset_id ?? '')) === (string)$a->id)
-        >
-          {{ $a->asset_code ? '#'.$a->asset_code : '#'.$a->id }} — {{ $a->name ?? $a->model ?? 'Asset' }}
-        </option>
-      @endforeach
-    </select>
-    @error('asset_id')
-      <p id="asset_id_error" class="mt-1 text-sm text-rose-600">{{ $message }}</p>
-    @enderror
+    <label for="asset_id" class="block text-sm font-medium text-slate-700">Asset</label>
+    @php $assetColl = is_iterable($assetList ?? null) ? collect($assetList) : collect(); @endphp
+    <x-search-select name="asset_id" id="asset_id"
+      :items="$assetColl->map(fn($a)=> (object)['id'=>$a->id,'name'=>(($a->asset_code ?? '—')).' — '.($a->name ?? '')])"
+      label-field="name" value-field="id"
+      :value="old('asset_id', (string)($req->asset_id ?? ''))"
+      placeholder="— เลือกทรัพย์สิน —" />
+    @error('asset_id')<p id="asset_id_error" class="mt-1 text-sm text-rose-600">{{ $message }}</p>@enderror
   </div>
 
-  {{-- Reporter (optional; will fallback to current user if empty) --}}
+  {{-- Reporter (optional; search-select) --}}
   <div>
-    <label for="reporter_id" class="block text-sm font-medium text-slate-700">
-      Reporter (optional)
-    </label>
-    <select
-      id="reporter_id"
-      name="reporter_id"
-      class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:ring-emerald-600
-             @error('reporter_id') border-rose-400 ring-rose-200 @enderror"
-      aria-invalid="@error('reporter_id') true @else false @enderror"
-      aria-describedby="@error('reporter_id') reporter_id_error @enderror"
-    >
-      <option value="">-- Current user --</option>
-      @foreach ($userList as $u)
-        <option value="{{ $u->id }}" @selected((string)$defaultReporter === (string)$u->id)>{{ $u->name }}</option>
-      @endforeach
-    </select>
-    @error('reporter_id')
-      <p id="reporter_id_error" class="mt-1 text-sm text-rose-600">{{ $message }}</p>
-    @enderror
+    <label for="reporter_id" class="block text-sm font-medium text-slate-700">Reporter (optional)</label>
+    @php $userColl = is_iterable($userList ?? null) ? collect($userList) : collect(); @endphp
+    <x-search-select name="reporter_id" id="reporter_id"
+      :items="$userColl->map(fn($u)=> (object)['id'=>$u->id,'name'=>$u->name])"
+      label-field="name" value-field="id"
+      :value="$defaultReporter"
+      placeholder="— ใช้ผู้ใช้งานปัจจุบัน —" />
+    @error('reporter_id')<p id="reporter_id_error" class="mt-1 text-sm text-rose-600">{{ $message }}</p>@enderror
   </div>
 
   {{-- Reporter Email (optional; ใช้กรณีไม่ได้เลือกผู้ใช้ในระบบ) --}}
@@ -71,7 +44,7 @@
       type="email"
       maxlength="255"
       value="{{ old('reporter_email', $req->reporter_email ?? '') }}"
-      class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:border-emerald-600 focus:ring-emerald-600 @error('reporter_email') border-rose-400 ring-rose-200 @enderror"
+  class="mt-1 w-full rounded-xl border px-3 py-2 text-sm placeholder-slate-400 focus:border-emerald-600 focus:ring-emerald-600 border-slate-300 @error('reporter_email') ring-rose-200 @enderror"
       aria-invalid="@error('reporter_email') true @else false @enderror"
       aria-describedby="@error('reporter_email') reporter_email_error @enderror"
       placeholder="someone@example.com" />
@@ -95,8 +68,7 @@
       autocomplete="off"
       spellcheck="false"
       value="{{ old('title', $req->title ?? '') }}"
-      class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:border-emerald-600 focus:ring-emerald-600
-             @error('title') border-rose-400 ring-rose-200 @enderror"
+  class="mt-1 w-full rounded-xl border px-3 py-2 text-sm placeholder-slate-400 focus:border-emerald-600 focus:ring-emerald-600 border-slate-300 @error('title') ring-rose-200 @enderror"
       aria-invalid="@error('title') true @else false @enderror"
       aria-describedby="@error('title') title_error @enderror"
       placeholder="Short, clear summary (e.g., Aircon leaking in Room 302)"
@@ -115,8 +87,7 @@
       name="description"
       rows="6"
       spellcheck="false"
-      class="mt-1 w-full resize-y rounded-xl border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:border-emerald-600 focus:ring-emerald-600
-             @error('description') border-rose-400 ring-rose-200 @enderror"
+  class="mt-1 w-full resize-y rounded-xl border px-3 py-2 text-sm placeholder-slate-400 focus:border-emerald-600 focus:ring-emerald-600 border-slate-300 @error('description') ring-rose-200 @enderror"
       aria-invalid="@error('description') true @else false @enderror"
       aria-describedby="@error('description') description_error @enderror"
       placeholder="Add details to help triage (symptoms, when it occurs, photo links, etc.)"
@@ -135,8 +106,7 @@
       id="priority"
       name="priority"
       required
-      class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:ring-emerald-600
-             @error('priority') border-rose-400 ring-rose-200 @enderror"
+  class="mt-1 w-full rounded-xl border px-3 py-2 text-sm focus:border-emerald-600 focus:ring-emerald-600 border-slate-300 @error('priority') ring-rose-200 @enderror"
       aria-invalid="@error('priority') true @else false @enderror"
       aria-describedby="@error('priority') priority_error @enderror"
     >

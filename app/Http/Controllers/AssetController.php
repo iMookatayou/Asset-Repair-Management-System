@@ -46,28 +46,35 @@ class AssetController extends Controller
         $sortBy    = $sortMap[$sortByReq] ?? 'id';
         $sortDir   = strtolower($request->string('sort_dir', 'desc')->toString()) === 'asc' ? 'asc' : 'desc';
 
-        $assets = Asset::query()
+        // Build base filtered query once so we can compute an accurate total count
+        $baseQuery = Asset::query()
             ->with(['categoryRef','department'])
-            ->when($q !== '', fn($s) =>
-                $s->where(function ($w) use ($q) {
-                    $w->where('asset_code', 'like', "%{$q}%")
-                      ->orWhere('name', 'like', "%{$q}%")
-                      ->orWhere('serial_number', 'like', "%{$q}%");
-                })
-            )
-            ->when($status !== '', fn($s) => $s->where('status', $status))
+            ->search($q)
+            ->status($status)
             ->when($type !== '', fn($s) => $s->where('type', $type))
-            // Use request->filled to avoid treating empty select ("") as 0 which filters out all rows
             ->when($request->filled('category_id'), fn($s) => $s->where('category_id', $categoryId))
-            ->when($request->filled('department_id'), fn($s) => $s->where('department_id', $deptId))
-            ->when($location !== '', fn($s) => $s->where('location', $location))
+            ->departmentId($deptId)
+            ->when($location !== '', fn($s) => $s->where('location', $location));
+
+        // Compute filtered total explicitly (works reliably across drivers / transactions)
+        $filteredTotal = (clone $baseQuery)->toBase()->count();
+
+        $assets = (clone $baseQuery)
             ->orderBy($sortBy, $sortDir)
             ->paginate($perPage)
             ->withQueryString();
-
-        $payload = $assets->toArray();
-        // ถ้า client ขอ JSON ให้แนบ info toast สำหรับ UX (โหลดข้อมูลสำเร็จ)
-        $payload['toast'] = Toast::info('โหลดรายการทรัพย์สินแล้ว', 1200);
+        // Unified list response shape { data: [...], meta: {...}, toast }
+        $payload = [
+            'data' => $assets->items(),
+            'meta' => [
+                'current_page' => $assets->currentPage(),
+                'per_page'     => $assets->perPage(),
+                // Fallback to explicit filtered count if paginator total is zero (e.g., during MySQL TX tests)
+                'total'        => $assets->total() ?: $filteredTotal,
+                'last_page'    => $assets->lastPage(),
+            ],
+            'toast' => Toast::info('โหลดรายการทรัพย์สินแล้ว', 1200),
+        ];
         return response()->json($payload, 200, [], $this->jsonOptions($request));
     }
 
@@ -186,11 +193,14 @@ class AssetController extends Controller
     // ====================== เพจ (Blade) ======================
     public function indexPage(Request $request)
     {
-        $q = trim($request->string('q')->toString());
-        $status   = $request->string('status')->toString();
+        $q          = trim($request->string('q')->toString());
+        $status     = $request->string('status')->toString();
         $categoryId = $request->integer('category_id');
-        $sortBy   = $request->string('sort_by', 'id')->toString();
-        $sortDir  = strtolower($request->string('sort_dir', 'desc')->toString()) === 'asc' ? 'asc' : 'desc';
+        $deptId     = $request->integer('department_id');
+        $type       = $request->string('type')->toString();
+        $location   = $request->string('location')->toString();
+        $sortBy     = $request->string('sort_by', 'id')->toString();
+        $sortDir    = strtolower($request->string('sort_dir', 'desc')->toString()) === 'asc' ? 'asc' : 'desc';
 
         $sortMap = [
             'id'         => 'id',
@@ -204,16 +214,12 @@ class AssetController extends Controller
 
         $assetsQ = \App\Models\Asset::query()
             ->with(['categoryRef','department'])
-            ->when($q !== '', fn($s) =>
-                $s->where(function ($w) use ($q) {
-                    $w->where('asset_code', 'like', "%{$q}%")
-                      ->orWhere('name', 'like', "%{$q}%")
-                      ->orWhere('serial_number', 'like', "%{$q}%");
-                })
-            )
-            ->when($status !== '', fn($s) => $s->where('status', $status))
-            // Avoid category_id=0 when select is "ทั้งหมด"
-            ->when($request->filled('category_id'), fn($s) => $s->where('category_id', $categoryId));
+            ->search($q)
+            ->status($status)
+            ->when($request->filled('category_id'), fn($s) => $s->where('category_id', $categoryId))
+            ->departmentId($deptId)
+            ->when($type !== '', fn($s) => $s->where('type', $type))
+            ->when($location !== '', fn($s) => $s->where('location', $location));
 
         if ($sortCol === 'category') {
             $assetsQ->orderByRaw('(select name from asset_categories where asset_categories.id = assets.category_id) '.$sortDir);
@@ -223,9 +229,17 @@ class AssetController extends Controller
 
         $assets = $assetsQ->paginate(20)->withQueryString();
 
-        $categories = \App\Models\AssetCategory::orderBy('name')->get(['id','name']);
+        $categories  = \App\Models\AssetCategory::orderBy('name')->get(['id','name']);
+        $departments = \App\Models\Department::query()
+            ->select(['id','code','name_th','name_en'])
+            ->orderByRaw('COALESCE(name_th, name_en, code) asc')
+            ->get()
+            ->map(fn($d) => [
+                'id' => $d->id,
+                'display_name' => $d->display_name,
+            ]);
 
-        return view('assets.index', compact('assets','categories'));
+        return view('assets.index', compact('assets','categories','departments'));
     }
 
     public function createPage()

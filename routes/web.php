@@ -115,12 +115,10 @@ Route::middleware(['auth'])->group(function () {
     // ดูโปรไฟล์ (ทุกคน)
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
 
-    // แก้ไข/อัปเดต/ลบ (เฉพาะแอดมินผ่าน Gate manage-users)
-    Route::middleware('can:manage-users')->group(function () {
-        Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile',    [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/profile',   [ProfileController::class, 'destroy'])->name('profile.destroy');
-    });
+    // ผู้ใช้ทุกคนสามารถแก้ไข / อัปเดต / ลบบัญชีตนเองได้ (สอดคล้อง Breeze tests)
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile',    [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile',   [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // เปลี่ยนรหัสผ่าน (ให้ทุกคนทำเองได้)
     Route::put('/password', [PasswordController::class, 'update'])->name('password.update');

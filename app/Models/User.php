@@ -22,6 +22,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'password',
         'department',            // เก็บรหัสแผนก (code) เป็น string
         'role',
         'profile_photo_path',

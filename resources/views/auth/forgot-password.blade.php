@@ -1,25 +1,38 @@
-<x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-        {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
-    </div>
+@extends('layouts.auth')
+@section('title', 'Forgot password')
 
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+@section('content')
+    <p class="text-sm text-slate-600">
+        Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.
+    </p>
 
-    <form method="POST" action="{{ route('password.email') }}">
+    @if (session('status'))
+        <div class="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
+            {{ session('status') }}
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('password.email') }}" class="mt-4 space-y-4">
         @csrf
 
-        <!-- Email Address -->
+        {{-- Email --}}
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <label for="email" class="block text-sm font-medium text-slate-700">Email</label>
+            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
+                   class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2
+                          focus:border-[#0E2B51] focus:ring-[#0E2B51]">
+            @error('email')
+            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
+            @enderror
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
-                {{ __('Email Password Reset Link') }}
-            </x-primary-button>
+        <div class="mt-2 flex items-center justify-between">
+            <a href="{{ route('login') }}" class="text-sm text-[#0E2B51] hover:underline">Back to login</a>
+
+            <button class="h-11 px-5 rounded-lg bg-[#0E2B51] text-white font-medium
+                           hover:opacity-95 focus:ring-2 focus:ring-offset-2 focus:ring-[#0E2B51]">
+                Email Password Reset Link
+            </button>
         </div>
     </form>
-</x-guest-layout>
+@endsection

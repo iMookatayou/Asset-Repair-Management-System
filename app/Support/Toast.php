@@ -18,16 +18,16 @@ class Toast
     }
 
     public static function success(string $message, int $timeout = 1600): array
-    { return self::make($message,'success','uc',$timeout,'lg'); }
+    { return self::make($message,'success','tc',$timeout,'lg'); }
 
     public static function info(string $message, int $timeout = 1600): array
-    { return self::make($message,'info','uc',$timeout,'lg'); }
+    { return self::make($message,'info','tc',$timeout,'lg'); }
 
     public static function error(string $message, int $timeout = 2000): array
-    { return self::make($message,'error','uc',$timeout,'lg'); }
+    { return self::make($message,'error','tc',$timeout,'lg'); }
 
     public static function warning(string $message, int $timeout = 2000): array
-    { return self::make($message,'warning','uc',$timeout,'lg'); }
+    { return self::make($message,'warning','tc',$timeout,'lg'); }
 
     public static function from(array $raw): array
     {

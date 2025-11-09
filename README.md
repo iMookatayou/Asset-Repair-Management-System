@@ -48,8 +48,30 @@ Notes:
 - Change ports in `docker-compose.yml` if they conflict locally.
 - For production build, run `npm run build` in the node container or GitHub Actions and serve `public/build`.
  - A root `Dockerfile` is provided for building a production PHP-FPM image (multi-stage). The compose stack uses `./.docker/Dockerfile` for local dev.
+## Run locally without Redis (Windows/macOS/Linux)
 
----
+Redis is optional. The default `.env` already uses database + file drivers so the app runs even if the PHP Redis extension is missing.
+
+Minimal `.env` (excerpt) for a Redis-free setup:
+
+```env
+CACHE_STORE=database        # database cache + rate limiter
+SESSION_DRIVER=file         # file-based sessions
+QUEUE_CONNECTION=database   # uses jobs table (run migrations) OR set sync
+# QUEUE_CONNECTION=sync
+
+# These can be commented out if you prefer (unused unless you switch drivers)
+# REDIS_CLIENT=phpredis
+# REDIS_HOST=127.0.0.1
+# REDIS_PORT=6379
+```
+
+Details:
+- Health endpoint skips Redis when the extension/class isn’t present.
+- Rate limiting (login, etc.) uses the configured cache store; with `database` it writes to the `cache` table.
+- To enable Redis later: install server + PHP extension, then set `CACHE_STORE=redis` and (optionally) `QUEUE_CONNECTION=redis`.
+- If you keep `QUEUE_CONNECTION=database`, run a worker: `php artisan queue:work`.
+
 
 ## About Laravel
 

@@ -1,0 +1,750 @@
+openapi: 3.1.0
+info:
+  title: Asset Repair Management API
+  version: 0.1.0
+servers:
+  - url: /api
+tags:
+  - name: Auth
+    description: Authentication and token management
+  - name: Assets
+    description: Asset CRUD and listing
+  - name: Maintenance
+    description: Maintenance requests workflows
+  - name: Stats
+    description: Dashboard statistics
+  - name: Meta
+    description: Lightweight meta data for forms
+  - name: Search
+    description: Quick search endpoints
+  - name: Chat
+    description: Threaded chat endpoints
+  - name: Health
+    description: Healthcheck
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and receive bearer token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                device_name: { type: string }
+              required: [email,password]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  token_type: { type: string }
+                  user:
+                    $ref: '#/components/schemas/User'
+  /auth/me:
+    get:
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      summary: Current authenticated user profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /auth/tokens:
+    get:
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      summary: List active personal access tokens
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+                        abilities:
+                          type: array
+                          items: { type: string }
+                        last_used_at: { type: string, nullable: true }
+                        created_at: { type: string }
+  /auth/tokens/{id}:
+    delete:
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      summary: Revoke a token by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Revoked }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      summary: Logout (revoke current token)
+      responses:
+        '200': { description: Logged out }
+  /auth/logout-all:
+    post:
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      summary: Logout and revoke all tokens
+      responses:
+        '200': { description: Logged out all }
+  /auth/password/email:
+    post:
+      tags: [Auth]
+      summary: Request password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+              required: [email]
+      responses:
+        '200': { description: Sent }
+  /auth/password/reset:
+    post:
+      tags: [Auth]
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                token: { type: string }
+                password: { type: string }
+                password_confirmation: { type: string }
+              required: [email,token,password,password_confirmation]
+      responses:
+        '200': { description: Reset OK }
+  /assets:
+    get:
+      tags: [Assets]
+      security: [{ bearerAuth: [] }]
+      summary: List assets (paginated)
+      parameters:
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Asset' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Assets]
+      security: [{ bearerAuth: [] }]
+      summary: Create asset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssetCreate'
+      responses:
+        '201': { description: Created }
+  /assets/{id}:
+    get:
+      tags: [Assets]
+      security: [{ bearerAuth: [] }]
+      summary: Show asset
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AssetWrapper' }
+    put:
+      tags: [Assets]
+      security: [{ bearerAuth: [] }]
+      summary: Update asset
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AssetUpdate' }
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Assets]
+      security: [{ bearerAuth: [] }]
+      summary: Delete asset
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Deleted }
+  /repair-requests:
+    get:
+      tags: [Maintenance]
+      security: [{ bearerAuth: [] }]
+      summary: List maintenance requests
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: priority
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/MaintenanceRequest' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Maintenance]
+      security: [{ bearerAuth: [] }]
+      summary: Create maintenance request
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                priority: { type: string }
+                description: { type: string }
+                asset_id: { type: integer, nullable: true }
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+              required: [title,priority]
+      responses:
+        '201': { description: Created }
+  /repair-requests/{id}:
+    get:
+      tags: [Maintenance]
+      security: [{ bearerAuth: [] }]
+      summary: Show maintenance request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MaintenanceRequestWrapper' }
+    put:
+      tags: [Maintenance]
+      security: [{ bearerAuth: [] }]
+      summary: Update maintenance request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MaintenanceRequestUpdate'
+      responses:
+        '200': { description: Updated }
+  /repair-requests/{id}/transition:
+    post:
+      tags: [Maintenance]
+      security: [{ bearerAuth: [] }]
+      summary: Transition maintenance request status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string }
+                note: { type: string }
+                technician_id: { type: integer }
+              required: [status]
+      responses:
+        '200': { description: Transitioned }
+  /repair-requests/{id}/logs:
+    get:
+      tags: [Maintenance]
+      security: [{ bearerAuth: [] }]
+      summary: List maintenance request logs
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/MaintenanceLog' }
+  /stats/summary:
+    get:
+      tags: [Stats]
+      security: [{ bearerAuth: [] }]
+      summary: Dashboard summary statistics
+      responses:
+        '200':
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  assets_total: { type: integer }
+                  requests_open: { type: integer }
+                  requests_closed: { type: integer }
+                  priority_counts:
+                    type: object
+                    properties:
+                      low: { type: integer }
+                      medium: { type: integer }
+                      high: { type: integer }
+                      urgent: { type: integer }
+                  recent_daily:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date: { type: string, format: date }
+                        count: { type: integer }
+  /stats/maintenance/status-counts:
+    get:
+      tags: [Stats]
+      security: [{ bearerAuth: [] }]
+      summary: Maintenance status counts
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: { type: integer }
+  /stats/maintenance/technicians:
+    get:
+      tags: [Stats]
+      security: [{ bearerAuth: [] }]
+      summary: Technician performance summary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TechnicianSummary' }
+  /stats/assets/by-department:
+    get:
+      tags: [Stats]
+      security: [{ bearerAuth: [] }]
+      summary: Asset counts by department
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/DepartmentAssetCount' }
+  /meta/departments:
+    get:
+      tags: [Meta]
+      security: [{ bearerAuth: [] }]
+      summary: List departments meta
+      responses:
+        '200': { description: OK }
+  /meta/categories:
+    get:
+      tags: [Meta]
+      security: [{ bearerAuth: [] }]
+      summary: List asset categories meta
+      responses:
+        '200': { description: OK }
+  /meta/users:
+    get:
+      tags: [Meta]
+      security: [{ bearerAuth: [] }]
+      summary: List users (filter by role)
+      parameters:
+        - in: query
+          name: role
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /search/assets:
+    get:
+      tags: [Search]
+      security: [{ bearerAuth: [] }]
+      summary: Quick asset search
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        '200': { description: OK }
+  /search/maintenance-requests:
+    get:
+      tags: [Search]
+      security: [{ bearerAuth: [] }]
+      summary: Quick maintenance request search
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        '200': { description: OK }
+  /threads:
+    get:
+      tags: [Chat]
+      security: [{ bearerAuth: [] }]
+      summary: List chat threads (with unread counts)
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ChatThread' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Chat]
+      security: [{ bearerAuth: [] }]
+      summary: Create chat thread
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+              required: [title]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatThread' }
+  /threads/{id}:
+    get:
+      tags: [Chat]
+      security: [{ bearerAuth: [] }]
+      summary: Show chat thread (latest messages)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatThreadDetail' }
+  /threads/{id}/messages:
+    get:
+      tags: [Chat]
+      security: [{ bearerAuth: [] }]
+      summary: List messages in thread
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: after_id
+          schema: { type: integer }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, maximum: 100 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ChatMessage' }
+    post:
+      tags: [Chat]
+      security: [{ bearerAuth: [] }]
+      summary: Post message in thread
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body: { type: string }
+              required: [body]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatMessage' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    PaginationMeta:
+      type: object
+      properties:
+        current_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+        last_page: { type: integer }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string }
+        abilities:
+          type: array
+          items: { type: string }
+    Asset:
+      type: object
+      properties:
+        id: { type: integer }
+        asset_code: { type: string }
+        name: { type: string }
+        type: { type: string }
+        brand: { type: string }
+        model: { type: string }
+        serial_number: { type: string }
+        location: { type: string }
+        status: { type: string }
+        department_id: { type: integer }
+        category_id: { type: integer }
+    AssetCreate:
+      allOf:
+        - $ref: '#/components/schemas/AssetUpdate'
+      required: [asset_code,name]
+    AssetUpdate:
+      type: object
+      properties:
+        asset_code: { type: string }
+        name: { type: string }
+        type: { type: string }
+        category_id: { type: integer }
+        brand: { type: string }
+        model: { type: string }
+        serial_number: { type: string }
+        location: { type: string }
+        department_id: { type: integer }
+        purchase_date: { type: string, format: date }
+        warranty_expire: { type: string, format: date }
+        status: { type: string }
+    AssetWrapper:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/Asset' }
+    Token:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        abilities:
+          type: array
+          items: { type: string }
+        last_used_at: { type: string, nullable: true }
+        created_at: { type: string }
+    UserBasic:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+    ChatMessage:
+      type: object
+      properties:
+        id: { type: integer }
+        user:
+          $ref: '#/components/schemas/UserBasic'
+        body: { type: string }
+        created_at: { type: string }
+    ChatThread:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        is_locked: { type: boolean }
+        created_at: { type: string }
+        author:
+          $ref: '#/components/schemas/UserBasic'
+        messages_count: { type: integer }
+        unread_count: { type: integer }
+        latest_message:
+          $ref: '#/components/schemas/ChatMessage'
+    ChatThreadDetail:
+      allOf:
+        - $ref: '#/components/schemas/ChatThread'
+        - type: object
+          properties:
+            latest_messages:
+              type: array
+              items: { $ref: '#/components/schemas/ChatMessage' }
+    MaintenanceRequest:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string }
+        priority: { type: string }
+        asset_id: { type: integer, nullable: true }
+        reporter_id: { type: integer, nullable: true }
+        reporter_email: { type: string, nullable: true }
+        request_date: { type: string, format: date-time }
+    MaintenanceRequestUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        priority: { type: string }
+        status: { type: string }
+        asset_id: { type: integer }
+        reporter_email: { type: string }
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+    MaintenanceRequestWrapper:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/MaintenanceRequest' }
+    MaintenanceLog:
+      type: object
+      properties:
+        id: { type: integer }
+        action: { type: string }
+        note: { type: string, nullable: true }
+        user_id: { type: integer, nullable: true }
+        created_at: { type: string, format: date-time }
+    TechnicianSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string, nullable: true }
+        total: { type: integer }
+        open: { type: integer }
+        closed: { type: integer }
+        avg_hours: { type: number, nullable: true }
+    DepartmentAssetCount:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string, nullable: true }
+        count: { type: integer }

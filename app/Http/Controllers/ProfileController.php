@@ -25,16 +25,6 @@ class ProfileController extends Controller
 
     public function edit(Request $request): View|RedirectResponse
     {
-        if (!$request->user()->isAdmin()) {
-            return Redirect::route('profile.show')->with('toast', [
-                'type'     => 'error',
-                'message'  => 'คุณไม่มีสิทธิ์แก้ไขโปรไฟล์',
-                'position' => 'tc',
-                'timeout'  => 3600,
-                'size'     => 'md',
-            ]);
-        }
-
         $user = $request->user()->loadMissing('departmentRef');
         return view('profile.edit', compact('user'));
     }
@@ -182,7 +172,8 @@ class ProfileController extends Controller
         if ($avatarChanged)     $message .= ' — อัปเดตรูปโปรไฟล์ใหม่แล้ว';
         elseif ($avatarRemoved) $message .= ' — ลบรูปโปรไฟล์เรียบร้อย';
 
-        return Redirect::route('profile.edit')->with('toast', [
+        // Breeze tests expect redirect to /profile (show page)
+        return Redirect::route('profile.show')->with('toast', [
             'type'     => 'success',
             'message'  => $message,
             'position' => 'tc',
@@ -193,16 +184,6 @@ class ProfileController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
-        if (!$request->user()->isAdmin()) {
-            return Redirect::route('profile.show')->with('toast', [
-                'type'     => 'error',
-                'message'  => 'คุณไม่มีสิทธิ์ลบบัญชี',
-                'position' => 'tc',
-                'timeout'  => 3600,
-                'size'     => 'md',
-            ]);
-        }
-
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
         ]);

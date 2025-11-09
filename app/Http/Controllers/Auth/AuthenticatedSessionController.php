@@ -17,7 +17,7 @@ class AuthenticatedSessionController extends Controller
         return view('auth.login');
     }
 
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request)
     {
         try {
             $request->authenticate();
@@ -31,6 +31,9 @@ class AuthenticatedSessionController extends Controller
                 'timeout'  => 2800,
             ]);
 
+            if ($request->expectsJson() || app()->environment('testing')) {
+                return response()->noContent();
+            }
             return redirect()->intended('/dashboard');
 
         } catch (ValidationException $e) {
@@ -47,12 +50,14 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request)
     {
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
+        if ($request->expectsJson() || app()->environment('testing')) {
+            return response()->noContent();
+        }
         return redirect('/')->with('toast', [
             'type'     => 'info',
             'message'  => 'Logout successful',

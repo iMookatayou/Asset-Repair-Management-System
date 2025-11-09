@@ -71,7 +71,8 @@ class AssetSeeder extends Seeder
             $r['category_id']     = $cat[$r['category_slug']] ?? null;
             $r['purchase_date']   = $now->copy()->subYears(1)->toDateString();
             $r['warranty_expire'] = $now->copy()->addYear()->toDateString();
-            $r['status']          = 'active';
+            $roll = mt_rand(1, 100);
+            $r['status'] = $roll <= 80 ? 'active' : ($roll <= 95 ? 'in_repair' : 'disposed');
             $r['created_at']      = $now;
             $r['updated_at']      = $now;
 

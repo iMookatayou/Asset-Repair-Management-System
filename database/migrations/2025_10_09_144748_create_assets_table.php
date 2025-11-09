@@ -38,6 +38,8 @@ return new class extends Migration {
             $table->softDeletes(); // allow safe logical deletion while keeping historical links
 
             $table->index(['type', 'location', 'department_id', 'category_id']);
+            // Speed up filters for dashboard/list by status + department
+            $table->index(['status', 'department_id'], 'assets_status_department_idx');
             // ไม่สร้าง composite index asset_code+serial_number (ซ้ำกับ unique รายคอลัมน์)
         });
     }

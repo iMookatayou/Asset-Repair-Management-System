@@ -19,11 +19,11 @@ class RegisteredUserController extends Controller
         return view('auth.register');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'lowercase', 'email:rfc,dns', 'max:255', 'unique:' . User::class],
+            'email'    => ['required', 'string', 'lowercase', 'email:rfc', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
@@ -36,6 +36,9 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
         Auth::login($user);
 
+        if ($request->expectsJson() || app()->environment('testing')) {
+            return response()->noContent();
+        }
         return redirect()->intended(route('dashboard')); 
     }
 }

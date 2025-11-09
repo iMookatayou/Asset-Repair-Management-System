@@ -146,7 +146,13 @@ class MaintenanceRequestController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'data'  => $list,
+                'data' => $list->items(),
+                'meta' => [
+                    'current_page' => $list->currentPage(),
+                    'per_page'     => $list->perPage(),
+                    'total'        => $list->total(),
+                    'last_page'    => $list->lastPage(),
+                ],
                 'toast' => [
                     'type' => 'info', 'message' => 'โหลดรายการคำขอบำรุงรักษาแล้ว',
                     'position' => 'tc','timeout' => 1200,'size' => 'sm',
@@ -160,6 +166,10 @@ class MaintenanceRequestController extends Controller
     public function store(Request $request)
     {
         // Custom validator so we can craft a toast listing missing required fields
+        $maxKb = config('uploads.max_kb', 10240);
+        $mimetypes = implode(',', config('uploads.mimetypes', ['image/*','application/pdf']));
+        $fileRules = ['file', 'max:'.$maxKb, 'mimetypes:'.$mimetypes];
+
         $rules = [
             'title'         => ['required','string','max:255'],
             'description'   => ['nullable','string','max:5000'],
@@ -168,7 +178,7 @@ class MaintenanceRequestController extends Controller
             'request_date'  => ['nullable','date'],
             'reporter_id'   => ['nullable','integer','exists:users,id'],
             'reporter_email'=> ['nullable','email','max:255'],
-            'files.*'       => ['file','max:10240','mimetypes:image/*,application/pdf'],
+            'files.*'       => $fileRules,
         ];
 
     $validator = Validator::make($request->all(), $rules);
@@ -290,6 +300,10 @@ class MaintenanceRequestController extends Controller
     public function update(Request $request, MR $req)
     {
         // ใช้ Validator manual เพื่อออก warning toast แบบรวมสาเหตุ (คล้าย store())
+        $maxKb = config('uploads.max_kb', 10240);
+        $mimetypes = implode(',', config('uploads.mimetypes', ['image/*','application/pdf']));
+        $fileRules = ['file', 'max:'.$maxKb, 'mimetypes:'.$mimetypes];
+
         $rules = [
             'title'        => ['sometimes','required','string','max:255'],
             'description'  => ['nullable','string','max:5000'],
@@ -298,7 +312,7 @@ class MaintenanceRequestController extends Controller
             'status'       => ['nullable', Rule::in(['pending','accepted','in_progress','on_hold','resolved','closed','cancelled'])],
             'request_date' => ['nullable','date'],
             'reporter_email'=> ['nullable','email','max:255'],
-            'files.*'      => ['file','max:10240','mimetypes:image/*,application/pdf'],
+            'files.*'      => $fileRules,
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -511,8 +525,12 @@ class MaintenanceRequestController extends Controller
 
     public function uploadAttachmentFromBlade(Request $request, MR $req)
     {
+        $maxKb = config('uploads.max_kb', 10240);
+        $mimetypes = implode(',', config('uploads.mimetypes', ['image/*','application/pdf']));
+        $fileRules = ['required','file','max:'.$maxKb,'mimetypes:'.$mimetypes];
+
         $validated = $request->validate([
-            'file'       => ['required','file','max:10240','mimetypes:image/*,application/pdf'],
+            'file'       => $fileRules,
             'is_private' => ['nullable','boolean'],
             'caption'    => ['nullable','string','max:255'],
             'alt_text'   => ['nullable','string','max:255'],

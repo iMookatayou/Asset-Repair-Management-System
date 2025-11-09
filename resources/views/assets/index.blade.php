@@ -57,7 +57,7 @@
       <div class="mt-4 h-px bg-zinc-200"></div>
 
       {{-- ===== Filters (grid-12 + ไอคอนค้นหาไม่ทับ) ===== --}}
-      <form method="GET" class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12" role="search" aria-label="Filter assets">
+  <form method="GET" class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12" role="search" aria-label="Filter assets">
         {{-- คำค้นหา --}}
         <div class="md:col-span-5 min-w-0">
           <label for="q" class="mb-1 block text-[12px] text-zinc-600">คำค้นหา</label>
@@ -74,7 +74,7 @@
         </div>
 
         {{-- สถานะ --}}
-        <div class="md:col-span-3">
+        <div class="md:col-span-2">
           <label for="status" class="mb-1 block text-[12px] text-zinc-600">สถานะ</label>
           @php $statuses = ['' => 'ทั้งหมด','active'=>'พร้อมใช้งาน','in_repair'=>'อยู่ระหว่างซ่อม','disposed'=>'จำหน่าย']; @endphp
           <select id="status" name="status"
@@ -86,14 +86,35 @@
         </div>
 
         {{-- หมวดหมู่ (FK) --}}
-        <div class="md:col-span-3">
+        <div class="md:col-span-2">
           <label for="category_id" class="mb-1 block text-[12px] text-zinc-600">หมวดหมู่</label>
           <select id="category_id" name="category_id" class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
             <option value="">ทั้งหมด</option>
-            @foreach(($categories ?? []) as $c)
+            @foreach($categories as $c)
               <option value="{{ $c->id }}" @selected((string)request('category_id') === (string)$c->id)>{{ $c->name }}</option>
             @endforeach
           </select>
+        </div>
+
+        {{-- หน่วยงาน --}}
+        <div class="md:col-span-2">
+          <label for="department_id" class="mb-1 block text-[12px] text-zinc-600">หน่วยงาน</label>
+          <select id="department_id" name="department_id" class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+            <option value="">ทั้งหมด</option>
+            @foreach($departments as $d)
+              <option value="{{ $d['id'] }}" @selected((string)request('department_id') === (string)$d['id'])>{{ $d['display_name'] }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        {{-- ประเภท & ที่ตั้ง (เสริม) --}}
+        <div class="md:col-span-2">
+          <label for="type" class="mb-1 block text-[12px] text-zinc-600">ประเภท</label>
+          <input id="type" name="type" value="{{ request('type') }}" class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="เช่น Computer, Printer" />
+        </div>
+        <div class="md:col-span-2">
+          <label for="location" class="mb-1 block text-[12px] text-zinc-600">ที่ตั้ง</label>
+          <input id="location" name="location" value="{{ request('location') }}" class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="เช่น ER, IT Room" />
         </div>
 
         {{-- ปุ่ม --}}

@@ -9,7 +9,7 @@
   // Base fields
   $type     = $toast['type']     ?? null;      // success|info|warning|error
   $message  = $toast['message']  ?? null;
-  $position = $toast['position'] ?? 'uc';      // tr|tl|br|bl|center|tc|bc|uc
+  $position = $toast['position'] ?? 'tc';      // tr|tl|br|bl|center|tc|bc|uc (บังคับใช้ tc เป็นค่าเริ่มต้น)
   $timeout  = (int)($toast['timeout'] ?? 3200);
   $size     = $toast['size']     ?? 'lg';      // sm|md|lg
 
@@ -155,7 +155,7 @@
   };
 
   // ตั้งค่าเป็นค่า truthy ('tc' ฯลฯ) หากอยาก "บังคับ" ตำแหน่งทั้งหมดให้ตรงกัน
-  const FORCE_POSITION = null; // ปล่อยว่าง = เคารพค่าที่ส่งมาแต่ละเคส
+  const FORCE_POSITION = 'tc'; // บังคับ Toast ทุกตัวให้อยู่ top-center
 
   function ensurePos(position){
     const overlay = document.querySelector('.toast-overlay');

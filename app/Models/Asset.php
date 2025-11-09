@@ -118,7 +118,17 @@ class Asset extends Model
 
     public function scopeDepartmentId($q, ?int $departmentId)
     {
-        return filled($departmentId) ? $q->where('department_id', $departmentId) : $q;
+        // Treat 0 / null / falsy as no filter (Request::integer returns 0 when param missing)
+        return ($departmentId && $departmentId > 0) ? $q->where('department_id', $departmentId) : $q;
+    }
+
+    /**
+     * Filter by status if provided (supports '', null => no-op)
+     */
+    public function scopeStatus($q, ?string $status)
+    {
+        $status = trim((string) $status);
+        return $status !== '' ? $q->where('status', $status) : $q;
     }
 
     public function scopeCategory($q, ?string $category)

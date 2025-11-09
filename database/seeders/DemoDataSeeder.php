@@ -182,7 +182,10 @@ class DemoDataSeeder extends Seeder
             if ($hasCategoryId && $categoryIds) $row['category_id']   = $categoryIds[array_rand($categoryIds)];
             if ($hasPurchaseDate) $row['purchase_date']   = $purchaseAt;
             if ($hasWarranty)     $row['warranty_expire'] = $warrantyAt;
-            if ($hasStatus)       $row['status']          = 'active';
+            if ($hasStatus) {
+                $roll = mt_rand(1, 100);
+                $row['status'] = $roll <= 75 ? 'active' : ($roll <= 95 ? 'in_repair' : 'disposed');
+            }
 
             $assetRows[] = $row;
             if (count($assetRows) >= $chunkSize) { DB::table('assets')->insert($assetRows); $assetRows = []; }

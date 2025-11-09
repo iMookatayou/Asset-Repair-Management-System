@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +15,16 @@ use Illuminate\Validation\ValidationException;
 
 class NewPasswordController extends Controller
 {
+    /**
+     * Display the password reset form for the given token.
+     */
+    public function create(Request $request): View
+    {
+        return view('auth.reset-password', [
+            'request' => $request,
+        ]);
+    }
+
     /**
      * Handle an incoming new password request.
      *

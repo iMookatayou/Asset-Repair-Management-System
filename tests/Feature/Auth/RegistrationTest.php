@@ -17,8 +17,8 @@ class RegistrationTest extends TestCase
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
-
-        $this->assertAuthenticated();
+        // In testing environment controller returns 204 no content, assert user created & authenticated
         $response->assertNoContent();
+        $this->assertAuthenticated();
     }
 }

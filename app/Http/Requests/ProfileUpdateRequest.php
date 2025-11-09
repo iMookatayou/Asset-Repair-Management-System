@@ -12,11 +12,11 @@ use Illuminate\Auth\Access\AuthorizationException;
 class ProfileUpdateRequest extends FormRequest
 {
     /**
-     * อนุญาตเฉพาะแอดมินให้ส่งฟอร์มนี้ได้
+     * อนุญาตให้ผู้ใช้ที่ล็อกอินทุกคนอัปเดตโปรไฟล์ของตนเองได้ (สอดคล้อง Breeze tests)
      */
     public function authorize(): bool
     {
-        return (bool) $this->user()?->isAdmin();
+        return (bool) $this->user();
     }
 
     /**

@@ -57,7 +57,7 @@
       <div class="mt-4 h-px bg-zinc-200"></div>
 
       
-      <form method="GET" class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12" role="search" aria-label="Filter assets">
+  <form method="GET" class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12" role="search" aria-label="Filter assets">
         
         <div class="md:col-span-5 min-w-0">
           <label for="q" class="mb-1 block text-[12px] text-zinc-600">คำค้นหา</label>
@@ -74,7 +74,7 @@
         </div>
 
         
-        <div class="md:col-span-3">
+        <div class="md:col-span-2">
           <label for="status" class="mb-1 block text-[12px] text-zinc-600">สถานะ</label>
           <?php $statuses = ['' => 'ทั้งหมด','active'=>'พร้อมใช้งาน','in_repair'=>'อยู่ระหว่างซ่อม','disposed'=>'จำหน่าย']; ?>
           <select id="status" name="status"
@@ -86,14 +86,35 @@
         </div>
 
         
-        <div class="md:col-span-3">
+        <div class="md:col-span-2">
           <label for="category_id" class="mb-1 block text-[12px] text-zinc-600">หมวดหมู่</label>
           <select id="category_id" name="category_id" class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
             <option value="">ทั้งหมด</option>
-            <?php $__currentLoopData = ($categories ?? []); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
               <option value="<?php echo e($c->id); ?>" <?php if((string)request('category_id') === (string)$c->id): echo 'selected'; endif; ?>><?php echo e($c->name); ?></option>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
           </select>
+        </div>
+
+        
+        <div class="md:col-span-2">
+          <label for="department_id" class="mb-1 block text-[12px] text-zinc-600">หน่วยงาน</label>
+          <select id="department_id" name="department_id" class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+            <option value="">ทั้งหมด</option>
+            <?php $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $d): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+              <option value="<?php echo e($d['id']); ?>" <?php if((string)request('department_id') === (string)$d['id']): echo 'selected'; endif; ?>><?php echo e($d['display_name']); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+          </select>
+        </div>
+
+        
+        <div class="md:col-span-2">
+          <label for="type" class="mb-1 block text-[12px] text-zinc-600">ประเภท</label>
+          <input id="type" name="type" value="<?php echo e(request('type')); ?>" class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="เช่น Computer, Printer" />
+        </div>
+        <div class="md:col-span-2">
+          <label for="location" class="mb-1 block text-[12px] text-zinc-600">ที่ตั้ง</label>
+          <input id="location" name="location" value="<?php echo e(request('location')); ?>" class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="เช่น ER, IT Room" />
         </div>
 
         

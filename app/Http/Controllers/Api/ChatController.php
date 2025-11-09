@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChatThread;
 use App\Models\ChatMessage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
@@ -18,6 +19,7 @@ class ChatController extends Controller
     public function index(Request $r)
     {
         $q = (string) $r->query('q', '');
+        $userId = optional($r->user())->id;
 
         $threads = ChatThread::query()
             ->with('author:id,name')
@@ -29,8 +31,29 @@ class ChatController extends Controller
             ->paginate(perPage: 15);
 
         // แปลงเป็น JSON ที่อ่านง่าย
+        // Pre-fetch last read map for current user
+        $readsMap = [];
+        if ($userId) {
+            $readsMap = DB::table('chat_thread_reads')
+                ->where('user_id', $userId)
+                ->whereIn('chat_thread_id', $threads->getCollection()->pluck('id')->all())
+                ->pluck('last_read_message_id', 'chat_thread_id')
+                ->all();
+        }
+
         $payload = [
-            'data' => $threads->getCollection()->map(function (ChatThread $th) {
+            'data' => $threads->getCollection()->map(function (ChatThread $th) use ($readsMap) {
+                $lastReadMessageId = $readsMap[$th->id] ?? null;
+                $total   = $th->messages_count ?? 0;
+                $unread  = 0;
+                if ($lastReadMessageId) {
+                    $unread = \App\Models\ChatMessage::query()
+                        ->where('chat_thread_id', $th->id)
+                        ->where('id', '>', $lastReadMessageId)
+                        ->count();
+                } else {
+                    $unread = $total; // ไม่มี record ถือว่ายังไม่เคยอ่าน
+                }
                 return [
                     'id'              => $th->id,
                     'title'           => $th->title,
@@ -40,7 +63,8 @@ class ChatController extends Controller
                         'id'   => $th->author->id,
                         'name' => $th->author->name,
                     ] : null,
-                    'messages_count'  => $th->messages_count ?? 0,
+                    'messages_count'  => $total,
+                    'unread_count'    => $unread,
                     'latest_message'  => $th->latestMessage ? [
                         'id'         => $th->latestMessage->id,
                         'user'       => $th->latestMessage->user ? [
@@ -186,6 +210,14 @@ class ChatController extends Controller
 
         // แนบ user กลับไปด้วย
         $msg->load('user:id,name');
+
+        // Update read marker for author (message owner auto-reads their own post)
+        if ($msg->user_id) {
+            DB::table('chat_thread_reads')->updateOrInsert(
+                ['user_id' => $msg->user_id, 'chat_thread_id' => $thread->id],
+                ['last_read_message_id' => $msg->id, 'last_read_at' => now(), 'updated_at' => now(), 'created_at' => now()]
+            );
+        }
 
         return response()->json([
             'id'         => $msg->id,
