@@ -1,23 +1,54 @@
 /.phpunit.cache
-/node_modules
-/public/build
+/.phpunit.result.cache
+.phpactor.json
+
+# Dependencies
+/node_modules/
+/vendor/
+
+# Compiled assets / build output (re-generated)
+/public/build/
 /public/hot
+/public/phpinfo.php
+
+# User uploaded/storage (keep symlink only)
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
+
+# Environment & secrets (keep only .env.example tracked)
 .env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
+.env.*
+!.env.example
+
+# Local environment variants
 Homestead.json
 Homestead.yaml
-npm-debug.log
-yarn-error.log
+
+# Debug logs
+npm-debug.log*
+yarn-error.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Auth/session temp
 /auth.json
-/.fleet
+
+# IDE/editor configs
 /.idea
+/.fleet
 /.nova
 /.vscode
 /.zed
+
+# OS cruft
+Thumbs.db
+.DS_Store
+
+# Optional SQLite dev db files
+database/*.sqlite
