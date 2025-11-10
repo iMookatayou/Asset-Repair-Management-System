@@ -24,7 +24,7 @@
 # Environment & secrets (keep only .env.example tracked)
 .env
 .env.*
-!.env.example
+.env.example
 
 # Local environment variants
 Homestead.json
