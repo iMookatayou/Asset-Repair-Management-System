@@ -21,10 +21,12 @@
 /storage/framework/views/*
 /storage/logs/*
 
-# Environment & secrets (keep only .env.example tracked)
+# Environment & secrets
+# Ignore all real env files, but allow example templates to be tracked
 .env
 .env.*
-.env.example
+!.env.example
+!.env.*.example
 
 # Local environment variants
 Homestead.json
