@@ -25,6 +25,7 @@
       default                         => 'ring-1 ring-emerald-300 text-emerald-800 bg-white',
     };
   };
+  $showActions = auth()->user()?->can('tech-only') ?? false;
 @endphp
 
 <div class="pt-3 md:pt-4"></div>
@@ -45,7 +46,7 @@
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2 text-[13px]">
+  <div class="flex flex-wrap items-center gap-2 text-[13px]">
           <span class="inline-flex items-center gap-2 rounded-md border border-zinc-400 bg-white px-3 py-1 text-zinc-900">
             <span class="text-zinc-700">ทั้งหมด</span>
             <strong class="tabular-nums">{{ $total }}</strong>
@@ -63,13 +64,15 @@
             <strong class="tabular-nums">{{ $done }}</strong>
           </span>
 
-          <a href="{{ route('repairs.my_jobs') }}"
-             class="ml-2 inline-flex items-center gap-2 rounded-lg border border-indigo-700 bg-indigo-700 px-4 py-2 text-[13px] font-medium text-white hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-600">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 2h6a2 2 0 0 1 2 2v2h-2V4H9v2H7V4a2 2 0 0 1 2-2zm3 8h4m-8 0h.01M9 16h6m-8 0h.01M5 8h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"/>
-            </svg>
-            My Jobs
-          </a>
+          @can('view-my-jobs')
+            <a href="{{ route('repairs.my_jobs') }}"
+               class="ml-2 inline-flex items-center gap-2 rounded-lg border border-indigo-700 bg-indigo-700 px-4 py-2 text-[13px] font-medium text-white hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 2h6a2 2 0 0 1 2 2v2h-2V4H9v2H7V4a2 2 0 0 1 2-2zm3 8h4m-8 0h.01M9 16h6m-8 0h.01M5 8h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"/>
+              </svg>
+              My Jobs
+            </a>
+          @endcan
         </div>
       </div>
 
@@ -124,7 +127,9 @@
             <th class="p-3 text-left font-medium w-[20%]">ทรัพย์สิน</th>
             <th class="p-3 text-left font-medium w-[18%]">ผู้แจ้ง</th>
             <th class="p-3 text-left font-medium w-[14%]">วันที่แจ้ง</th>
-            <th class="p-3 text-center font-medium whitespace-nowrap min-w-[200px]">การดำเนินการ</th>
+            @if($showActions)
+              <th class="p-3 text-center font-medium whitespace-nowrap min-w-[200px]">การดำเนินการ</th>
+            @endif
           </tr>
         </thead>
 
@@ -185,39 +190,41 @@
               @endif
             </td>
 
-            <td class="p-3 text-center align-middle">
-              @can('tech-only')
-                <div class="relative inline-block text-left">
-                  <details class="group inline-block queue-actions">
-                    <summary class="flex cursor-pointer list-none">
-                      <span class="inline-flex items-center gap-1 rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50">
-                        ดำเนินการ ▾
-                      </span>
-                    </summary>
-                    <div class="dropdown-like absolute right-0 z-10 mt-1 w-44 rounded-md border border-zinc-300 bg-white p-2 text-left shadow-sm">
-                      <form method="POST" action="{{ route('maintenance.requests.transition', $r) }}" class="block">
-                        @csrf <input type="hidden" name="action" value="accept">
-                        <button class="w-full rounded-md px-3 py-1.5 text-left text-xs text-zinc-800 hover:bg-zinc-100">รับงาน</button>
-                      </form>
-                      <form method="POST" action="{{ route('maintenance.requests.transition', $r) }}" class="mt-1 block">
-                        @csrf
-                        <input type="hidden" name="action" value="assign">
-                        <input type="hidden" name="technician_id" value="{{ auth()->id() }}">
-                        <button class="w-full rounded-md px-3 py-1.5 text-left text-xs text-zinc-800 hover:bg-zinc-100">มอบหมายให้ฉัน</button>
-                      </form>
-                      <form method="POST" action="{{ route('maintenance.requests.transition', $r) }}" class="mt-1 block">
-                        @csrf <input type="hidden" name="action" value="start">
-                        <button class="w-full rounded-md px-3 py-1.5 text-left text-xs text-zinc-800 hover:bg-zinc-100">เริ่มงาน</button>
-                      </form>
-                    </div>
-                  </details>
-                </div>
-              @endcan
-            </td>
+            @if($showActions)
+              <td class="p-3 text-center align-middle">
+                @can('tech-only')
+                  <div class="relative inline-block text-left">
+                    <details class="group inline-block queue-actions">
+                      <summary class="flex cursor-pointer list-none">
+                        <span class="inline-flex items-center gap-1 rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50">
+                          ดำเนินการ ▾
+                        </span>
+                      </summary>
+                      <div class="dropdown-like absolute right-0 z-10 mt-1 w-44 rounded-md border border-zinc-300 bg-white p-2 text-left shadow-sm">
+                        <form method="POST" action="{{ route('maintenance.requests.transition', $r) }}" class="block">
+                          @csrf <input type="hidden" name="action" value="accept">
+                          <button class="w-full rounded-md px-3 py-1.5 text-left text-xs text-zinc-800 hover:bg-zinc-100">รับงาน</button>
+                        </form>
+                        <form method="POST" action="{{ route('maintenance.requests.transition', $r) }}" class="mt-1 block">
+                          @csrf
+                          <input type="hidden" name="action" value="assign">
+                          <input type="hidden" name="technician_id" value="{{ auth()->id() }}">
+                          <button class="w-full rounded-md px-3 py-1.5 text-left text-xs text-zinc-800 hover:bg-zinc-100">มอบหมายให้ฉัน</button>
+                        </form>
+                        <form method="POST" action="{{ route('maintenance.requests.transition', $r) }}" class="mt-1 block">
+                          @csrf <input type="hidden" name="action" value="start">
+                          <button class="w-full rounded-md px-3 py-1.5 text-left text-xs text-zinc-800 hover:bg-zinc-100">เริ่มงาน</button>
+                        </form>
+                      </div>
+                    </details>
+                  </div>
+                @endcan
+              </td>
+            @endif
           </tr>
         @empty
           <tr>
-            <td colspan="5" class="p-12 text-center text-zinc-600">ไม่พบรายการที่รอดำเนินการ</td>
+            <td colspan="{{ $showActions ? 5 : 4 }}" class="p-12 text-center text-zinc-600">ไม่พบรายการที่รอดำเนินการ</td>
           </tr>
         @endforelse
         </tbody>

@@ -15,9 +15,13 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    public const ROLE_ADMIN      = 'admin';
-    public const ROLE_TECHNICIAN = 'technician';
-    public const ROLE_STAFF      = 'staff';
+    // บทบาทตามที่ตกลง (เก็บเป็นโค้ดสั้นสำหรับระบบ)
+    public const ROLE_ADMIN             = 'admin';           // ผู้ดูแลระบบ Admin
+    public const ROLE_SUPERVISOR        = 'supervisor';      // หัวหน้า Supervisor
+    public const ROLE_IT_SUPPORT        = 'it_support';      // ไอทีซัพพอร์ต IT Support
+    public const ROLE_NETWORK           = 'network';         // เน็ตเวิร์ค Network
+    public const ROLE_DEVELOPER         = 'developer';       // นักพัฒนา Developer
+    public const ROLE_COMPUTER_OFFICER  = 'computer_officer';// บุคลากร Member
 
     protected $fillable = [
         'name',
@@ -34,7 +38,7 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $appends = ['avatar_url', 'avatar_thumb_url', 'department_name'];
+    protected $appends = ['avatar_url', 'avatar_thumb_url', 'department_name', 'role_label'];
 
     protected function casts(): array
     {
@@ -44,9 +48,67 @@ class User extends Authenticatable
         ];
     }
 
+    // เพื่อให้โค้ดเดิมทำงานต่อได้: map isAdmin/isTechnician ไปยังบทบาทใหม่
     public function isAdmin(): bool      { return $this->role === self::ROLE_ADMIN; }
-    public function isTechnician(): bool { return $this->role === self::ROLE_TECHNICIAN; }
-    public function isStaff(): bool      { return $this->role === self::ROLE_STAFF; }
+    public function isTechnician(): bool { return in_array($this->role, [
+        self::ROLE_IT_SUPPORT,
+        self::ROLE_NETWORK,
+        self::ROLE_DEVELOPER,
+    ], true); }
+    // Legacy compatibility method (staff removed); always false
+    public function isStaff(): bool      { return false; }
+
+    // กลุ่มสิทธิ์แบบอ่านง่าย
+    public function isSupervisor(): bool { return $this->role === self::ROLE_SUPERVISOR; }
+    public function isWorker(): bool     { return $this->isTechnician(); }
+
+    // รายชื่อบทบาทที่ระบบรองรับ (ใช้ในฟอร์มหรือฟิลเตอร์)
+    public static function availableRoles(): array
+    {
+        return [
+            self::ROLE_ADMIN,
+            self::ROLE_SUPERVISOR,
+            self::ROLE_IT_SUPPORT,
+            self::ROLE_NETWORK,
+            self::ROLE_DEVELOPER,
+            self::ROLE_COMPUTER_OFFICER,
+        ];
+    }
+
+    // บทบาทที่ถือว่าเป็นทีมปฏิบัติการ (worker)
+    public static function workerRoles(): array
+    {
+        return [
+            self::ROLE_IT_SUPPORT,
+            self::ROLE_NETWORK,
+            self::ROLE_DEVELOPER,
+        ];
+    }
+
+    // บทบาทที่แสดงใน Team Drawer (หัวหน้า + ทีมปฏิบัติการ)
+    public static function teamRoles(): array
+    {
+        return array_merge([self::ROLE_SUPERVISOR], self::workerRoles());
+    }
+
+    // แผนที่บทบาท -> ป้ายกำกับ ไทย-อังกฤษ
+    public static function roleLabels(): array
+    {
+        return [
+            self::ROLE_ADMIN             => 'ผู้ดูแลระบบ Admin',
+            self::ROLE_SUPERVISOR        => 'หัวหน้า Supervisor',
+            self::ROLE_IT_SUPPORT        => 'ไอทีซัพพอร์ต IT Support',
+            self::ROLE_NETWORK           => 'เน็ตเวิร์ค Network',
+            self::ROLE_DEVELOPER         => 'นักพัฒนา Developer',
+            self::ROLE_COMPUTER_OFFICER  => 'บุคลากร Member',
+        ];
+    }
+
+    public function getRoleLabelAttribute(): string
+    {
+        $labels = self::roleLabels();
+        return $labels[$this->role] ?? (ucfirst((string) $this->role) ?: '-');
+    }
 
     public function scopeRole($q, string $role)    { return $q->where('role', $role); }
     public function scopeInRoles($q, array $roles) { return $q->whereIn('role', $roles); }

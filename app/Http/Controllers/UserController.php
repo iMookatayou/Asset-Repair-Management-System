@@ -49,7 +49,7 @@ class UserController extends Controller
             'name'       => ['sometimes','string','max:255'],
             'email'      => ['sometimes','email','max:255', Rule::unique('users','email')->ignore($user->id)],
             'department' => ['nullable','string','max:100'],
-            'role'       => ['sometimes', Rule::in(['admin','technician','staff'])],
+            'role'       => ['sometimes', Rule::in(['admin','technician','computer_officer'])],
             'password'   => ['nullable','string','min:8'],
         ]);
 

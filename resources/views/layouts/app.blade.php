@@ -323,7 +323,7 @@
     @php
       // Query team (admins + technicians) with active workload counts
       $globalTeam = \App\Models\User::query()
-        ->whereIn('role', ['admin','technician'])
+        ->whereIn('role', \App\Models\User::teamRoles())
         ->withCount([
           'assignedRequests as active_count' => fn($q) => $q->whereNotIn('status',[ 'resolved','closed','cancelled' ]),
           'assignedRequests as total_count',
@@ -365,7 +365,7 @@
               @foreach($globalTeam as $member)
                 @php
                   $initial = \Illuminate\Support\Str::of($member->name)->substr(0,1)->upper();
-                  $roleClasses = $member->role === 'admin'
+                  $roleClasses = method_exists($member,'isSupervisor') && $member->isSupervisor()
                     ? 'bg-indigo-100 text-indigo-700 ring-indigo-200'
                     : 'bg-emerald-100 text-emerald-700 ring-emerald-200';
                 @endphp
@@ -374,7 +374,7 @@
                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ring-1 {{ $roleClasses }}">{{ $initial }}</span>
                     <div>
                       <div class="text-sm font-medium text-gray-900 group-hover:text-indigo-700">{{ $member->name }}</div>
-                      <div class="text-xs text-gray-500">บทบาท: {{ $member->role }}</div>
+                      <div class="text-xs text-gray-500">บทบาท: {{ $member->role_label ?? ucfirst($member->role) }}</div>
                     </div>
                   </div>
                   <div class="flex items-center gap-2">
@@ -455,6 +455,37 @@
   </script>
 
   @stack('scripts')
+
+  <script>
+    // ===== Global diagnostic for searchable select components =====
+    window.ssDiag = function(print = true){
+      const nodes = Array.from(document.querySelectorAll('[data-ss]'));
+      const rows = nodes.map(n => ({
+        id: n.getAttribute('data-ss-id'),
+        variant: n.getAttribute('data-ss-variant'),
+        inline: n.getAttribute('data-ss-inline'),
+        bound: n.getAttribute('data-ss-bound') === '1',
+        fail: n.getAttribute('data-ss-fail') || '',
+        options: n.querySelectorAll('[data-ss-option]').length,
+        value: n.querySelector('[data-ss-input]')?.value || '',
+      }));
+      if (print) {
+        console.group('[ssDiag] Searchable Select Components');
+        console.table(rows);
+        console.log('Total:', rows.length, 'Bound:', rows.filter(r=>r.bound).length, 'Failed:', rows.filter(r=>r.fail).length);
+        console.groupEnd();
+      }
+      return rows;
+    };
+    document.addEventListener('DOMContentLoaded', () => {
+      // Auto-run short summary
+      const rows = window.ssDiag(false);
+      console.info(`[ssDiag] components=${rows.length} bound=${rows.filter(r=>r.bound).length} failed=${rows.filter(r=>r.fail).length}`);
+      if (rows.some(r=>!r.bound)) {
+        console.warn('[ssDiag] Some components were not bound. Run ssDiag() for details.');
+      }
+    });
+  </script>
 
   <div id="loaderOverlay" class="loader-overlay" aria-hidden="true">
     <div class="loader-spinner" role="status" aria-label="กำลังโหลด"></div>

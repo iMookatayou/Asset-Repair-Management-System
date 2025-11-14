@@ -1,6 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Hide elements until Alpine initializes to prevent flash/always-open panels */
+[x-cloak] { display: none !important; }
 @plugin "daisyui";
 
 .menu-item {
@@ -9,5 +12,5 @@
 
 .footer {
   text-align: center;
-  color: #0E2B51; 
+  color: #0E2B51;
 }

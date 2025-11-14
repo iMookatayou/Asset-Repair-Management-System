@@ -38,6 +38,10 @@ class Asset extends Model
         'status' => 'active',
     ];
 
+    protected $appends = [
+        'display_name',
+    ];
+
     public function department()
     {
         return $this->belongsTo(Department::class);
@@ -128,5 +132,13 @@ class Asset extends Model
         $col = $map[$by ?? 'id'] ?? 'id';
         $dir = strtolower($dir) === 'asc' ? 'asc' : 'desc';
         return $q->orderBy($col, $dir);
+    }
+
+    public function getDisplayNameAttribute(): string
+    {
+        $code = trim((string) $this->asset_code);
+        $name = trim((string) $this->name);
+        if ($code && $name) return $code.' - '.$name;
+        return $code ?: $name;
     }
 }

@@ -35,11 +35,20 @@
   @isset($categories)
     <div>
       <label class="block text-sm font-medium text-slate-700" for="category_id">หมวดหมู่</label>
-      <x-search-select name="category_id" id="category_id"
-        :items="$categories"
-        label-field="name" value-field="id"
-        :value="old('category_id', $asset->category_id ?? null)"
-        placeholder="— ไม่ระบุ —" />
+      @php
+        $initialCat = $categories->firstWhere('id', old('category_id', $asset->category_id ?? null));
+        $initialCatLabel = $initialCat->name ?? null;
+      @endphp
+      <x-dynamic-search-dropdown
+        name="category_id"
+        :endpoint="url('/api/meta/categories')"
+        label-field="name"
+        value-field="id"
+        :value="old('category_id', $asset->category_id ?? '')"
+        :value-label="$initialCatLabel"
+        placeholder="ค้นหา / เลือกหมวดหมู่"
+        search-placeholder="พิมพ์เพื่อค้นหา..."
+      />
       @error('category_id') <p class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
     </div>
   @endisset
@@ -47,16 +56,20 @@
   @isset($departments)
     <div>
       <label class="block text-sm font-medium text-slate-700" for="department_id">หน่วยงาน</label>
-      @php $hasDepartments = ($departments instanceof \Illuminate\Support\Collection) ? $departments->isNotEmpty() : count($departments ?? []) > 0; @endphp
-      @if($hasDepartments)
-        <x-search-select name="department_id" id="department_id"
-          :items="$departments"
-          label-field="display_name" value-field="id"
-          :value="old('department_id', $asset->department_id ?? null)"
-          placeholder="— ไม่ระบุ —" />
-      @else
-        <div class="mt-1 w-full rounded-lg border px-3 py-2 text-slate-400">ยังไม่มีข้อมูลหน่วยงาน (กรุณา seed)</div>
-      @endif
+      @php
+        $initialDept = $departments->firstWhere('id', old('department_id', $asset->department_id ?? null));
+        $deptLabel = $initialDept ? trim(($initialDept->code ? $initialDept->code.' - ' : '').($initialDept->name_th ?: $initialDept->name_en)) : null;
+      @endphp
+      <x-dynamic-search-dropdown
+        name="department_id"
+        :endpoint="url('/api/meta/departments')"
+        label-field="display"
+        value-field="id"
+        :value="old('department_id', $asset->department_id ?? '')"
+        :value-label="$deptLabel"
+        placeholder="ค้นหา / เลือกหน่วยงาน"
+        search-placeholder="พิมพ์เพื่อค้นหา..."
+      />
       @error('department_id') <p class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
     </div>
   @endisset

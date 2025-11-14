@@ -25,6 +25,8 @@ class MaintenanceRequestSeeder extends Seeder
                     'name'     => 'นางสาวอัญชัน ศรีสมบัติ',
                     'email'    => 'nurse.ppk@example.com',
                     'password' => Hash::make('password1234'),
+                    'role'     => User::ROLE_COMPUTER_OFFICER,
+                    'department' => 'HIM',
                 ]);
             }
 
@@ -34,6 +36,8 @@ class MaintenanceRequestSeeder extends Seeder
                     'name'     => 'นายสมชาย ช่างอาคาร',
                     'email'    => 'technician.ppk@example.com',
                     'password' => Hash::make('password1234'),
+                    'role'     => User::ROLE_IT_SUPPORT,
+                    'department' => 'FAC',
                 ]);
             }
 

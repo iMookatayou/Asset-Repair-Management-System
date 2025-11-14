@@ -9,30 +9,52 @@ use App\Models\User;
 
 class MetaController extends Controller
 {
-    public function departments()
+    public function departments(Request $r)
     {
-        $rows = DB::table('departments')
-            ->select('id','code','name')
-            ->orderBy('name')
-            ->get()
-            ->map(fn($r) => [
-                'id'   => $r->id,
-                'code' => $r->code,
-                'name' => $r->name,
-            ]);
+        $q = trim((string) $r->query('q'));
+        $builder = DB::table('departments')
+            ->select('id','code','name_th','name_en')
+            ->when($q, function ($qq) use ($q) {
+                $qq->where(function($w) use ($q){
+                    $w->where('code','like',"%{$q}%")
+                      ->orWhere('name_th','like',"%{$q}%")
+                      ->orWhere('name_en','like',"%{$q}%");
+                });
+            })
+            ->orderBy('name_th');
+
+        $rows = $builder->limit(50)->get()->map(function($r){
+            $display = trim($r->name_th).' '.($r->name_en ? "({$r->name_en})" : '');
+            return [
+                'id'         => $r->id,
+                'code'       => $r->code,
+                'name'       => trim($r->name_th), // primary name
+                'display'    => trim($display),
+            ];
+        });
         return response()->json(['data' => $rows]);
     }
 
-    public function categories()
+    public function categories(Request $r)
     {
-        $rows = DB::table('asset_categories')
-            ->select('id','name')
-            ->orderBy('name')
-            ->get()
-            ->map(fn($r) => [
-                'id'   => $r->id,
-                'name' => $r->name,
-            ]);
+        $q = trim((string) $r->query('q'));
+        $builder = DB::table('asset_categories')
+            ->select('id','name','slug','color','description')
+            ->when($q, function ($qq) use ($q) {
+                $qq->where('name','like',"%{$q}%")
+                   ->orWhere('slug','like',"%{$q}%");
+            })
+            ->orderBy('name');
+
+        $rows = $builder->limit(50)->get()->map(function($r){
+            return [
+                'id'          => $r->id,
+                'name'        => $r->name,
+                'slug'        => $r->slug,
+                'color'       => $r->color,
+                'description' => $r->description,
+            ];
+        });
         return response()->json(['data' => $rows]);
     }
 

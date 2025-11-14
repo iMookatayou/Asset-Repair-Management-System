@@ -35,10 +35,30 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Unified JSON error shape for API endpoints
+        // Handle authorization failures for web requests with toast
         $exceptions->render(function ($e, Request $request) {
+            // Authorization/Access Denied: show toast and redirect back (web only)
+            if (!$request->is('api/*') &&
+                ($e instanceof \Illuminate\Auth\Access\AuthorizationException ||
+                 $e instanceof \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException)) {
+
+                $message = $e->getMessage() ?: 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้';
+
+                $redirectTo = $request->headers->get('referer')
+                    ? redirect()->back()
+                    : redirect()->route('dashboard');
+
+                return $redirectTo->with('toast', [
+                    'type' => 'error',
+                    'message' => $message,
+                    'timeout' => 3500,
+                    'position' => 'tc',
+                    'size' => 'md',
+                ]);
+            }
+
             if (! $request->is('api/*')) {
-                return null; // use default rendering for non-api
+                return null; // use default rendering for other non-api exceptions
             }
 
             $cid = $request->attributes->get('correlation_id') ?? Str::uuid()->toString();

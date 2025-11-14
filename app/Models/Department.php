@@ -47,6 +47,10 @@ class Department extends Model
         return $th ?: $en;
     }
 
+    protected $appends = [
+        'display_name',
+    ];
+
     public function scopeCode($q, ?string $code)
     {
         return $code ? $q->where('code', $code) : $q;

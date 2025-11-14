@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    private const ROLES = ['admin', 'technician', 'staff'];
+    // ใช้บทบาทตามโมเดล User
+    private const ROLES = [];
 
     public function index(Request $request)
     {
@@ -39,7 +40,7 @@ class UserController extends Controller
 
         return view('admin.users.index', [
             'users' => $users,
-            'roles' => self::ROLES,
+            'roles' => User::availableRoles(),
             'filters' => [
                 's' => $request->get('s'),
                 'role' => $request->get('role'),
@@ -51,7 +52,7 @@ class UserController extends Controller
     public function create()
     {
         return view('admin.users.create', [
-            'roles' => self::ROLES,
+            'roles' => User::availableRoles(),
         ]);
     }
 
@@ -62,7 +63,7 @@ class UserController extends Controller
             'email'      => ['required', 'email', 'max:255', 'unique:users,email'],
             'password'   => ['required', 'confirmed', 'min:8'],
             'department' => ['nullable', 'string', 'max:100'],
-            'role'       => ['required', Rule::in(self::ROLES)],
+            'role'       => ['required', Rule::in(User::availableRoles())],
         ]);
 
         $data['password'] = Hash::make($data['password']);
@@ -78,7 +79,7 @@ class UserController extends Controller
     {
         return view('admin.users.edit', [
             'user'  => $user,
-            'roles' => self::ROLES,
+            'roles' => User::availableRoles(),
         ]);
     }
 
@@ -89,7 +90,7 @@ class UserController extends Controller
             'email'      => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->getKey())],
             'password'   => ['nullable', 'confirmed', 'min:8'],
             'department' => ['nullable', 'string', 'max:100'],
-            'role'       => ['required', Rule::in(self::ROLES)],
+            'role'       => ['required', Rule::in(User::availableRoles())],
         ]);
 
         if (!empty($data['password'])) {
@@ -122,7 +123,7 @@ class UserController extends Controller
             'action' => ['required', 'string'],
             'ids'    => ['required', 'array', 'min:1'],
             'ids.*'  => ['integer', 'exists:users,id'],
-            'role'   => ['nullable', Rule::in(self::ROLES)],
+            'role'   => ['nullable', Rule::in(User::availableRoles())],
         ]);
 
         $ids = collect($validated['ids'])->unique()->values();

@@ -2,7 +2,7 @@
 @section('title','Manage Users')
 
 @php
-  $roles   = $roles   ?? ['admin','technician','staff'];
+  $roles   = $roles   ?? \App\Models\User::availableRoles();
   $filters = $filters ?? ['s'=>'','role'=>'','department'=>''];
 
   $CTL = 'h-10 text-sm rounded-lg border border-zinc-300 px-3 focus:border-emerald-500 focus:ring-emerald-500';
@@ -53,7 +53,7 @@
             <select name="role" class="w-full {{ $SEL }}">
               <option value="">บทบาททั้งหมด</option>
               @foreach ($roles as $r)
-                <option value="{{ $r }}" @selected($filters['role']===$r)>{{ ucfirst($r) }}</option>
+                <option value="{{ $r }}" @selected($filters['role']===$r)>{{ \App\Models\User::roleLabels()[$r] ?? ucfirst($r) }}</option>
               @endforeach
             </select>
 
@@ -128,8 +128,9 @@
               <td class="px-3 py-2 truncate max-w-[240px]">{{ $u->email }}</td>
               <td class="px-3 py-2 hidden lg:table-cell truncate max-w-[160px]">{{ $u->department ?: '-' }}</td>
               <td class="px-3 py-2 hidden md:table-cell">
-                <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] leading-5 {{ $u->role==='admin' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-zinc-50 text-zinc-700 border-zinc-300' }}">
-                  {{ ucfirst($u->role) }}
+                @php $isSup = method_exists($u,'isSupervisor') ? $u->isSupervisor() : false; @endphp
+                <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] leading-5 {{ $isSup ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-zinc-50 text-zinc-700 border-zinc-300' }}">
+                  {{ $u->role_label ?? ucfirst($u->role) }}
                 </span>
               </td>
               <td class="px-3 py-2 hidden xl:table-cell text-zinc-700 whitespace-nowrap">

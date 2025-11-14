@@ -19,7 +19,7 @@ class DemoDataSeeder extends Seeder
         // ===== Config =====
         $assetCount   = (int) env('DEMO_ASSET_COUNT', 120);
         $techCount    = (int) env('DEMO_TECH_COUNT', 6);
-        $staffCount   = (int) env('DEMO_STAFF_COUNT', 18);
+    $staffCount   = (int) env('DEMO_MEMBER_COUNT', 18); // legacy STAFF renamed to Member
         $requestCount = (int) env('DEMO_SEED_COUNT', 300);
         $chunkSize    = (int) env('DEMO_CHUNK', 500);
 
@@ -67,7 +67,7 @@ class DemoDataSeeder extends Seeder
             ]
         );
 
-        // ===== Users: Technicians / Staff =====
+    // ===== Users: Technicians / Members (legacy staff) =====
         // ใช้ state เพื่อสุ่ม "ต่อแถว" และให้ department เป็น code จริง
         $techDefault = in_array('IT', $deptCodes, true) ? 'IT' : ($deptCodes[0] ?? null);
 
@@ -79,16 +79,17 @@ class DemoDataSeeder extends Seeder
             ])
             ->create();
 
-        $staffs = User::factory()
+    $staffs = User::factory()
             ->count($staffCount)
             ->state(fn () => [
-                'role'       => 'staff',
+                // legacy 'staff' replaced by 'computer_officer'
+                'role'       => 'computer_officer',
                 'department' => fake()->randomElement($deptCodes),
             ])
             ->create();
 
         $techIds  = $technicians->pluck('id')->all();
-        $staffIds = $staffs->pluck('id')->all();
+    $staffIds = $staffs->pluck('id')->all(); // member ids
 
         // ===== asset_categories (ถ้ามี) =====
         $categoryIds = [];

@@ -13,10 +13,10 @@ class DevAdminSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'dev@example.com'],
             [
-                'name' => 'Dev Admin',
+                'name' => 'ผู้ดูแลระบบ Admin',
                 'email_verified_at' => now(),
                 'password' => Hash::make('Dev12345!'),
-                'role' => 'admin',
+                'role' => \App\Models\User::ROLE_ADMIN,
                 'department' => 'IT',
             ]
         );

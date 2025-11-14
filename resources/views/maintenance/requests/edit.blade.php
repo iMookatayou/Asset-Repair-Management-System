@@ -66,30 +66,79 @@
           <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
 
             @php $field='asset_id'; $assetList = is_iterable($assets ?? null) ? collect($assets) : collect(); @endphp
+              @php
+                $field='asset_id';
+                $assetList = is_iterable($assets ?? null) ? collect($assets) : collect();
+                $assetItems = $assetList->map(function($a){
+                  $code = $a->asset_code ?? '';
+                  $name = $a->name ?? '';
+                  $label = trim(($code ? ($code.' - ') : '').$name);
+                  return ['id' => $a->id, 'display_name' => $label ?: ($code ?: $name)];
+                });
+              @endphp
             <div>
               <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">
                 ทรัพย์สิน
               </label>
-              <x-search-select name="asset_id" id="asset_id"
-                :items="$assetList->map(fn($a)=> (object)['id'=>$a->id,'name'=>($a->asset_code ?? '—').' — '.($a->name ?? '')])"
-                label-field="name" value-field="id"
+              @php
+                $initialAsset = $assetList->firstWhere('id', old('asset_id', $mr->asset_id));
+                $initialAssetLabel = $initialAsset['display_name'] ?? null;
+              @endphp
+              <x-dynamic-search-dropdown
+                name="asset_id"
+                :endpoint="url('/api/search/assets')"
+                label-field="name"
+                value-field="id"
                 :value="old('asset_id', $mr->asset_id)"
-                placeholder="— เลือกทรัพย์สิน —" />
+                :value-label="$initialAssetLabel"
+                placeholder="— เลือกทรัพย์สิน —"
+                search-placeholder="พิมพ์เพื่อค้นหา..." />
               @error($field) <p id="{{ $field }}_error" class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
             </div>
 
-            @php $field='reporter_id'; $userList = is_iterable($users ?? null) ? collect($users) : collect(); @endphp
+            @php $field='department_id'; $deptList = is_iterable($depts ?? null) ? collect($depts) : collect(); @endphp
             <div>
               <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">
-                ผู้แจ้ง (ถ้าทำเรื่องแทน)
+                หน่วยงาน <span class="ml-1 text-xs text-slate-500">(ไม่บังคับ)</span>
               </label>
-              <x-search-select name="reporter_id" id="reporter_id"
-                :items="$userList->map(fn($u)=> (object)['id'=>$u->id,'name'=>$u->name])"
-                label-field="name" value-field="id"
-                :value="old('reporter_id', $mr->reporter_id ?? auth()->id())"
-                placeholder="— ใช้ผู้ใช้งานปัจจุบัน —" />
+              @php
+                // Build display labels for departments: CODE - ThaiName (or English)
+                $deptItems = $deptList->map(function($d){
+                  $code = $d->code ?? '';
+                  $th   = $d->name_th ?? '';
+                  $en   = $d->name_en ?? '';
+                  $name = $th ?: $en ?: '';
+                  $label = trim(($code ? ($code.' - ') : '').$name);
+                  return ['id' => $d->id, 'display_name' => $label ?: ($code ?: $name ?: '—')];
+                });
+              @endphp
+              @php
+                $initialDept = $deptItems->firstWhere('id', old('department_id', $mr->department_id));
+                $initialDeptLabel = $initialDept['display_name'] ?? null;
+              @endphp
+              <x-dynamic-search-dropdown
+                name="department_id"
+                :endpoint="url('/api/meta/departments')"
+                label-field="display"
+                value-field="id"
+                :value="old('department_id', $mr->department_id)"
+                :value-label="$initialDeptLabel"
+                placeholder="— เลือกหน่วยงาน —"
+                search-placeholder="พิมพ์เพื่อค้นหา..." />
               @error($field) <p id="{{ $field }}_error" class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
             </div>
+          </div>
+          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            @php $field='location_text'; @endphp
+            <div class="md:col-span-2">
+              <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">สถานที่ / ตำแหน่ง <span class="ml-1 text-xs text-slate-500">(ไม่บังคับ)</span></label>
+              <input id="{{ $field }}" name="{{ $field }}" type="text"
+                     placeholder="เช่น อาคาร A ชั้น 3 ห้อง 302"
+                     class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-emerald-600 @error($field) border-rose-400 ring-rose-200 @enderror"
+                     value="{{ old($field, $mr->location_text) }}">
+              @error($field) <p id="{{ $field }}_error" class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
+            </div>
+          </div>
           </div>
         </section>
 
@@ -210,6 +259,28 @@
           </div>
         </section>
       </div>
+
+      <section class="pt-4 border-t border-slate-200 mt-6">
+        <h2 class="text-base font-semibold text-slate-900">ผลการซ่อมและค่าใช้จ่าย</h2>
+        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          @php $field='resolution_note'; @endphp
+          <div class="md:col-span-2">
+            <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">ผลการซ่อม <span class="ml-1 text-xs text-slate-500">(ไม่บังคับ)</span></label>
+            <textarea id="{{ $field }}" name="{{ $field }}" rows="3"
+                      class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-emerald-600 @error($field) border-rose-400 ring-rose-200 @enderror">{{ old($field, $mr->resolution_note) }}</textarea>
+            @error($field) <p class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
+          </div>
+
+          @php $field='cost'; @endphp
+          <div>
+            <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">ค่าใช้จ่าย (บาท) <span class="ml-1 text-xs text-slate-500">(ไม่บังคับ)</span></label>
+            <input id="{{ $field }}" name="{{ $field }}" type="number" step="0.01" min="0"
+                   class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-emerald-600 @error($field) border-rose-400 ring-rose-200 @enderror"
+                   value="{{ old($field, $mr->cost) }}">
+            @error($field) <p class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
+          </div>
+        </div>
+      </section>
 
       <div class="mt-6 flex justify-end gap-2">
         <a href="{{ route('maintenance.requests.show', $mr) }}"

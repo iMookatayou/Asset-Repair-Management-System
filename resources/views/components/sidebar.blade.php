@@ -43,25 +43,29 @@
 
   {{-- Repair Queue --}}
   @php $active = $is('repairs.queue'); @endphp
-  <a href="{{ $rl('repairs.queue', url('/repairs/queue')) }}" class="{{ $base }} {{ $active ? $on : $off }}">
-    <span class="{{ $dot($active) }}"></span>
-    <span class="w-8 h-8 flex items-center justify-center">
-      {{-- inbox --}}
-      <svg class="{{ $ico($active) }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5h13.1a2 2 0 0 1 1.93 1.52L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6l1.52-5.48A2 2 0 0 1 5.45 5z"/></svg>
-    </span>
-    <span class="truncate">Repair Queue</span>
-  </a>
+  @can('tech-only')
+    <a href="{{ $rl('repairs.queue', url('/repairs/queue')) }}" class="{{ $base }} {{ $active ? $on : $off }}">
+      <span class="{{ $dot($active) }}"></span>
+      <span class="w-8 h-8 flex items-center justify-center">
+        {{-- inbox --}}
+        <svg class="{{ $ico($active) }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5h13.1a2 2 0 0 1 1.93 1.52L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6l1.52-5.48A2 2 0 0 1 5.45 5z"/></svg>
+      </span>
+      <span class="truncate">Repair Queue</span>
+    </a>
+  @endcan
 
   {{-- My Jobs --}}
   @php $active = $is('repairs.my_jobs'); @endphp
-  <a href="{{ $rl('repairs.my_jobs', url('/repairs/my-jobs')) }}" class="{{ $base }} {{ $active ? $on : $off }}">
-    <span class="{{ $dot($active) }}"></span>
-    <span class="w-8 h-8 flex items-center justify-center">
-      {{-- clipboard-list --}}
-      <svg class="{{ $ico($active) }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="4" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/><rect x="4" y="4" width="16" height="18" rx="2"/></svg>
-    </span>
-    <span class="truncate">My Jobs</span>
-  </a>
+  @can('view-my-jobs')
+    <a href="{{ $rl('repairs.my_jobs', url('/repairs/my-jobs')) }}" class="{{ $base }} {{ $active ? $on : $off }}">
+      <span class="{{ $dot($active) }}"></span>
+      <span class="w-8 h-8 flex items-center justify-center">
+        {{-- clipboard-list --}}
+        <svg class="{{ $ico($active) }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="4" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/><rect x="4" y="4" width="16" height="18" rx="2"/></svg>
+      </span>
+      <span class="truncate">My Jobs</span>
+    </a>
+  @endcan
 
   {{-- Assets --}}
   @php $active = $is('assets.*'); @endphp

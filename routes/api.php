@@ -34,7 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::name('api.')->group(function () {
         Route::apiResource('assets', AssetController::class);
     });
-      
+
     Route::prefix('repair-requests')->name('repair-requests.')->group(function () {
         Route::get('/',                  [MaintenanceRequestController::class, 'index'])->name('index');
         Route::post('/',                 [MaintenanceRequestController::class, 'store'])->name('store');
@@ -68,7 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('meta')->name('meta.')->group(function () {
         Route::get('/departments', [MetaController::class, 'departments'])->name('departments');
         Route::get('/categories',  [MetaController::class, 'categories'])->name('categories');
-        Route::get('/users',       [MetaController::class, 'users'])->name('users'); // ?role=technician|staff
+    Route::get('/users',       [MetaController::class, 'users'])->name('users'); // ?role=it_support|network|developer|computer_officer|supervisor|admin
     });
 
     Route::prefix('search')->name('search.')->group(function () {

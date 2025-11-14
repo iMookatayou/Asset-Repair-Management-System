@@ -31,7 +31,9 @@ class MaintenanceRequestController extends Controller
                     ->select('id','attachable_id','attachable_type','file_id','original_name','is_private','order_column')
                     ->with(['file:id,path,disk,mime,size']),
             ])
-            ->when(($user && !$user->isAdmin() && !$user->isTechnician()), fn($qb) => $qb->where('reporter_id', $user->id))
+            // จำกัดเฉพาะผู้ใช้ระดับ Member (computer_officer) ให้เห็นงานที่ตนแจ้งเท่านั้น
+            // Admin / Supervisor / Technician roles เห็นทั้งหมด
+            ->when(($user && !$user->isAdmin() && !$user->isSupervisor() && !$user->isTechnician()), fn($qb) => $qb->where('reporter_id', $user->id))
             ->when($status, fn ($qb) => $qb->where('status', $status))
             ->when($priority, fn ($qb) => $qb->where('priority', $priority))
             ->when($q, function ($w) use ($q) {
@@ -105,9 +107,23 @@ class MaintenanceRequestController extends Controller
                 ->whereNotIn('status', ['resolved','closed','cancelled'])->count(),
         ];
 
-        // ทีมงานช่าง + admin พร้อมจำนวนงาน
+        // ทีมงาน (หัวหน้า + ช่าง) + ผู้ที่ถูกระบุเป็น technician ในงานที่ยังไม่เสร็จ
+        $activeTechIds = MR::query()
+            ->whereNotIn('status', ['resolved','closed','cancelled'])
+            ->whereNotNull('technician_id')
+            ->pluck('technician_id')
+            ->unique()
+            ->values()
+            ->all();
+
         $team = \App\Models\User::query()
-            ->whereIn('role', ['admin','technician'])
+            ->where(function ($qq) use ($activeTechIds) {
+                $qq->inRoles(\App\Models\User::teamRoles());
+                if (!empty($activeTechIds)) {
+                    $qq->orWhereIn('id', $activeTechIds); // เผื่อมีคนถูก assign ก่อนปรับ role
+                }
+            })
+            ->where('role', '!=', \App\Models\User::ROLE_ADMIN) // ไม่แสดง admin ตาม requirement
             ->withCount([
                 'assignedRequests as active_count' => fn($q) => $q->whereNotIn('status', ['resolved','closed','cancelled']),
                 'assignedRequests as total_count',
@@ -147,9 +163,10 @@ class MaintenanceRequestController extends Controller
             return redirect()->back()->with('toast', \App\Support\Toast::warning('งานนี้ถูกรับไปแล้วโดยคนอื่น', 2000));
         }
 
+        // ไม่ต้องบันทึก note พิเศษ (ใช้ defaultNoteForStatus ใน applyTransition แทน)
         $payload = [
             'status' => 'accepted',
-            'note'   => 'รับงานผ่านหน้า My Jobs',
+            // 'note' => null, // intentionally omitted
         ];
 
         $updated = $this->applyTransition($req, $payload, Auth::id());
@@ -168,15 +185,22 @@ class MaintenanceRequestController extends Controller
             'logs.user:id,name',
         ]);
 
-        return view('maintenance.requests.show', compact('req'));
+        // รายชื่อทีมงาน (หัวหน้า + ช่าง) สำหรับ dropdown เลือกผู้รับผิดชอบ
+        $techUsers = \App\Models\User::query()
+            ->inRoles(\App\Models\User::teamRoles())
+            ->orderBy('name')
+            ->get(['id','name']);
+
+        return view('maintenance.requests.show', compact('req','techUsers'));
     }
 
     public function createPage()
     {
         $assets = \App\Models\Asset::orderBy('asset_code')->get(['id','asset_code','name']);
         $users  = \App\Models\User::orderBy('name')->get(['id','name']);
+        $depts  = \App\Models\Department::orderBy('name_th')->get(['id','code','name_th','name_en']);
 
-        return view('maintenance.requests.create', compact('assets','users'));
+        return view('maintenance.requests.create', compact('assets','users','depts'));
     }
 
     public function index(Request $request)
@@ -185,8 +209,11 @@ class MaintenanceRequestController extends Controller
         $priority = $request->string('priority')->toString();
         $q        = $request->string('q')->toString();
 
+        $user = $request->user();
         $list = MR::query()
             ->with(['asset','reporter:id,name,email','technician:id,name'])
+            // API: บังคับ filter เช่นเดียวกับหน้าเว็บ สำหรับ Member เท่านั้น
+            ->when(($user && !$user->isAdmin() && !$user->isSupervisor() && !$user->isTechnician()), fn($qb) => $qb->where('reporter_id', $user->id))
             ->when($status, fn ($qb) => $qb->where('status', $status))
             ->when($priority, fn ($qb) => $qb->where('priority', $priority))
             ->when($q, function ($w) use ($q) {
@@ -232,8 +259,9 @@ class MaintenanceRequestController extends Controller
             'asset_id'      => ['nullable','integer','exists:assets,id'],
             'priority'      => ['required', Rule::in(['low','medium','high','urgent'])],
             'request_date'  => ['nullable','date'],
-            'reporter_id'   => ['nullable','integer','exists:users,id'],
             'reporter_email'=> ['nullable','email','max:255'],
+            'department_id' => ['nullable','integer','exists:departments,id'],
+            'location_text' => ['nullable','string','max:255'],
             'files.*'       => $fileRules,
         ];
 
@@ -248,7 +276,7 @@ class MaintenanceRequestController extends Controller
             }
             $human = [ 'title' => 'หัวข้อ', 'priority' => 'ระดับความสำคัญ' ];
             $missingHuman = collect($missing)->map(fn($f) => $human[$f] ?? $f)->implode(', ');
-            $optionalList = 'รายละเอียด, ทรัพย์สิน, วันที่แจ้ง, ผู้แจ้งแทน, อีเมลผู้แจ้ง, ไฟล์แนบ (ไม่บังคับ)';
+            $optionalList = 'รายละเอียด, ทรัพย์สิน, วันที่แจ้ง, อีเมลผู้แจ้ง, ไฟล์แนบ (ไม่บังคับ)';
             $msg = $missingHuman
                 ? 'กรุณากรอกให้ครบ: '.$missingHuman.' • ช่องอื่นๆ '.$optionalList
                 : 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
@@ -263,7 +291,8 @@ class MaintenanceRequestController extends Controller
         }
         $data = $validator->validated();
 
-        $actorId = $data['reporter_id'] ?? optional($request->user())->id;
+        // ของใครของมัน: ผู้แจ้งคือผู้ล็อกอินปัจจุบันเท่านั้น
+        $actorId = optional($request->user())->id;
 
         $req = DB::transaction(function () use ($data, $request, $actorId) {
             /** @var \App\Models\MaintenanceRequest $req */
@@ -276,6 +305,8 @@ class MaintenanceRequestController extends Controller
                 'request_date' => $data['request_date'] ?? now(),
                 'reporter_id'  => $actorId,
                 'reporter_email'=> $data['reporter_email'] ?? null,
+                'department_id'=> $data['department_id'] ?? null,
+                'location_text'=> $data['location_text'] ?? null,
             ]);
 
             if (class_exists(\App\Models\MaintenanceLog::class)) {
@@ -360,6 +391,11 @@ class MaintenanceRequestController extends Controller
             'status'       => ['nullable', Rule::in(['pending','accepted','in_progress','on_hold','resolved','closed','cancelled'])],
             'request_date' => ['nullable','date'],
             'reporter_email'=> ['nullable','email','max:255'],
+            'department_id'=> ['nullable','integer','exists:departments,id'],
+            'location_text'=> ['nullable','string','max:255'],
+            'resolution_note'=> ['nullable','string','max:5000'],
+            'cost'         => ['nullable','numeric','min:0','max:99999999.99'],
+            'technician_id'=> ['nullable','integer','exists:users,id'],
             'files.*'      => $fileRules,
         ];
 
@@ -396,6 +432,31 @@ class MaintenanceRequestController extends Controller
             }
 
             $req->save();
+
+            // อัปเดตไทม์ไลน์เมื่อมีการเปลี่ยนสถานะ
+            if (array_key_exists('status', $data) && $originalStatus !== $req->status) {
+                $now = now();
+                switch ($req->status) {
+                    case 'accepted':
+                        if (empty($req->accepted_at)) $req->accepted_at = $now;
+                        if (empty($req->assigned_date)) $req->assigned_date = $now;
+                        break;
+                    case 'in_progress':
+                        if (empty($req->started_at)) $req->started_at = $now;
+                        break;
+                    case 'on_hold':
+                        if (empty($req->on_hold_at)) $req->on_hold_at = $now;
+                        break;
+                    case 'resolved':
+                        if (empty($req->resolved_at)) $req->resolved_at = $now;
+                        break;
+                    case 'closed':
+                        if (empty($req->closed_at)) $req->closed_at = $now;
+                        if (empty($req->completed_date)) $req->completed_date = $now;
+                        break;
+                }
+                $req->save();
+            }
 
 
             // ถ้าสถานะมีการเปลี่ยน ให้บันทึก transition log พร้อม from/to
@@ -576,6 +637,28 @@ class MaintenanceRequestController extends Controller
                 $req->technician_id = $actorId;
                 $technicianChanged = true;
             }
+            // ตั้งค่าไทม์ไลน์ตามสถานะใหม่
+            $now = now();
+            switch ($req->status) {
+                case 'accepted':
+                    if (empty($req->accepted_at)) $req->accepted_at = $now;
+                    if (empty($req->assigned_date)) $req->assigned_date = $now;
+                    break;
+                case 'in_progress':
+                    if (empty($req->started_at)) $req->started_at = $now;
+                    break;
+                case 'on_hold':
+                    if (empty($req->on_hold_at)) $req->on_hold_at = $now;
+                    break;
+                case 'resolved':
+                    if (empty($req->resolved_at)) $req->resolved_at = $now;
+                    break;
+                case 'closed':
+                    if (empty($req->closed_at)) $req->closed_at = $now;
+                    if (empty($req->completed_date)) $req->completed_date = $now;
+                    break;
+            }
+
             $req->save();
 
             if (class_exists(\App\Models\MaintenanceLog::class)) {
@@ -735,13 +818,14 @@ class MaintenanceRequestController extends Controller
 
         $assets = \App\Models\Asset::orderBy('asset_code')->get(['id','asset_code','name']);
         $users  = \App\Models\User::orderBy('name')->get(['id','name']);
+        $depts  = \App\Models\Department::orderBy('name_th')->get(['id','code','name_th','name_en']);
 
         $attachments = $mr->attachments()
             ->select(['id','file_id','original_name','is_private','order_column','attachable_id','attachable_type'])
             ->with(['file:id,path,disk,mime,size'])
             ->get();
 
-        return view('maintenance.requests.edit', compact('mr','assets','users','attachments'));
+        return view('maintenance.requests.edit', compact('mr','assets','users','attachments','depts'));
     }
 
     /**

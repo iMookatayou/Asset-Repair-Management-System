@@ -24,14 +24,14 @@ class UpdateUserRequest extends FormRequest
             'email'      => ['required', 'email', 'max:255', Rule::unique('users','email')->ignore($userId)],
             'password'   => ['nullable', 'confirmed', 'min:8'],
             'department' => ['nullable', 'string', 'max:100'],
-            'role'       => ['required', Rule::in(['admin','technician','staff'])],
+            'role'       => ['required', Rule::in(['admin','technician','computer_officer'])],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'role.in' => 'Role ต้องเป็น admin, technician หรือ staff เท่านั้น',
+            'role.in' => 'Role ต้องเป็น admin, technician หรือ บุคลากร Member เท่านั้น',
         ];
     }
 }

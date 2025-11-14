@@ -14,9 +14,10 @@ class MaintenanceTransitionTest extends TestCase
 
     public function test_can_transition_request_status(): void
     {
-        $tech = User::factory()->create();
+        $tech = User::factory()->create(['role' => User::ROLE_IT_SUPPORT]);
         $req  = MaintenanceRequest::factory()->create([
             'status' => MaintenanceRequest::STATUS_PENDING,
+            'technician_id' => $tech->id, // Assign tech first
         ]);
 
         Sanctum::actingAs($tech);
@@ -24,7 +25,6 @@ class MaintenanceTransitionTest extends TestCase
         // Accept the job
         $resp1 = $this->postJson("/api/repair-requests/{$req->id}/transition", [
             'status' => MaintenanceRequest::STATUS_ACCEPTED,
-            'technician_id' => $tech->id,
         ]);
         $resp1->assertOk();
         $this->assertSame(MaintenanceRequest::STATUS_ACCEPTED, $resp1->json('data.status'));

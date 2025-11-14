@@ -14,17 +14,21 @@ class AuthController extends Controller
 {
     protected function abilitiesFor(User $user): array
     {
-        return match ($user->role) {
-            User::ROLE_ADMIN => [
-                'manage-users','assets.read','assets.write','maintenance.request','maintenance.manage','stats.view'
-            ],
-            User::ROLE_TECHNICIAN => [
-                'assets.read','maintenance.work','stats.view'
-            ],
-            default => [
-                'assets.read','maintenance.request','stats.view'
-            ],
-        };
+        if ($user->isSupervisor()) {
+            return [
+                'manage-users', 'assets.read', 'assets.write', 'maintenance.request', 'maintenance.manage', 'stats.view'
+            ];
+        }
+
+        if ($user->isWorker()) {
+            return [
+                'assets.read', 'maintenance.work', 'stats.view'
+            ];
+        }
+
+        return [
+            'assets.read', 'maintenance.request', 'stats.view'
+        ];
     }
 
     public function login(Request $request)

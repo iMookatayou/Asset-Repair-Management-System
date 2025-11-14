@@ -53,6 +53,11 @@
               <path d="M21 2l-4.2 4.2a4 4 0 01-5.6 5.6L7 16l-3 1 1-3 4.2-4.2a4 4 0 015.6-5.6L21 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             Repair work details <span id="rid">#{{ $req->id }}</span>
+            @if($req->request_no)
+              <span class="ml-2 inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-700" title="Reference number">
+                {{ $req->request_no }}
+              </span>
+            @endif
           </h1>
 
           <div class="flex flex-wrap items-center gap-2">
@@ -110,6 +115,9 @@
           <div>
             <div class="text-slate-500">หมายเลข</div>
             <div class="font-semibold text-slate-900">#{{ $req->id }}</div>
+            @if($req->request_no)
+              <div class="text-slate-600 text-sm mt-0.5">{{ $req->request_no }}</div>
+            @endif
           </div>
           <div>
             <div class="text-slate-500">ผู้แจ้ง</div>
@@ -196,10 +204,16 @@
           </div>
 
           <div id="techWrap">
-            <label for="technician_id" class="mb-1 block text-sm text-slate-700">รหัสช่างผู้รับผิดชอบ (ถ้ามี)</label>
-            <input id="technician_id" type="number" inputmode="numeric" name="technician_id"
-                   class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:ring-emerald-600"
-                   value="{{ old('technician_id', $req->technician_id) }}" placeholder="เช่น 5">
+            <label for="technician_id" class="mb-1 block text-sm text-slate-700">ช่างผู้รับผิดชอบ (ถ้ามี)</label>
+            <x-searchable-select
+              id="technician_id"
+              name="technician_id"
+              placeholder="— ไม่ระบุ —"
+              label-field="name"
+              value-field="id"
+              :items="$techUsers ?? collect()"
+              :value="old('technician_id', $req->technician_id)"
+            />
           </div>
 
           <div class="md:col-span-2">

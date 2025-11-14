@@ -19,7 +19,8 @@ return new class extends Migration
             // เก็บรหัสแผนก (เช่น IT, ER, OPD) แบบ string ไม่ผูก FK
             $table->string('department', 100)->nullable();
 
-            $table->enum('role', ['admin','technician','staff'])->default('staff');
+            // Legacy originally stored enum('admin','technician','staff'). Replaced by flexible string roles.
+            $table->string('role', 50)->default('computer_officer')->comment('Role code (admin, supervisor, it_support, network, developer, computer_officer)');
 
             $table->string('profile_photo_path', 2048)->nullable();
             $table->string('profile_photo_thumb', 2048)->nullable();

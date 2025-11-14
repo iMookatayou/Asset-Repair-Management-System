@@ -24,7 +24,7 @@ class ApiAuthTest extends TestCase
     {
         $user = User::factory()->create([
             'password' => 'secret1234',
-            'role' => User::ROLE_ADMIN,
+            'role' => User::ROLE_SUPERVISOR,
         ]);
 
         $resp = $this->postJson('/api/auth/login', [

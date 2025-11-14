@@ -35,7 +35,7 @@ docker compose exec app php artisan test -q
 
 URLs:
 - App: http://localhost:8080
-- Vite Dev (hot reload): http://localhost:5173
+- Vite Dev (hot reload): http://localhost:5173 (exposed to LAN if host machine IP reachable)
 - DB: host=localhost port=3307 db=arm user=arm pass=arm
 
 Services:
@@ -45,6 +45,33 @@ Notes:
 - Change ports in `docker-compose.yml` if they conflict locally.
 - For production build, run `npm run build` in the node container or GitHub Actions and serve `public/build`.
  - A root `Dockerfile` is provided for building a production PHP-FPM image (multi-stage). The compose stack uses `./.docker/Dockerfile` for local dev.
+ - If you see CORS / `net::ERR_FAILED` when loading `http://localhost:5173` scripts from a different host/IP, remove the file `public/hot` (created by Vite dev) OR configure HMR host below.
+
+### Vite Dev over LAN
+
+To use hot reload from another device (phone/tablet) on the same network:
+
+1. Ensure the dev machine firewall allows inbound port 5173.
+2. Add to `.env` (optional override):
+  ```env
+  VITE_HMR_HOST=192.168.x.y   # your machine LAN IP
+  VITE_HMR_PORT=5173
+  VITE_HMR_PROTOCOL=http
+  ```
+3. Run `npm run dev` (or inside container `docker compose exec node npm run dev`).
+4. Access the app via its LAN address (e.g. `http://192.168.x.y:8080`). The Vite config now exposes HMR on `0.0.0.0` and will serve bundles correctly.
+
+If you switch back to production (no HMR):
+```bash
+rm -f public/hot
+npm run build
+```
+Then reload the app; it will use `public/build` manifest.
+
+Troubleshooting:
+- Stale `public/hot` while not running dev server ⇒ remove it.
+- Multiple “already been used with custom-element” warnings ⇒ harmless (duplicate registration) but ensure only one lottie-player script tag globally.
+- Dropdowns not responding ⇒ confirm `app-*.js` from `public/build` or dev server appears in Network tab and `window.initSearchSelects` is a function.
 ## Run locally without Redis (Windows/macOS/Linux)
 
 Redis is optional. The default `.env` already uses database + file drivers so the app runs even if the PHP Redis extension is missing.

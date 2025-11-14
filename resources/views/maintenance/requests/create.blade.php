@@ -83,32 +83,63 @@
           <p class="text-sm text-slate-500">เลือกทรัพย์สิน และ (ถ้าจำเป็น) ผู้แจ้ง</p>
 
           <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-
-            @php $field='asset_id'; $assetList = is_iterable($assets ?? null) ? collect($assets) : collect(); @endphp
+            @php
+              $field='asset_id';
+              $assetList = is_iterable($assets ?? null) ? collect($assets) : collect();
+              $assetItems = $assetList->map(function($a){
+                $code = $a->asset_code ?? '';
+                $name = $a->name ?? '';
+                $label = trim(($code ? ($code.' - ') : '').$name);
+                return ['id' => $a->id, 'display_name' => $label ?: ($code ?: $name ?: '—')];
+              });
+            @endphp
             <div>
               <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">
                 ทรัพย์สิน <span class="ml-1 text-xs text-slate-500">(ไม่บังคับ)</span>
               </label>
-              <x-search-select name="asset_id" id="asset_id"
-                :items="$assetList->map(fn($a)=> (object)['id'=>$a->id,'name'=>($a->asset_code ?? '—').' — '.($a->name ?? '')])"
-                label-field="name" value-field="id"
-                :value="old('asset_id')"
-                placeholder="— เลือกทรัพย์สิน —" />
+              <x-dynamic-search-dropdown
+                name="asset_id"
+                :endpoint="url('/api/search/assets')"
+                label-field="name"
+                value-field="id"
+                placeholder="— เลือกทรัพย์สิน —"
+                search-placeholder="พิมพ์เพื่อค้นหา..." />
               @error($field) <p id="{{ $field }}_error" class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
             </div>
-
-            @php $field='reporter_id'; $userList = is_iterable($users ?? null) ? collect($users) : collect(); @endphp
+            @php
+              $field='department_id';
+              $deptList = is_iterable($depts ?? null) ? collect($depts) : collect();
+              $deptItems = $deptList->map(function($d){
+                $code = $d->code ?? '';
+                $th   = $d->name_th ?? '';
+                $en   = $d->name_en ?? '';
+                $name = $th ?: $en ?: '';
+                $label = trim(($code ? ($code.' - ') : '').$name);
+                return ['id' => $d->id, 'display_name' => $label ?: ($code ?: $name ?: '—')];
+              });
+            @endphp
             <div>
               <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">
-                ผู้แจ้ง (ถ้าทำเรื่องแทน) <span class="ml-1 text-xs text-slate-500">(ไม่บังคับ)</span>
+                หน่วยงาน <span class="ml-1 text-xs text-slate-500">(ไม่บังคับ)</span>
               </label>
-              <x-search-select name="reporter_id" id="reporter_id"
-                :items="$userList->map(fn($u)=> (object)['id'=>$u->id,'name'=>$u->name])"
-                label-field="name" value-field="id"
-                :value="old('reporter_id', auth()->id())"
-                placeholder="— ใช้ผู้ใช้งานปัจจุบัน —" />
+              <x-dynamic-search-dropdown
+                name="department_id"
+                :endpoint="url('/api/meta/departments')"
+                label-field="display"
+                value-field="id"
+                placeholder="— เลือกหน่วยงาน —"
+                search-placeholder="พิมพ์เพื่อค้นหา..." />
               @error($field) <p id="{{ $field }}_error" class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
             </div>
+          </div>
+          <div class="mt-4">
+            @php $field='location_text'; @endphp
+            <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">สถานที่ / ตำแหน่ง <span class="ml-1 text-xs text-slate-500">(ไม่บังคับ)</span></label>
+            <input id="{{ $field }}" name="{{ $field }}" type="text"
+                   placeholder="เช่น อาคาร A ชั้น 3 ห้อง 302"
+                   class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-emerald-600 @error($field) border-rose-400 ring-rose-200 @enderror"
+                   value="{{ old($field) }}">
+            @error($field) <p id="{{ $field }}_error" class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
           </div>
         </section>
 
