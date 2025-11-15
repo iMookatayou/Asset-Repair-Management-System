@@ -17,9 +17,10 @@
           </p>
         </div>
 
+        {{-- ปุ่ม Back ใช้สไตล์เดียวกับปุ่มด้านล่าง --}}
         <a href="{{ route('maintenance.requests.index') }}"
-           class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50 transition">
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+           class="maint-btn maint-btn-outline">
+          <svg class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Back
@@ -46,7 +47,7 @@
     <form method="POST"
       action="{{ route('maintenance.requests.store') }}"
       enctype="multipart/form-data"
-      class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+      class="maint-form rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
       novalidate
       aria-label="แบบฟอร์มสร้างคำขอซ่อม">
     @csrf
@@ -60,12 +61,12 @@
 
         <div class="mt-6 flex justify-end gap-2">
             <a href="{{ route('maintenance.requests.index') }}"
-            class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50">
-            ยกเลิก
+               class="maint-btn maint-btn-outline">
+              ยกเลิก
             </a>
             <button type="submit"
-                    class="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">
-            บันทึก
+                    class="maint-btn maint-btn-primary">
+              บันทึก
             </button>
         </div>
     </form>
@@ -80,46 +81,125 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
 <style>
-  /* ไม่ให้ wrapper มีกรอบซ้อน เพิ่มเฉพาะกรอบใน control */
-  .ts-wrapper.ts-basic {
+  /* ====== Scope ทั้งหมดให้เฉพาะหน้า Create Maintenance ====== */
+
+  /* ให้ input / select ปกติสูงเท่ากัน + font-size เท่ากัน */
+  .maint-form input[type="text"],
+  .maint-form input[type="date"],
+  .maint-form input[type="number"],
+  .maint-form select:not([multiple]) {
+    height: 44px;
+    border-radius: 0.75rem;
+    box-sizing: border-box;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 0.875rem;       /* text-sm */
+    line-height: 1.25rem;
+  }
+
+  /* ========== ปุ่ม (Back / ยกเลิก / บันทึก) ========== */
+  .maint-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+    height: 44px;              /* ให้เท่ากับช่องกรอก */
+    border-radius: 0.75rem;
+    font-size: 0.875rem;       /* text-sm */
+    line-height: 1.25rem;
+    font-weight: 500;
+    border: 1px solid rgb(148,163,184);
+    background-color: #ffffff;
+    color: rgb(51,65,85);
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    text-decoration: none;
+    gap: 0.25rem;              /* ช่องระหว่าง icon กับ text ให้เท่ากัน */
+  }
+
+  .maint-btn svg {
+    flex-shrink: 0;
+  }
+
+  .maint-btn:hover {
+    background-color: rgb(248,250,252);
+  }
+
+  .maint-btn-outline {
+    /* ใช้ค่า default ด้านบน */
+  }
+
+  .maint-btn-primary {
+    border-color: rgb(5,150,105);
+    background-color: rgb(5,150,105);
+    color: #ffffff;
+  }
+
+  .maint-btn-primary:hover {
+    background-color: rgb(4,120,87);
+    border-color: rgb(4,120,87);
+  }
+
+  /* ========== TomSelect เฉพาะในฟอร์มนี้ ========== */
+  .maint-form .ts-wrapper.ts-basic {
     border: none !important;
     padding: 0 !important;
     box-shadow: none !important;
     background: transparent;
   }
 
-  .ts-wrapper.ts-basic .ts-control {
+  .maint-form .ts-wrapper.ts-basic .ts-control {
     border-radius: 0.75rem;               /* ใกล้ rounded-xl */
     border: 1px solid rgb(226,232,240);   /* slate-200 */
-    padding: 0.5rem 0.75rem;              /* px-3 py-2 */
+    padding: 0 0.75rem;                   /* ให้เหมือน input */
     box-shadow: none;
-    min-height: auto;
+    min-height: 44px;                     /* สูงเท่าช่องกรอกอื่น */
     background-color: #fff;
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;                  /* text-sm */
+    line-height: 1.25rem;
   }
 
   /* เวลามีไอคอนแว่นขยาย ให้ขยับ text เข้าไปหน่อย */
-  .ts-wrapper.ts-basic.ts-with-icon .ts-control {
+  .maint-form .ts-wrapper.ts-basic.ts-with-icon .ts-control {
     padding-left: 2.6rem;                 /* เผื่อที่ให้ไอคอนด้านซ้าย */
   }
 
-  .ts-wrapper.ts-basic .ts-control input {
+  .maint-form .ts-wrapper.ts-basic .ts-control input {
     font-size: 0.875rem;                  /* text-sm */
+    line-height: 1.25rem;
   }
 
-  .ts-wrapper.ts-basic .ts-control.focus {
+  .maint-form .ts-wrapper.ts-basic .ts-control.focus {
     border-color: rgb(5,150,105);         /* emerald-600 */
     box-shadow: none;
   }
 
-  .ts-wrapper.ts-basic .ts-dropdown {
+  .maint-form .ts-wrapper.ts-basic .ts-dropdown {
     border-radius: 0.5rem;
     border-color: rgb(226,232,240);       /* slate-200 */
     box-shadow: 0 10px 15px -3px rgba(15,23,42,0.15);
+    z-index: 50; /* dropdown ล้นก็ยังอยู่บน */
+    font-size: 0.875rem;                  /* text-sm ให้ dropdown text เท่ากันด้วย */
+    line-height: 1.25rem;
   }
 
   /* กรณี error ให้กรอบแดง */
-  .ts-wrapper.ts-basic.ts-error .ts-control {
+  .maint-form .ts-wrapper.ts-basic.ts-error .ts-control {
     border-color: rgb(248,113,113) !important; /* rose-400 */
+  }
+
+  /* ===== FIX: Search box ใน Dropdown ไม่ให้บวม ===== */
+  .maint-form .ts-dropdown .ts-dropdown-input {
+    padding: 0.25rem 0.75rem 0.5rem; /* บีบให้พอดี ไม่สูงเกิน */
+  }
+
+  .maint-form .ts-dropdown .ts-dropdown-input input {
+    height: 32px !important;   /* เตี้ยกว่าฟิลด์หลักเล็กน้อย */
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 </style>
 

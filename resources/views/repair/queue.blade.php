@@ -46,34 +46,17 @@
           </div>
         </div>
 
-  <div class="flex flex-wrap items-center gap-2 text-[13px]">
-          <span class="inline-flex items-center gap-2 rounded-md border border-zinc-400 bg-white px-3 py-1 text-zinc-900">
-            <span class="text-zinc-700">ทั้งหมด</span>
-            <strong class="tabular-nums">{{ $total }}</strong>
-          </span>
-          <span class="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-1 text-amber-800">
-            <span>รอคิว</span>
-            <strong class="tabular-nums">{{ $pending }}</strong>
-          </span>
-          <span class="inline-flex items-center gap-2 rounded-md border border-sky-300 bg-white px-3 py-1 text-sky-800">
-            <span>ระหว่างดำเนินการ</span>
-            <strong class="tabular-nums">{{ $doing }}</strong>
-          </span>
-          <span class="inline-flex items-center gap-2 rounded-md border border-emerald-300 bg-white px-3 py-1 text-emerald-800">
-            <span>เสร็จสิ้น</span>
-            <strong class="tabular-nums">{{ $done }}</strong>
-          </span>
-
-          @can('view-my-jobs')
+        @can('view-my-jobs')
+          <div class="flex items-center">
             <a href="{{ route('repairs.my_jobs') }}"
-               class="ml-2 inline-flex items-center gap-2 rounded-lg border border-indigo-700 bg-indigo-700 px-4 py-2 text-[13px] font-medium text-white hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+               class="inline-flex items-center gap-2 rounded-lg border border-indigo-700 bg-indigo-700 px-4 py-2 text-[13px] font-medium text-white hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-600">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 2h6a2 2 0 0 1 2 2v2h-2V4H9v2H7V4a2 2 0 0 1 2-2zm3 8h4m-8 0h.01M9 16h6m-8 0h.01M5 8h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"/>
               </svg>
               My Jobs
             </a>
-          @endcan
-        </div>
+          </div>
+        @endcan
       </div>
 
       <div class="mt-4 h-px bg-zinc-200"></div>

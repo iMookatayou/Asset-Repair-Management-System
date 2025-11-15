@@ -31,20 +31,18 @@
 @section('content')
   <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
 
-    @if (session('status'))
-      <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700">
-        {{ session('status') }}
-      </div>
-    @endif
+    {{-- ไม่โชว์ session status แล้ว เพราะมี popup อยู่แล้ว --}}
 
     @if ($errors->any())
-      <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
-        <p class="font-medium">มีข้อผิดพลาดในการบันทึกข้อมูล:</p>
-        <ul class="mt-2 list-disc pl-5 text-sm">
-          @foreach ($errors->all() as $e)
-            <li>{{ $e }}</li>
-          @endforeach
-        </ul>
+      <div class="mb-4">
+        <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <p class="font-semibold">มีข้อผิดพลาดในการบันทึกข้อมูล:</p>
+          <ul class="mt-1 list-disc pl-5 space-y-0.5">
+            @foreach ($errors->all() as $e)
+              <li>{{ $e }}</li>
+            @endforeach
+          </ul>
+        </div>
       </div>
     @endif
 
