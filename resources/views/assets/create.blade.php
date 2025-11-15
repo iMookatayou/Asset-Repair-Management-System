@@ -53,8 +53,8 @@
       @csrf
 
       @include('assets._fields', [
-        'asset' => new \App\Models\Asset(),
-        'categories' => $categories ?? null,
+        'asset'       => new \App\Models\Asset(),
+        'categories'  => $categories ?? null,
         'departments' => $departments ?? null
       ])
 
@@ -71,3 +71,68 @@
     </form>
   </div>
 @endsection
+
+{{-- ===========================
+     Tom Select + Styling เหมือนหน้า Create Maintenance
+     ใช้กับ select: #category_id, #department_id
+=========================== --}}
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<style>
+  .ts-wrapper.ts-basic {
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: transparent;
+  }
+
+  .ts-wrapper.ts-basic .ts-control {
+    border-radius: 0.75rem;
+    border: 1px solid rgb(226,232,240);
+    padding: 0.5rem 0.75rem;
+    box-shadow: none;
+    min-height: auto;
+    background-color: #fff;
+  }
+
+  .ts-wrapper.ts-basic.ts-with-icon .ts-control {
+    padding-left: 2.6rem;
+  }
+
+  .ts-wrapper.ts-basic .ts-control input {
+    font-size: 0.875rem;
+  }
+
+  .ts-wrapper.ts-basic .ts-control.focus {
+    border-color: rgb(5,150,105);
+    box-shadow: none;
+  }
+
+  .ts-wrapper.ts-basic .ts-dropdown {
+    border-radius: 0.5rem;
+    border-color: rgb(226,232,240);
+    box-shadow: 0 10px 15px -3px rgba(15,23,42,0.15);
+  }
+
+  .ts-wrapper.ts-basic.ts-error .ts-control {
+    border-color: rgb(248,113,113) !important;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    ['category_id', 'department_id'].forEach(function (id) {
+      if (document.getElementById(id)) {
+        new TomSelect('#' + id, {
+          create: false,
+          allowEmptyOption: true,
+          plugins: ['dropdown_input'],
+          sortField: { field: 'text', direction: 'asc' },
+          maxOptions: 500,
+        });
+      }
+    });
+  });
+</script>
