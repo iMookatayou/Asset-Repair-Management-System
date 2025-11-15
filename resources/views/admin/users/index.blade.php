@@ -14,72 +14,75 @@
 @section('content')
   <div class="pt-3 md:pt-4"></div>
 
-  <div class="mb-4 rounded-2xl border border-zinc-200 bg-white shadow-sm">
-    <div class="px-4 py-3">
-      <div class="flex flex-col gap-3">
-        {{-- Top row: Icon + Title + Button --}}
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex items-start gap-3">
-            <div class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 ring-1 ring-inset ring-indigo-200">
-              <svg class="h-5 w-5 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <rect x="4" y="3" width="16" height="18" rx="2"/>
-                <path d="M8 7h8M8 11h8M8 15h5"/>
-              </svg>
-            </div>
-            <div>
-              <h1 class="text-lg font-semibold text-slate-800">Manage User</h1>
-              <p class="text-sm text-slate-500">เรียกดู กรอง และจัดการผู้ใช้</p>
-            </div>
-          </div>
-
-          <div class="flex shrink-0 items-center">
-            <a href="{{ route('admin.users.create') }}"
-               class="{{ $BTN }} min-w-[108px] justify-center bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              <span class="hidden sm:inline">สร้างผู้ใช้ใหม่</span>
-              <span class="sm:hidden">สร้าง</span>
-            </a>
-          </div>
-        </div>
-
-        {{-- Search/Filter Form --}}
-        <div class="pt-3 border-t border-zinc-200">
-          <form method="GET" class="grid grid-cols-1 gap-2 md:grid-cols-5">
-            <input name="s" value="{{ $filters['s'] }}" placeholder="ค้นหาชื่อ/อีเมล/หน่วยงาน"
-                   class="w-full {{ $CTL }}" />
-
-            <select name="role" class="w-full {{ $SEL }}">
-              <option value="">บทบาททั้งหมด</option>
-              @foreach ($roles as $r)
-                <option value="{{ $r }}" @selected($filters['role']===$r)>{{ \App\Models\User::roleLabels()[$r] ?? ucfirst($r) }}</option>
-              @endforeach
-            </select>
-
-            <input name="department" value="{{ $filters['department'] }}" placeholder="หน่วยงาน"
-                   class="w-full {{ $CTL }}" />
-
-            <div class="col-span-1 flex items-center gap-2">
-              <button class="{{ $BTN }} min-w-[96px] justify-center bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500" title="Filter">
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 5h18M6 12h12M10 19h4"/>
+  {{-- Sticky header + filter --}}
+  <div class="sticky top-[6rem] z-20 bg-slate-50/90 backdrop-blur mb-4">
+    <div class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      <div class="px-4 py-3">
+        <div class="flex flex-col gap-3">
+          {{-- Top row: Icon + Title + Button --}}
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <div class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 ring-1 ring-inset ring-indigo-200">
+                <svg class="h-5 w-5 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="4" y="3" width="16" height="18" rx="2"/>
+                  <path d="M8 7h8M8 11h8M8 15h5"/>
                 </svg>
-                <span class="hidden md:inline">กรอง</span>
-                <span class="md:hidden">ค้นหา</span>
-              </button>
+              </div>
+              <div>
+                <h1 class="text-lg font-semibold text-slate-800">Manage User</h1>
+                <p class="text-sm text-slate-500">เรียกดู กรอง และจัดการผู้ใช้</p>
+              </div>
+            </div>
 
-              <a href="{{ route('admin.users.index') }}"
-                 class="{{ $BTN }} min-w-[88px] justify-center border border-zinc-300 text-zinc-700 hover:bg-zinc-50 focus:ring-emerald-500"
-                 title="Reset">
+            <div class="flex shrink-0 items-center">
+              <a href="{{ route('admin.users.create') }}"
+                 class="{{ $BTN }} min-w-[108px] justify-center bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 12a9 9 0 1 0 3-6.7M3 5v5h5"/>
+                  <path d="M12 5v14M5 12h14"/>
                 </svg>
-                <span class="hidden md:inline">ล้างค่า</span>
-                <span class="md:hidden">ล้าง</span>
+                <span class="hidden sm:inline">สร้างผู้ใช้ใหม่</span>
+                <span class="sm:hidden">สร้าง</span>
               </a>
             </div>
-          </form>
+          </div>
+
+          {{-- Search/Filter Form --}}
+          <div class="pt-3 border-t border-zinc-200">
+            <form method="GET" class="grid grid-cols-1 gap-2 md:grid-cols-5">
+              <input name="s" value="{{ $filters['s'] }}" placeholder="ค้นหาชื่อ/อีเมล/หน่วยงาน"
+                     class="w-full {{ $CTL }}" />
+
+              <select name="role" class="w-full {{ $SEL }}">
+                <option value="">บทบาททั้งหมด</option>
+                @foreach ($roles as $r)
+                  <option value="{{ $r }}" @selected($filters['role']===$r)>{{ \App\Models\User::roleLabels()[$r] ?? ucfirst($r) }}</option>
+                @endforeach
+              </select>
+
+              <input name="department" value="{{ $filters['department'] }}" placeholder="หน่วยงาน"
+                     class="w-full {{ $CTL }}" />
+
+              <div class="col-span-1 flex items-center gap-2">
+                <button class="{{ $BTN }} min-w-[96px] justify-center bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500" title="Filter">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 5h18M6 12h12M10 19h4"/>
+                  </svg>
+                  <span class="hidden md:inline">กรอง</span>
+                  <span class="md:hidden">ค้นหา</span>
+                </button>
+
+                <a href="{{ route('admin.users.index') }}"
+                   class="{{ $BTN }} min-w-[88px] justify-center border border-zinc-300 text-zinc-700 hover:bg-zinc-50 focus:ring-emerald-500"
+                   title="Reset">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 3-6.7M3 5v5h5"/>
+                  </svg>
+                  <span class="hidden md:inline">ล้างค่า</span>
+                  <span class="md:hidden">ล้าง</span>
+                </a>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

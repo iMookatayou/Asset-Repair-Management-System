@@ -150,7 +150,7 @@
 
     /* ===== Global team tab motion ===== */
     @keyframes tabNudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-2px); } }
-    #teamTab { cursor: pointer; }
+    #teamTab { cursor: pointer; right: .8rem; }
     #teamTab .tri { transition: transform .18s ease, border-color .18s ease; }
     #teamTab:hover .tri { transform: translateX(-1px); }
     #teamTab .tab-nudge { animation: tabNudge 1.8s ease-in-out infinite; }
@@ -334,88 +334,125 @@
 
     {{-- Triangle Tab Trigger --}}
     @if($globalTeam->count())
-      <button id="teamTab" type="button" onclick="toggleTeamDrawer()" aria-label="เปิด/ปิดภาระงานทีม" aria-expanded="false"
-        class="fixed top-1/2 right-0 -translate-y-1/2 z-[2202] group select-none">
-        <!-- Closed state: point inward (left) -->
-        <span id="teamTabTriClosed" class="tri tri-closed inline-block w-0 h-0 border-y-[12px] border-y-transparent border-r-[18px] border-r-indigo-600 group-hover:border-r-indigo-700 tab-nudge"></span>
-        <!-- Open state: point outward (right) -->
-        <span id="teamTabTriOpen" class="tri tri-open inline-block w-0 h-0 border-y-[12px] border-y-transparent border-l-[18px] border-l-indigo-600 group-hover:border-l-indigo-700 hidden"></span>
-      </button>
+      <button id="teamTab"
+        class="fixed top-1/2 right-2 -translate-y-1/2 z-[2202] group select-none
+                w-10 h-10 bg-indigo-600 text-white rounded-full shadow-lg
+                flex items-center justify-center hover:bg-indigo-700 transition"
+        onclick="toggleTeamDrawer()"
+        aria-expanded="false">
 
-      {{-- Overlay --}}
-  <div id="teamOverlay" class="fixed inset-0 bg-black/40 z-[2200] hidden" onclick="closeTeamDrawer()" aria-hidden="true"></div>
+        <!-- ไอคอนปิด: ลูกศรชี้ซ้าย -->
+        <svg id="teamTabIconClosed" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
+        </svg>
 
-      {{-- Drawer --}}
-      <aside id="teamDrawer" class="fixed top-0 right-0 h-full w-[360px] max-w-[90vw] bg-white shadow-xl z-[2201] transform translate-x-full transition-transform duration-300" aria-label="ภาระงานทีม">
-        <div class="h-full flex flex-col">
-          <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <svg class="h-5 w-5 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                <path d="M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
-                <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
-              </svg>
-              <h3 class="text-sm font-semibold text-gray-900">Technician Jobs</h3>
+        <!-- ไอคอนเปิด: ลูกศรชี้ขวา -->
+        <svg id="teamTabIconOpen" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6"/>
+        </svg>
+    </button>
+
+    {{-- Overlay --}}
+    <div id="teamOverlay" class="fixed inset-0 bg-black/40 z-[2200] hidden" onclick="closeTeamDrawer()" aria-hidden="true"></div>
+
+        {{-- Drawer --}}
+        <aside id="teamDrawer" class="fixed top-0 right-0 h-full w-[360px] max-w-[90vw] bg-white shadow-xl z-[2201] transform translate-x-full transition-transform duration-300" aria-label="ภาระงานทีม">
+            <div class="h-full flex flex-col">
+            <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                <h3 class="text-sm font-semibold text-gray-900">Technician</h3>
+                </div>
+                <button type="button" onclick="closeTeamDrawer()" class="p-1.5 rounded-md hover:bg-gray-100" aria-label="ปิด">
+                <svg class="h-5 w-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
-            <button type="button" onclick="closeTeamDrawer()" class="p-1.5 rounded-md hover:bg-gray-100" aria-label="ปิด">
-              <svg class="h-5 w-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-          </div>
-          <div class="p-3 overflow-y-auto flex-1" id="teamDrawerScroll">
-            <div class="space-y-2">
-              @foreach($globalTeam as $member)
-                @php
-                  $initial = \Illuminate\Support\Str::of($member->name)->substr(0,1)->upper();
-                  $roleClasses = method_exists($member,'isSupervisor') && $member->isSupervisor()
-                    ? 'bg-indigo-100 text-indigo-700 ring-indigo-200'
-                    : 'bg-emerald-100 text-emerald-700 ring-emerald-200';
-                @endphp
-                <a href="{{ route('repairs.my_jobs', array_merge(request()->except('page'), ['filter'=>'all','tech'=>$member->id])) }}" class="group flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                  <div class="flex items-center gap-3">
-                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ring-1 {{ $roleClasses }}">{{ $initial }}</span>
-                    <div>
-                      <div class="text-sm font-medium text-gray-900 group-hover:text-indigo-700">{{ $member->name }}</div>
-                      <div class="text-xs text-gray-500">บทบาท: {{ $member->role_label ?? ucfirst($member->role) }}</div>
+            <div class="p-3 overflow-y-auto flex-1" id="teamDrawerScroll">
+                <div class="space-y-2">
+                @foreach($globalTeam as $member)
+                    @php
+                    $initial = \Illuminate\Support\Str::of($member->name)->substr(0,1)->upper();
+                    $roleClasses = method_exists($member,'isSupervisor') && $member->isSupervisor()
+                        ? 'bg-indigo-100 text-indigo-700 ring-indigo-200'
+                        : 'bg-emerald-100 text-emerald-700 ring-emerald-200';
+                    @endphp
+                    <a href="{{ route('repairs.my_jobs', array_merge(request()->except('page'), ['filter'=>'all','tech'=>$member->id])) }}" class="group flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center gap-3">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ring-1 {{ $roleClasses }}">{{ $initial }}</span>
+                        <div>
+                        <div class="text-sm font-medium text-gray-900 group-hover:text-indigo-700">{{ $member->name }}</div>
+                        <div class="text-xs text-gray-500">บทบาท: {{ $member->role_label ?? ucfirst($member->role) }}</div>
+                        </div>
                     </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded">{{ $member->active_count ?? 0 }}</span>
-                    <svg class="h-4 w-4 text-gray-500 group-hover:text-indigo-700" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
-                  </div>
-                </a>
-              @endforeach
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded">{{ $member->active_count ?? 0 }}</span>
+                        <svg class="h-4 w-4 text-gray-500 group-hover:text-indigo-700" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+                    </div>
+                    </a>
+                @endforeach
+                </div>
             </div>
-          </div>
-          <!-- footer removed per request -->
-        </div>
-      </aside>
+            <!-- footer removed per request -->
+            </div>
+        </aside>
+        @endif
     @endif
-  @endif
 
-  <script>
-    // Global Team Drawer logic (shared across pages)
-    let teamDrawerOpen = false;
+    <script>
+        // Global Team Drawer logic (shared across pages)
+        let teamDrawerOpen = false;
+
     function toggleTeamDrawer(){
-      if(teamDrawerOpen) closeTeamDrawer(); else openTeamDrawer();
+    if (teamDrawerOpen) {
+        closeTeamDrawer();
+    } else {
+        openTeamDrawer();
     }
+    }
+
     function openTeamDrawer(){
-      const d = document.getElementById('teamDrawer');
-      const o = document.getElementById('teamOverlay');
-      const tab = document.getElementById('teamTab');
-      const triC = document.getElementById('teamTabTriClosed');
-      const triO = document.getElementById('teamTabTriOpen');
-      if(!d||!o) return; d.classList.remove('translate-x-full'); o.classList.remove('hidden'); teamDrawerOpen = true;
-      if(tab){ tab.setAttribute('aria-expanded','true'); }
-      if(triC && triO){ triC.classList.add('hidden'); triO.classList.remove('hidden'); }
+    const d   = document.getElementById('teamDrawer');
+    const o   = document.getElementById('teamOverlay');
+    const tab = document.getElementById('teamTab');
+    const iconC = document.getElementById('teamTabIconClosed');
+    const iconO = document.getElementById('teamTabIconOpen');
+
+    if (!d || !o) return;
+
+    d.classList.remove('translate-x-full');
+    o.classList.remove('hidden');
+
+    teamDrawerOpen = true;
+
+    if (tab) {
+        tab.setAttribute('aria-expanded', 'true');
     }
+    if (iconC && iconO) {
+        iconC.classList.add('hidden');
+        iconO.classList.remove('hidden');
+    }
+    }
+
     function closeTeamDrawer(){
-      const d = document.getElementById('teamDrawer');
-      const o = document.getElementById('teamOverlay');
-      const tab = document.getElementById('teamTab');
-      const triC = document.getElementById('teamTabTriClosed');
-      const triO = document.getElementById('teamTabTriOpen');
-      if(!d||!o) return; d.classList.add('translate-x-full'); o.classList.add('hidden'); teamDrawerOpen = false;
-      if(tab){ tab.setAttribute('aria-expanded','false'); }
-      if(triC && triO){ triC.classList.remove('hidden'); triO.classList.add('hidden'); }
+    const d   = document.getElementById('teamDrawer');
+    const o   = document.getElementById('teamOverlay');
+    const tab = document.getElementById('teamTab');
+    const iconC = document.getElementById('teamTabIconClosed');
+    const iconO = document.getElementById('teamTabIconOpen');
+
+    if (!d || !o) return;
+
+    d.classList.add('translate-x-full');
+    o.classList.add('hidden');
+
+    teamDrawerOpen = false;
+
+    if (tab) {
+        tab.setAttribute('aria-expanded', 'false');
+    }
+    if (iconC && iconO) {
+        iconO.classList.add('hidden');
+        iconC.classList.remove('hidden');
+    }
     }
     // Swipe gestures (open from right edge, close by swiping right)
     let tdStartX=null, tdStartY=null;

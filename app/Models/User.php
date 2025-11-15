@@ -49,18 +49,43 @@ class User extends Authenticatable
     }
 
     // เพื่อให้โค้ดเดิมทำงานต่อได้: map isAdmin/isTechnician ไปยังบทบาทใหม่
-    public function isAdmin(): bool      { return $this->role === self::ROLE_ADMIN; }
-    public function isTechnician(): bool { return in_array($this->role, [
-        self::ROLE_IT_SUPPORT,
-        self::ROLE_NETWORK,
-        self::ROLE_DEVELOPER,
-    ], true); }
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isTechnician(): bool
+    {
+        return in_array($this->role, [
+            self::ROLE_IT_SUPPORT,
+            self::ROLE_NETWORK,
+            self::ROLE_DEVELOPER,
+        ], true);
+    }
+
     // Legacy compatibility method (staff removed); always false
-    public function isStaff(): bool      { return false; }
+    public function isStaff(): bool
+    {
+        return false;
+    }
+
+    // === เพิ่มอันนี้ ===
+    // สมาชิกธรรมดา (บุคลากร Member)
+    public function isMember(): bool
+    {
+        return $this->role === self::ROLE_COMPUTER_OFFICER;
+    }
 
     // กลุ่มสิทธิ์แบบอ่านง่าย
-    public function isSupervisor(): bool { return $this->role === self::ROLE_SUPERVISOR; }
-    public function isWorker(): bool     { return $this->isTechnician(); }
+    public function isSupervisor(): bool
+    {
+        return $this->role === self::ROLE_SUPERVISOR;
+    }
+
+    public function isWorker(): bool
+    {
+        return $this->isTechnician();
+    }
 
     // รายชื่อบทบาทที่ระบบรองรับ (ใช้ในฟอร์มหรือฟิลเตอร์)
     public static function availableRoles(): array

@@ -26,38 +26,41 @@
 
   <div class="max-w-5xl mx-auto py-6 space-y-6">
 
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="px-5 py-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div class="flex items-center gap-3">
-          <div class="size-10 grid place-items-center rounded-xl bg-emerald-50 text-emerald-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"
-                    d="M6 8h12M6 12h8M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v11l-3.5 3.5H6a2 2 0 0 1-2-2V5z"/>
-            </svg>
+    {{-- Sticky header + search --}}
+    <div class="sticky top-[6rem] z-20 bg-slate-50/90 backdrop-blur">
+      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="px-5 py-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div class="flex items-center gap-3">
+            <div class="size-10 grid place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+              <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"
+                      d="M6 8h12M6 12h8M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v11l-3.5 3.5H6a2 2 0 0 1-2-2V5z"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-xl font-semibold text-slate-900">Community Chat</h1>
+              <p class="text-sm text-slate-600">ถาม-ตอบ แชร์ทริก แลกเปลี่ยนประสบการณ์กันได้ที่นี่</p>
+            </div>
           </div>
-          <div>
-            <h1 class="text-xl font-semibold text-slate-900">Community Chat</h1>
-            <p class="text-sm text-slate-600">ถาม-ตอบ แชร์ทริก แลกเปลี่ยนประสบการณ์กันได้ที่นี่</p>
-          </div>
-        </div>
 
-        <form method="GET" action="{{ route('chat.index') }}"
-              class="w-full md:w-[440px] flex items-center rounded-xl border border-slate-300 bg-white shadow-sm focus-within:ring-2 focus-within:ring-emerald-500">
-          <input
-            type="text"
-            name="q"
-            value="{{ request('q','') }}"
-            placeholder="ค้นหากระทู้…"
-            class="flex-1 px-3 h-11 text-sm bg-transparent outline-none border-0 rounded-l-xl"
-            aria-label="Search threads"
-          >
-          <button type="submit"
-                  class="h-11 px-4 text-sm font-medium text-white bg-emerald-700 rounded-r-xl hover:bg-emerald-800 active:translate-y-[0.5px]">
-            Search
-          </button>
-        </form>
+          <form method="GET" action="{{ route('chat.index') }}"
+                class="w-full md:w-[440px] flex items-center rounded-xl border border-slate-300 bg-white shadow-sm focus-within:ring-2 focus-within:ring-emerald-500">
+            <input
+              type="text"
+              name="q"
+              value="{{ request('q','') }}"
+              placeholder="ค้นหากระทู้…"
+              class="flex-1 px-3 h-11 text-sm bg-transparent outline-none border-0 rounded-l-xl"
+              aria-label="Search threads"
+            >
+            <button type="submit"
+                    class="h-11 px-4 text-sm font-medium text-white bg-emerald-700 rounded-r-xl hover:bg-emerald-800 active:translate-y-[0.5px]">
+              Search
+            </button>
+          </form>
+        </div>
+        <div class="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
       </div>
-      <div class="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
     </div>
 
     <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">

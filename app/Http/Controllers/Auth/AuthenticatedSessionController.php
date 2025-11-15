@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -30,10 +29,21 @@ class AuthenticatedSessionController extends Controller
                 'timeout'  => 2800,
             ]);
 
+            // ถ้าเป็น API / testing → ตอบ 204 เหมือนเดิม
             if ($request->expectsJson() || app()->environment('testing')) {
                 return response()->noContent();
             }
-            return redirect()->intended('/dashboard');
+
+            $user = $request->user();
+
+            // === เงื่อนไข redirect ===
+            // ถ้าเป็น Member (computer_officer) → dashboard ปกติ
+            if (method_exists($user, 'isMember') && $user->isMember()) {
+                return redirect()->intended('/dashboard');
+            }
+
+            // ทุกตำแหน่งอื่น → ไปหน้า My Jobs
+            return redirect('/repair/my-jobs');
 
         } catch (ValidationException $e) {
             return back()
@@ -53,9 +63,11 @@ class AuthenticatedSessionController extends Controller
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         if ($request->expectsJson() || app()->environment('testing')) {
             return response()->noContent();
         }
+
         return redirect('/')->with('toast', [
             'type'     => 'info',
             'message'  => 'Logout successful',

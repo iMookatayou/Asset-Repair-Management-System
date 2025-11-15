@@ -46,98 +46,102 @@
 <div class="pt-3 md:pt-4"></div>
 
 <div class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-5">
-  <div class="rounded-lg border border-zinc-300 bg-white">
-    <div class="px-5 py-4">
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div class="flex items-start gap-3">
-          <div class="grid h-9 w-9 place-items-center rounded-md bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200">
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M6 11h12M8 15h8m-6 4h4"/>
-            </svg>
-          </div>
-          <div>
-            <h1 class="text-[17px] font-semibold text-zinc-900">Maintenance Requests</h1>
-            <p class="text-[13px] text-zinc-600">รายการคำขอบำรุงรักษา • ค้นหา กรอง และตรวจทานคำขอ</p>
-          </div>
-        </div>
-
-        <div class="flex shrink-0 items-center">
-          <a href="{{ route('maintenance.requests.create') }}"
-             class="inline-flex items-center gap-2 rounded-md border border-emerald-700 bg-emerald-700 px-4 py-2 text-[13px] font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
-             onclick="showLoader()">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
-            </svg>
-            สร้างคำขอใหม่
-          </a>
-        </div>
-      </div>
-
-      <div class="mt-4 h-px bg-zinc-200"></div>
-
-      <form method="GET" action="{{ route('maintenance.requests.index') }}"
-            class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12" onsubmit="showLoader()">
-
-        <div class="md:col-span-6 min-w-0">
-          <label for="q" class="mb-1 block text-[12px] text-zinc-600">คำค้นหา</label>
-          <div class="relative">
-            <input id="q" type="text" name="q" value="{{ $q }}"
-                   placeholder="เช่น ชื่อเรื่อง, รายละเอียด, อีเมลผู้แจ้ง"
-                   class="w-full rounded-md border border-zinc-300 pl-12 pr-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-600">
-            <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-zinc-400">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
+  {{-- ===== Sticky Header + Filter Card ===== --}}
+  <div class="sticky top-[6rem] z-20 bg-slate-50/90 backdrop-blur">
+    <div class="rounded-lg border border-zinc-300 bg-white">
+      <div class="px-5 py-4">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="flex items-start gap-3">
+            <div class="grid h-9 w-9 place-items-center rounded-md bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M6 11h12M8 15h8m-6 4h4"/>
               </svg>
-            </span>
+            </div>
+            <div>
+              <h1 class="text-[17px] font-semibold text-zinc-900">Maintenance Requests</h1>
+              <p class="text-[13px] text-zinc-600">รายการคำขอบำรุงรักษา • ค้นหา กรอง และตรวจทานคำขอ</p>
+            </div>
+          </div>
+
+          <div class="flex shrink-0 items-center">
+            <a href="{{ route('maintenance.requests.create') }}"
+               class="inline-flex items-center gap-2 rounded-md border border-emerald-700 bg-emerald-700 px-4 py-2 text-[13px] font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+               onclick="showLoader()">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+              </svg>
+              สร้างคำขอใหม่
+            </a>
           </div>
         </div>
 
-        <div class="md:col-span-3">
-          <label for="status" class="mb-1 block text-[12px] text-zinc-600">สถานะ</label>
-          <select id="status" name="status"
-                  class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
-            <option value="">ทั้งหมด</option>
-            @foreach ([
-              'pending'     => 'รอคิว',
-              'accepted'    => 'รับงานแล้ว',
-              'in_progress' => 'ระหว่างดำเนินการ',
-              'on_hold'     => 'พักไว้',
-              'resolved'    => 'แก้ไขแล้ว',
-              'closed'      => 'ปิดงาน',
-              'cancelled'   => 'ยกเลิก',
-            ] as $k=>$v)
-              <option value="{{ $k }}" @selected($status===$k)>{{ $v }}</option>
-            @endforeach
-          </select>
-        </div>
+        <div class="mt-4 h-px bg-zinc-200"></div>
 
-        <div class="md:col-span-2">
-          <label for="priority" class="mb-1 block text-[12px] text-zinc-600">ความสำคัญ</label>
-          <select id="priority" name="priority"
-                  class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
-            <option value="">ทั้งหมด</option>
-            @foreach (['low'=>'ต่ำ','medium'=>'ปานกลาง','high'=>'สูง','urgent'=>'เร่งด่วน'] as $k=>$v)
-              <option value="{{ $k }}" @selected($priority===$k)>{{ $v }}</option>
-            @endforeach
-          </select>
-        </div>
+        <form method="GET" action="{{ route('maintenance.requests.index') }}"
+              class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12" onsubmit="showLoader()">
 
-        <div class="md:col-span-1 flex items-end gap-2">
-          <button type="submit"
-                  class="rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800">
-            กรองข้อมูล
-          </button>
-          @if(request()->hasAny(['q','status','priority']))
-            <a href="{{ route('maintenance.requests.index') }}"
-               class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50">
-              ล้างค่า
-            </a>
-          @endif
-        </div>
-      </form>
+          <div class="md:col-span-6 min-w-0">
+            <label for="q" class="mb-1 block text-[12px] text-zinc-600">คำค้นหา</label>
+            <div class="relative">
+              <input id="q" type="text" name="q" value="{{ $q }}"
+                     placeholder="เช่น ชื่อเรื่อง, รายละเอียด, อีเมลผู้แจ้ง"
+                     class="w-full rounded-md border border-zinc-300 pl-12 pr-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+              <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-zinc-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </span>
+            </div>
+          </div>
+
+          <div class="md:col-span-3">
+            <label for="status" class="mb-1 block text-[12px] text-zinc-600">สถานะ</label>
+            <select id="status" name="status"
+                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+              <option value="">ทั้งหมด</option>
+              @foreach ([
+                'pending'     => 'รอคิว',
+                'accepted'    => 'รับงานแล้ว',
+                'in_progress' => 'ระหว่างดำเนินการ',
+                'on_hold'     => 'พักไว้',
+                'resolved'    => 'แก้ไขแล้ว',
+                'closed'      => 'ปิดงาน',
+                'cancelled'   => 'ยกเลิก',
+              ] as $k=>$v)
+                <option value="{{ $k }}" @selected($status===$k)>{{ $v }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label for="priority" class="mb-1 block text-[12px] text-zinc-600">ความสำคัญ</label>
+            <select id="priority" name="priority"
+                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+              <option value="">ทั้งหมด</option>
+              @foreach (['low'=>'ต่ำ','medium'=>'ปานกลาง','high'=>'สูง','urgent'=>'เร่งด่วน'] as $k=>$v)
+                <option value="{{ $k }}" @selected($priority===$k)>{{ $v }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="md:col-span-1 flex items-end gap-2">
+            <button type="submit"
+                    class="rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800">
+              ค้นหา
+            </button>
+            @if(request()->hasAny(['q','status','priority']))
+              <a href="{{ route('maintenance.requests.index') }}"
+                 class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50">
+                ล้างค่า
+              </a>
+            @endif
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
+  {{-- ===== Table Card ===== --}}
   <div class="rounded-lg border border-zinc-300 bg-white overflow-hidden">
     <div class="relative overflow-x-auto">
       <table class="min-w-full text-sm">

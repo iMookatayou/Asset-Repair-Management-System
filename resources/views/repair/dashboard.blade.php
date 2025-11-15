@@ -93,13 +93,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M3 4h18M6 8h12M9 12h6M11 16h2"/>
                 </svg>
-                Filters
+                กรอง
               </button>
-
-              <a href="{{ route('repair.dashboard') }}"
-                 class="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50">
-                Refresh
-              </a>
             </div>
           </div>
           {{-- Quick row removed in favor of dropdown --}}
@@ -119,10 +114,10 @@
                 <label for="f_status" class="block text-xs font-medium text-zinc-700">Status</label>
                 <select id="f_status" name="status"
                         class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
-                  <option value="">All</option>
-                  <option value="pending"     {{ request('status')==='pending'?'selected':'' }}>Pending</option>
-                  <option value="in_progress" {{ request('status')==='in_progress'?'selected':'' }}>In progress</option>
-                  <option value="completed"   {{ request('status')==='completed'?'selected':'' }}>Completed</option>
+                  <option value="">ทั้งหมด</option>
+                  <option value="pending"     {{ request('status')==='pending'?'selected':'' }}>รอดำเนินการ</option>
+                  <option value="in_progress" {{ request('status')==='in_progress'?'selected':'' }}>กำลังดำเนินการ</option>
+                  <option value="completed"   {{ request('status')==='completed'?'selected':'' }}>เสร็จสิ้น</option>
                 </select>
               </div>
 
@@ -140,11 +135,11 @@
 
               <div class="md:col-span-2 flex items-end gap-2">
                 <button class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500/30">
-                  Apply
+                  ค้นหา
                 </button>
                 <a href="{{ route('repair.dashboard') }}"
                    class="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
-                  Reset
+                  คืนค่า
                 </a>
               </div>
             </div>

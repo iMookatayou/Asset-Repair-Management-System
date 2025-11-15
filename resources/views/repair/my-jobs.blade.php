@@ -16,19 +16,19 @@
     'all' => 'ทั้งหมด',
   ];
   $human = fn($s) => [
-    'pending' => 'รอดำเนินการ',
-    'accepted' => 'รับงานแล้ว',
+    'pending'     => 'รอดำเนินการ',
+    'accepted'    => 'รับงานแล้ว',
     'in_progress' => 'กำลังดำเนินการ',
-    'on_hold' => 'พักไว้ชั่วคราว',
-    'resolved' => 'แก้ไขเสร็จสิ้น',
-    'closed' => 'ปิดงาน',
+    'on_hold'     => 'พักไว้ชั่วคราว',
+    'resolved'    => 'แก้ไขเสร็จสิ้น',
+    'closed'      => 'ปิดงาน',
   ][$s] ?? Str::of($s)->replace('_',' ')->title();
 @endphp
 
 <div class="container mx-auto px-4 py-4 max-w-[1600px]" id="myJobsContainer">
-  {{-- Header + Stats + Search/Filter in a single card --}}
-  <div class="mb-4">
-    <div class="bg-white rounded-lg border border-gray-200 p-3 lg:p-4">
+  {{-- Header + Stats + Search/Filter in a single sticky card --}}
+  <div class="mb-4 sticky top-[5.5rem] z-20 bg-slate-50/90 backdrop-blur">
+    <div class="bg-white rounded-lg border border-gray-200 p-3 lg:p-4 shadow-sm">
       <div class="flex flex-col gap-3">
         {{-- Top row: Icon + Title + Stats --}}
         <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
@@ -139,20 +139,20 @@
             $canAccept = !$r->technician_id && in_array($r->status, ['pending','accepted']);
 
             $priorityClasses = [
-              'low' => 'bg-green-100 text-green-800 border-green-200',
+              'low'    => 'bg-green-100 text-green-800 border-green-200',
               'medium' => 'bg-blue-100 text-blue-800 border-blue-200',
-              'high' => 'bg-amber-100 text-amber-800 border-amber-200',
+              'high'   => 'bg-amber-100 text-amber-800 border-amber-200',
               'urgent' => 'bg-red-100 text-red-800 border-red-200',
             ];
             $priorityClass = $priorityClasses[strtolower($r->priority ?? 'medium')] ?? $priorityClasses['medium'];
 
             $statusClasses = [
-              'pending' => 'bg-amber-100 text-amber-800 border-amber-200',
-              'accepted' => 'bg-blue-100 text-blue-800 border-blue-200',
+              'pending'     => 'bg-amber-100 text-amber-800 border-amber-200',
+              'accepted'    => 'bg-blue-100 text-blue-800 border-blue-200',
               'in_progress' => 'bg-indigo-100 text-indigo-800 border-indigo-200',
-              'on_hold' => 'bg-gray-100 text-gray-800 border-gray-200',
-              'resolved' => 'bg-green-100 text-green-800 border-green-200',
-              'closed' => 'bg-gray-200 text-gray-700 border-gray-300',
+              'on_hold'     => 'bg-gray-100 text-gray-800 border-gray-200',
+              'resolved'    => 'bg-green-100 text-green-800 border-green-200',
+              'closed'      => 'bg-gray-200 text-gray-700 border-gray-300',
             ];
             $statusClass = $statusClasses[$r->status] ?? $statusClasses['pending'];
           @endphp
@@ -231,8 +231,6 @@
 let refreshInterval;
 
 function refreshMyJobs() {
-  const params = new URLSearchParams(window.location.search);
-
   fetch(window.location.href, {
     headers: {
       'X-Requested-With': 'XMLHttpRequest'
@@ -250,7 +248,6 @@ function refreshMyJobs() {
       const currentStat = document.getElementById(id);
       if (newStat && currentStat && newStat.textContent !== currentStat.textContent) {
         currentStat.textContent = newStat.textContent;
-        // Flash animation
         currentStat.classList.add('animate-pulse');
         setTimeout(() => currentStat.classList.remove('animate-pulse'), 1000);
       }
@@ -266,7 +263,6 @@ function refreshMyJobs() {
       if (currentRows !== newRows || newTbody.innerHTML !== currentTbody.innerHTML) {
         currentTbody.innerHTML = newTbody.innerHTML;
 
-        // Show notification if new jobs added
         if (newRows > currentRows && currentRows > 0) {
           showNotification('มีงานใหม่เข้ามา!');
         }
@@ -277,7 +273,6 @@ function refreshMyJobs() {
 }
 
 function showNotification(message) {
-  // Simple toast notification
   const toast = document.createElement('div');
   toast.className = 'fixed top-4 right-4 bg-indigo-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce';
   toast.textContent = message;
@@ -290,10 +285,8 @@ function showNotification(message) {
   }, 3000);
 }
 
-// Start auto-refresh
-refreshInterval = setInterval(refreshMyJobs, 30000); // Every 30 seconds
+refreshInterval = setInterval(refreshMyJobs, 30000);
 
-// Clear interval when leaving page
 window.addEventListener('beforeunload', () => {
   if (refreshInterval) clearInterval(refreshInterval);
 });
