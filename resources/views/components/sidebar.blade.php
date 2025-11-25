@@ -38,7 +38,7 @@
       {{-- wrench --}}
       <svg class="{{ $ico($active) }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4.5 4.5 0 1 0-6.36 6.36l8.49 8.49a2 2 0 0 0 2.83-2.83l-8.49-8.49z"/><path d="m8 8 3 3"/></svg>
     </span>
-    <span class="truncate">Repair Jobs</span>
+    <span class="truncate">Requests</span>
   </a>
 
   {{-- Repair Queue --}}
@@ -61,7 +61,7 @@
       <span class="w-8 h-8 flex items-center justify-center">
         <svg class="{{ $ico($active) }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="4" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/><rect x="4" y="4" width="16" height="18" rx="2"/></svg>
       </span>
-      <span class="truncate">My Jobs</span>
+      <span class="truncate">Jobs</span>
     </a>
   @endcan
 

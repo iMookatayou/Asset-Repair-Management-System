@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\MaintenanceOperationLog;
+use App\Models\MaintenanceAssignment;
+use App\Models\MaintenanceLog;
+use App\Models\MaintenanceRating;
 
 class MaintenanceRequest extends Model
 {
@@ -27,6 +31,8 @@ class MaintenanceRequest extends Model
         'reporter_name',
         'reporter_phone',
         'reporter_email',
+        'reporter_position',
+        'reporter_ip',
 
         // ที่ตั้ง/หน่วยงาน
         'location_text',
@@ -68,7 +74,6 @@ class MaintenanceRequest extends Model
     public const STATUS_COMPLETED   = 'completed';
     public const STATUS_CANCELLED   = 'cancelled';
 
-
     public const STATUS_ACCEPTED = 'accepted';
     public const STATUS_ON_HOLD  = 'on_hold';
     public const STATUS_RESOLVED = 'resolved';
@@ -87,6 +92,25 @@ class MaintenanceRequest extends Model
     public function department() { return $this->belongsTo(Department::class); }
     public function reporter()   { return $this->belongsTo(User::class, 'reporter_id'); }
     public function technician() { return $this->belongsTo(User::class, 'technician_id'); }
+
+    public function operationLog()
+    {
+        return $this->hasOne(MaintenanceOperationLog::class, 'maintenance_request_id');
+    }
+
+    // งานนี้ถูก assign ให้ใครบ้าง (ทุกคน)
+    public function assignments()
+    {
+        return $this->hasMany(MaintenanceAssignment::class);
+    }
+
+    // ดึงรายชื่อ "คนทำงาน" ตรง ๆ แบบ belongsToMany
+    public function workers()
+    {
+        return $this->belongsToMany(User::class, 'maintenance_assignments')
+                    ->withPivot(['role', 'is_lead', 'assigned_at', 'status'])
+                    ->withTimestamps();
+    }
 
     public function logs()
     {
@@ -112,6 +136,7 @@ class MaintenanceRequest extends Model
     {
         return $this->hasOne(MaintenanceRating::class, 'maintenance_request_id');
     }
+
     public function getNormalizedStatusAttribute(): string
     {
         if ($this->status === self::STATUS_COMPLETED && $this->resolved_at) {
@@ -120,14 +145,38 @@ class MaintenanceRequest extends Model
         return (string) $this->status;
     }
 
+    /**
+     * สร้างเลขใบงานแบบ legacy: YY + TYPE + RUNNING(5 หลัก)
+     * เช่น ปี พ.ศ. 2568 → 68, type 10 → 681000001
+     */
+    public static function generateLegacyRequestNo(): string
+    {
+        // ปี พ.ศ. → เอา 2 หลักท้าย เช่น 2568 -> "68"
+        $thaiYear = now()->year + 543;
+        $yy = substr((string) $thaiYear, -2);
+
+        // TODO: ภายหลังอาจ map จาก department หรือประเภทงาน
+        $type = '10'; // ตอนนี้ fix 10 ไปก่อนแบบระบบเก่า
+
+        // นับจำนวนงานในปี ค.ศ. ปัจจุบัน แล้ว +1 ให้เป็น running
+        $count = static::query()
+            ->whereYear('created_at', now()->year)
+            ->count() + 1;
+
+        // เติม 5 หลัก เช่น 1 -> 00001
+        $run = str_pad((string) $count, 5, '0', STR_PAD_LEFT);
+
+        return $yy.$type.$run; // ถ้าจะใส่ขีดก็เปลี่ยนเป็น "{$yy}-{$type}-{$run}"
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $model) {
+            // ถ้ายังไม่มี request_no ให้ใช้เลขแบบ legacy 68xxxxxxx ไปก่อน
             if (empty($model->request_no)) {
-                $year = now()->format('Y');
-                $rand = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
-                $model->request_no = "MR-{$year}-{$rand}";
+                $model->request_no = static::generateLegacyRequestNo();
             }
+
             if (empty($model->source)) {
                 $model->source = 'web';
             }

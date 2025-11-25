@@ -14,6 +14,8 @@ use App\Http\Controllers\Repair\DashboardController as RepairDashboardController
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\MaintenanceOperationLogController;
+use App\Http\Controllers\MaintenanceAssignmentController;
 
 // Admin User Controller
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -74,6 +76,11 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
+    Route::post('/maintenance-requests/{maintenanceRequest}/operation-log',[MaintenanceOperationLogController::class, 'upsert'])->name('maintenance.requests.operation-log');
+
+    Route::post('/maintenance/requests/{maintenanceRequest}/assignments', [MaintenanceAssignmentController::class, 'store'])->name('maintenance-assignments.store');
+    Route::delete('/maintenance/assignments/{assignment}', [MaintenanceAssignmentController::class, 'destroy'])->name('maintenance-assignments.destroy');
+
     // ===== Attachments (serve private files after auth) =====
     Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');
 
@@ -118,7 +125,7 @@ Route::middleware(['auth'])->group(function () {
 
     // เปลี่ยนรหัสผ่าน (ให้ทุกคนทำเองได้)
     Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
-});
+    });
 
 // Auth scaffolding routes
 require __DIR__ . '/auth.php';

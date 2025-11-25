@@ -1,3 +1,4 @@
+{{-- resources/views/repairs/my_jobs.blade.php --}}
 @extends('layouts.app')
 @section('title','My Jobs')
 
@@ -53,8 +54,12 @@
 
 <div class="pt-3 md:pt-4"></div>
 
-<div class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-5" id="myJobsContainer">
-  {{-- ===== Sticky Header + Filter Card (ราชการโทนเดียวกับ Maintenance Requests) ===== --}}
+{{-- MAIN WRAPPER: ให้กว้างเท่าหน้าอื่นในระบบ ไม่ย่อซ้อน --}}
+<div
+  id="myJobsContainer"
+  class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-5 pb-8"
+>
+  {{-- ===== Sticky Header + Filter Card ===== --}}
   <div class="sticky top-[6rem] z-20 bg-slate-50/90 backdrop-blur">
     <div class="rounded-lg border border-zinc-300 bg-white shadow-sm">
       <div class="px-5 py-4">
@@ -76,7 +81,7 @@
             </div>
           </div>
 
-          {{-- Right: Stats (โทนเรียบ ๆ) --}}
+          {{-- Right: Stats --}}
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 w-full md:w-auto text-[11px]">
             <div class="min-w-[90px] px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
               <p class="text-[11px] text-zinc-600">รอดำเนินการ</p>
@@ -164,7 +169,7 @@
     </div>
   </div>
 
-  {{-- ===== Main Table Card (โทนเดียวกับ Maintenance Requests) ===== --}}
+  {{-- ===== Main Table Card ===== --}}
   <div class="rounded-lg border border-zinc-300 bg-white overflow-hidden">
     @php
       $activeTech = isset($tech) && isset($team) ? $team->firstWhere('id', (int)$tech) : null;
@@ -277,7 +282,7 @@
 
 @push('scripts')
 <script>
-// Real-time updates every 30 seconds (รักษา logic เดิม)
+// Real-time updates every 30 seconds (logic เดิม)
 let refreshInterval;
 
 function refreshMyJobs() {

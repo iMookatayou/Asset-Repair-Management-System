@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Models\User;
 use App\Models\MaintenanceRequest as MR;
+use App\Models\MaintenanceOperationLog;
+use App\Models\MaintenanceAssignment;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
@@ -121,7 +123,7 @@ class DemoDataSeeder extends Seeder
         $staffs = User::factory()
             ->count($staffCount)
             ->state(fn () => [
-                // legacy 'staff' replaced by 'computer_officer'
+                // legacy 'staff' replaced by 'member'
                 'role'       => 'member',
                 'department' => fake()->randomElement($deptCodes),
             ])
@@ -394,6 +396,7 @@ class DemoDataSeeder extends Seeder
             return $candidate;
         };
 
+        // ===== Seed maintenance_requests (bulk insert) =====
         DB::transaction(function () use (
             $requestCount,
             $assetIds,
@@ -628,6 +631,142 @@ class DemoDataSeeder extends Seeder
                 DB::table('maintenance_requests')->insert($rows);
             }
         });
+
+        // ===== Maintenance Assignments (team workers demo) =====
+        if (Schema::hasTable('maintenance_assignments') && !empty($techIds)) {
+            $assignRows = [];
+            $nowAssign  = now();
+
+            // เอางานที่ไม่ใช่ cancelled/pending บ้าง + บางส่วนของ pending
+            $targetRequests = MR::query()
+                ->whereIn('status', [
+                    MR::STATUS_ACCEPTED,
+                    MR::STATUS_IN_PROGRESS,
+                    MR::STATUS_ON_HOLD,
+                    MR::STATUS_RESOLVED,
+                    MR::STATUS_CLOSED,
+                ])
+                ->inRandomOrder()
+                ->limit((int) floor($requestCount * 0.7))
+                ->get();
+
+            foreach ($targetRequests as $req) {
+                if (!$techIds) {
+                    continue;
+                }
+
+                // สุ่มให้มีทีม 1–3 คน
+                $teamSize = random_int(1, min(3, count($techIds)));
+                $picked   = (array) array_rand($techIds, $teamSize);
+
+                foreach ($picked as $index) {
+                    $userId = $techIds[$index];
+
+                    // กำหนดสถานะ assignment ตามสถานะใบงานแบบประมาณ ๆ
+                    $status = MaintenanceAssignment::STATUS_PENDING;
+                    switch ($req->status) {
+                        case MR::STATUS_IN_PROGRESS:
+                        case MR::STATUS_ACCEPTED:
+                            $status = MaintenanceAssignment::STATUS_IN_PROGRESS;
+                            break;
+                        case MR::STATUS_RESOLVED:
+                        case MR::STATUS_CLOSED:
+                            $status = MaintenanceAssignment::STATUS_DONE;
+                            break;
+                        case MR::STATUS_CANCELLED:
+                            $status = MaintenanceAssignment::STATUS_CANCELLED;
+                            break;
+                        case MR::STATUS_ON_HOLD:
+                            // สุ่ม pending / in_progress
+                            $status = random_int(0, 1)
+                                ? MaintenanceAssignment::STATUS_IN_PROGRESS
+                                : MaintenanceAssignment::STATUS_PENDING;
+                            break;
+                        default:
+                            $status = MaintenanceAssignment::STATUS_PENDING;
+                    }
+
+                    $assignRows[] = [
+                        'maintenance_request_id' => $req->id,
+                        'user_id'                => $userId,
+                        'status'                 => $status,
+                        'created_at'             => $nowAssign,
+                        'updated_at'             => $nowAssign,
+                    ];
+                }
+            }
+
+            if ($assignRows) {
+                DB::table('maintenance_assignments')->insert($assignRows);
+            }
+        }
+
+        // ===== Maintenance Operation Logs (demo) =====
+        if (Schema::hasTable('maintenance_operation_logs')) {
+            // เลือกเฉพาะงานที่ resolved/closed มาใส่รายงานการปฏิบัติงาน
+            $targetRequests = MR::query()
+                ->whereIn('status', ['resolved', 'closed'])
+                ->inRandomOrder()
+                ->limit((int) floor($requestCount * 0.6)) // ซัก 60% ของใบงาน
+                ->get();
+
+            $opRows = [];
+            $now    = now();
+
+            foreach ($targetRequests as $req) {
+                // กันซ้ำ ถ้ามีอยู่แล้วให้ข้าม
+                if ($req->operationLog) {
+                    continue;
+                }
+
+                // เลือกช่างคนใดคนหนึ่งในทีม หรือสุ่มจาก techIds
+                $userId = null;
+                if ($req->workers && $req->workers->count()) {
+                    $userId = $req->workers->random()->id;
+                } elseif (!empty($techIds)) {
+                    $userId = $techIds[array_rand($techIds)];
+                }
+
+                $baseDate = $req->resolved_at
+                    ?? $req->closed_at
+                    ?? $req->started_at
+                    ?? $req->request_date
+                    ?? $req->created_at
+                    ?? $now;
+
+                $operationDate = (clone $baseDate)->startOfDay();
+
+                $methods = ['requisition', 'service_fee', 'other'];
+                $method  = $methods[array_rand($methods)];
+
+                // เดารพ./หน่วยงานจาก department ถ้ามี
+                $hospitalName = 'โรงพยาบาลพระปกเกล้า';
+                if ($req->department?->name_th) {
+                    $hospitalName .= ' - '.$req->department->name_th;
+                } elseif ($req->department?->name_en) {
+                    $hospitalName .= ' - '.$req->department->name_en;
+                }
+
+                $opRows[] = [
+                    'maintenance_request_id' => $req->id,
+                    'user_id'                => $userId,
+                    'operation_date'         => $operationDate,
+                    'operation_method'       => $method,
+                    'hospital_name'          => $hospitalName,
+                    'require_precheck'       => (bool) random_int(0, 1),
+                    'remark'                 => $req->resolution_note
+                        ?: fake()->sentence(10),
+                    'issue_software'         => (bool) random_int(0, 1),
+                    'issue_hardware'         => (bool) random_int(0, 1),
+                    'created_at'             => $now,
+                    'updated_at'             => $now,
+                ];
+            }
+
+            if ($opRows) {
+                DB::table('maintenance_operation_logs')->insert($opRows);
+            }
+        }
 
         // ปรับ updated_at ให้ recent
         if (Schema::hasTable('maintenance_requests')) {

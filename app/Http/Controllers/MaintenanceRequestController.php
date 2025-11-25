@@ -39,11 +39,19 @@ class MaintenanceRequestController extends Controller
             ->when($q, function ($w) use ($q) {
                 $w->where(function ($ww) use ($q) {
                     $ww->where('title','like',"%{$q}%")
-                       ->orWhere('description','like',"%{$q}%")
-                       ->orWhereHas('reporter', fn($qr) => $qr->where('email','like',"%{$q}%"))
-                       ->orWhere('reporter_email','like',"%{$q}%");
+                    ->orWhere('description','like',"%{$q}%")
+                    ->orWhere('request_no','like',"%{$q}%")              // ค้นด้วยเลขใบงาน 68xxxx
+                    ->orWhere('reporter_name','like',"%{$q}%")           // ชื่อผู้แจ้ง
+                    ->orWhere('reporter_position','like',"%{$q}%")       // ตำแหน่งผู้แจ้ง
+                    ->orWhere('reporter_phone','like',"%{$q}%")          // เบอร์ผู้แจ้ง
+                    ->orWhere('reporter_email','like',"%{$q}%")          // อีเมลที่เก็บในฟิลด์
+                    ->orWhereHas('reporter', fn($qr) =>                  // user ภายใน
+                        $qr->where('email','like',"%{$q}%")
+                            ->orWhere('name','like',"%{$q}%")
+                    );
                 });
             })
+
             ->orderByDesc('request_date')
             ->paginate(20)
             ->withQueryString();
@@ -68,6 +76,7 @@ class MaintenanceRequestController extends Controller
                 $qb->where(function ($w) use ($q) {
                     $w->where('title','like',"%{$q}%")
                       ->orWhere('description','like',"%{$q}%")
+                      ->orWhere('request_no','like',"%{$q}%")              // ค้นด้วยเลขใบงาน 68xxxx
                       ->orWhereHas('reporter', fn($qr) => $qr->where('name','like',"%{$q}%")->orWhere('email','like',"%{$q}%"))
                       ->orWhereHas('asset', fn($qa) => $qa->where('name','like',"%{$q}%")->orWhere('asset_code','like',"%{$q}%"));
                 });
@@ -120,13 +129,18 @@ class MaintenanceRequestController extends Controller
             ->where(function ($qq) use ($activeTechIds) {
                 $qq->inRoles(\App\Models\User::teamRoles());
                 if (!empty($activeTechIds)) {
-                    $qq->orWhereIn('id', $activeTechIds); // เผื่อมีคนถูก assign ก่อนปรับ role
+                    $qq->orWhereIn('id', $activeTechIds);
                 }
             })
-            ->where('role', '!=', \App\Models\User::ROLE_ADMIN) // ไม่แสดง admin ตาม requirement
+            ->where('role', '!=', \App\Models\User::ROLE_ADMIN)
             ->withCount([
-                'assignedRequests as active_count' => fn($q) => $q->whereNotIn('status', ['resolved','closed','cancelled']),
-                'assignedRequests as total_count',
+                'assignedRequests as active_count' => function ($q) {
+                    $q->whereNotIn('maintenance_requests.status', ['resolved','closed','cancelled'])
+                    ->whereNull('maintenance_requests.deleted_at');
+                },
+                'assignedRequests as total_count' => function ($q) {
+                    $q->whereNull('maintenance_requests.deleted_at');
+                },
             ])
             ->orderBy('name')
             ->get(['id','name','role']);
@@ -142,6 +156,7 @@ class MaintenanceRequestController extends Controller
                 $qb->where(function ($w) use ($q) {
                     $w->where('title','like',"%{$q}%")
                       ->orWhere('description','like',"%{$q}%")
+                      ->orWhere('request_no','like',"%{$q}%")              // ค้นด้วยเลขใบงาน 68xxxx
                       ->orWhereHas('asset', fn($qa) => $qa->where('name','like',"%{$q}%")->orWhere('asset_code','like',"%{$q}%"));
                 });
             })
@@ -222,11 +237,19 @@ class MaintenanceRequestController extends Controller
             ->when($q, function ($w) use ($q) {
                 $w->where(function ($ww) use ($q) {
                     $ww->where('title','like',"%{$q}%")
-                       ->orWhere('description','like',"%{$q}%")
-                       ->orWhereHas('reporter', fn($qr) => $qr->where('email','like',"%{$q}%"))
-                       ->orWhere('reporter_email','like',"%{$q}%");
+                    ->orWhere('description','like',"%{$q}%")
+                    ->orWhere('request_no','like',"%{$q}%")        // ค้นเลขใบงาน 68xxxx
+                    ->orWhere('reporter_name','like',"%{$q}%")     // ชื่อผู้แจ้ง
+                    ->orWhere('reporter_position','like',"%{$q}%") // ตำแหน่งผู้แจ้ง
+                    ->orWhere('reporter_phone','like',"%{$q}%")    // เบอร์ผู้แจ้ง
+                    ->orWhere('reporter_email','like',"%{$q}%")    // อีเมลฟิลด์ตรง
+                    ->orWhereHas('reporter', fn($qr) =>            // user ภายใน
+                        $qr->where('email','like',"%{$q}%")
+                            ->orWhere('name','like',"%{$q}%")
+                    );
                 });
             })
+
             ->orderByDesc('request_date')
             ->paginate(20)
             ->withQueryString();
@@ -262,7 +285,12 @@ class MaintenanceRequestController extends Controller
             'asset_id'      => ['nullable','integer','exists:assets,id'],
             'priority'      => ['required', Rule::in(['low','medium','high','urgent'])],
             'request_date'  => ['nullable','date'],
-            'reporter_email'=> ['nullable','email','max:255'],
+
+            'reporter_name'   => ['nullable','string','max:255'],
+            'reporter_phone'  => ['nullable','string','max:30'],
+            'reporter_email'  => ['nullable','email','max:255'],
+            'reporter_position' => ['nullable','string','max:255'],
+
             'department_id' => ['nullable','integer','exists:departments,id'],
             'location_text' => ['nullable','string','max:255'],
             'files.*'       => $fileRules,
@@ -298,6 +326,13 @@ class MaintenanceRequestController extends Controller
         $actorId = optional($request->user())->id;
 
         $req = DB::transaction(function () use ($data, $request, $actorId) {
+            $user = $request->user();
+
+            $reporterName     = $data['reporter_name']     ?? ($user->name  ?? null);
+            $reporterEmail    = $data['reporter_email']    ?? ($user->email ?? null);
+            $reporterPhone    = $data['reporter_phone']    ?? null;
+            $reporterPosition = $data['reporter_position'] ?? ($user->role  ?? null);
+
             /** @var \App\Models\MaintenanceRequest $req */
             $req = MR::create([
                 'title'        => $data['title'],
@@ -306,11 +341,18 @@ class MaintenanceRequestController extends Controller
                 'priority'     => $data['priority'],
                 'status'       => 'pending',
                 'request_date' => $data['request_date'] ?? now(),
-                'reporter_id'  => $actorId,
-                'reporter_email'=> $data['reporter_email'] ?? null,
-                'department_id'=> $data['department_id'] ?? null,
-                'location_text'=> $data['location_text'] ?? null,
+
+                'reporter_id'       => $actorId,
+                'reporter_name'     => $reporterName,
+                'reporter_phone'    => $reporterPhone,
+                'reporter_email'    => $reporterEmail,
+                'reporter_position' => $reporterPosition,
+                'reporter_ip'       => $request->ip(),
+
+                'department_id' => $data['department_id'] ?? null,
+                'location_text' => $data['location_text'] ?? null,
             ]);
+
 
             if (class_exists(\App\Models\MaintenanceLog::class)) {
                 \App\Models\MaintenanceLog::create([
@@ -393,7 +435,12 @@ class MaintenanceRequestController extends Controller
             'priority'     => ['nullable', Rule::in(['low','medium','high','urgent'])],
             'status'       => ['nullable', Rule::in(['pending','accepted','in_progress','on_hold','resolved','closed','cancelled'])],
             'request_date' => ['nullable','date'],
-            'reporter_email'=> ['nullable','email','max:255'],
+
+            'reporter_name'     => ['nullable','string','max:255'],
+            'reporter_phone'    => ['nullable','string','max:30'],
+            'reporter_email'    => ['nullable','email','max:255'],
+            'reporter_position' => ['nullable','string','max:255'],
+
             'department_id'=> ['nullable','integer','exists:departments,id'],
             'location_text'=> ['nullable','string','max:255'],
             'resolution_note'=> ['nullable','string','max:5000'],
@@ -848,4 +895,5 @@ class MaintenanceRequestController extends Controller
             default       => 'อัปเดตสถานะ',
         };
     }
+
 }

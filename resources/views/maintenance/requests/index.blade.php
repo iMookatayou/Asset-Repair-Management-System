@@ -98,7 +98,7 @@
             <label for="q" class="mb-1 block text-[12px] text-zinc-600">คำค้นหา</label>
             <div class="relative">
               <input id="q" type="text" name="q" value="{{ $q }}"
-                     placeholder="เช่น ชื่อเรื่อง, รายละเอียด, อีเมลผู้แจ้ง"
+                     placeholder="เช่น เลขใบงาน 68xxxx, ชื่อเรื่อง, ชื่อผู้แจ้ง, เบอร์, อีเมล"
                      class="w-full rounded-md border border-zinc-300 pl-10 pr-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600">
               <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-zinc-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -165,9 +165,9 @@
       <table class="min-w-full text-sm">
         <thead class="bg-zinc-50 border-b border-zinc-200">
           <tr class="text-zinc-700">
-            <th class="p-3 text-left font-medium w-[6%]">#</th>
+            <th class="p-3 text-left font-medium w-[10%] whitespace-nowrap">เลขใบงาน</th>
             <th class="p-3 text-left font-medium w-[30%]">เรื่อง</th>
-            <th class="p-3 text-left font-medium w-[18%]">อีเมล</th>
+            <th class="p-3 text-left font-medium w-[18%]">ผู้แจ้ง</th>
             <th class="p-3 text-left font-medium w-[14%]">หน่วยงาน</th>
             <th class="p-3 text-left font-medium w-[10%]">ความสำคัญ</th>
             <th class="p-3 text-left font-medium w-[10%]">สถานะ</th>
@@ -178,8 +178,18 @@
         <tbody class="bg-white">
         @forelse($list as $row)
           <tr class="align-top hover:bg-zinc-50 border-b last:border-0">
-            <td class="p-3 text-zinc-700">{{ $row->id }}</td>
+            {{-- เลขใบงาน --}}
+            <td class="p-3 align-middle text-zinc-700 whitespace-nowrap">
+              @if($row->request_no)
+                <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 ring-1 ring-emerald-200">
+                  {{ $row->request_no }}
+                </span>
+              @else
+                <span class="text-zinc-500 text-xs">#{{ $row->id }}</span>
+              @endif
+            </td>
 
+            {{-- เรื่อง + รายละเอียด --}}
             <td class="p-3">
               <a href="{{ route('maintenance.requests.show', $row) }}"
                  class="block max-w-full truncate font-medium text-zinc-900 hover:underline"
@@ -201,8 +211,30 @@
               @endif
             </td>
 
-            <td class="p-3 text-zinc-700">
-              {{ $row->reporter?->email ?? ($row->reporter_email ?? '-') }}
+            {{-- ผู้แจ้ง --}}
+            <td class="p-3 text-zinc-700 align-middle">
+              @php
+                $reporterName = $row->reporter_name ?? $row->reporter?->name;
+                $reporterEmail = $row->reporter_email ?? $row->reporter?->email;
+                $reporterPhone = $row->reporter_phone;
+              @endphp
+
+              <div class="text-[13px] font-medium text-zinc-900">
+                {{ $reporterName ?? '—' }}
+                @if($row->reporter_position)
+                  <span class="text-[11px] text-zinc-500">• {{ $row->reporter_position }}</span>
+                @endif
+              </div>
+              @if($reporterEmail || $reporterPhone)
+                <div class="mt-0.5 text-[11px] text-zinc-500 space-x-1">
+                  @if($reporterEmail)
+                    <span>{{ $reporterEmail }}</span>
+                  @endif
+                  @if($reporterPhone)
+                    <span>• {{ $reporterPhone }}</span>
+                  @endif
+                </div>
+              @endif
             </td>
 
             @php
@@ -210,15 +242,15 @@
                           ?? $row->asset?->department?->name
                           ?? '—';
             @endphp
-            <td class="p-3 text-zinc-700">{{ $deptName }}</td>
+            <td class="p-3 text-zinc-700 align-middle">{{ $deptName }}</td>
 
-            <td class="p-3">
+            <td class="p-3 align-middle">
               <span class="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] {{ $priorityClass($row->priority ?? null) }}">
                 {{ $priorityLabel($row->priority ?? null) }}
               </span>
             </td>
 
-            <td class="p-3">
+            <td class="p-3 align-middle">
               <span class="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] {{ $statusClass($row->status ?? null) }}">
                 {{ $statusLabel($row->status ?? null) }}
               </span>

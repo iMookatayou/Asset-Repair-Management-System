@@ -24,13 +24,15 @@
 
   @php
     $monthlyTrend = is_iterable($monthlyTrend ?? null) ? collect($monthlyTrend) : collect();
-    $byAssetType  = is_iterable($byAssetType  ?? null) ? collect($byAssetType)  : collect();
+    $byAssetType  = is_iterable($byAssetType  ?? null) ? collect($byAssetType) : collect();
     $byDept       = is_iterable($byDept       ?? null) ? collect($byDept)       : collect();
     $recent       = is_iterable($recent       ?? null) ? collect($recent)       : collect();
 
-    $monthlyTrend = $monthlyTrend->take(6)->values();
-    $byAssetType  = $byAssetType->take(9)->values();
-    $byDept       = $byDept->take(8)->values();
+    // แสดงแนวโน้มทุกเดือนที่มีข้อมูล ไม่ตัดเหลือ 6 เดือนแล้ว
+    $monthlyTrend = $monthlyTrend->values();
+    // ดึงทุกหมวดหมู่ / ทุกแผนก ไม่ตัด Top แล้ว
+    $byAssetType  = $byAssetType->values();
+    $byDept       = $byDept->values();
 
     $intVal   = fn($v)=> is_numeric($v) ? (int)$v : 0;
     $strVal   = fn($v,$f='')=> is_string($v) && $v!=='' ? $v : $f;
@@ -64,45 +66,52 @@
     };
   @endphp
 
-  <div class="py-4">
-    <div class="mx-auto max-w-7xl px-3 lg:px-6 space-y-4">
-      <div class="sticky top-24 z-30 -mt-2">
-        <div class="relative">
-          <div class="relative overflow-hidden rounded-2xl border border-emerald-100 bg-white/95 shadow-sm">
-            <div class="flex flex-wrap items-start gap-4 px-4 py-3 sm:px-5 sm:py-4">
+  {{-- พื้นหลัง dashboard แบบราชการสะอาด ๆ --}}
+  <div class="bg-slate-50/90">
+    <div class="px-4 sm:px-6 lg:px-10 2xl:px-20 pt-3 pb-8 space-y-5">
 
-              {{-- กล่องไอคอนเล็กแทนแท่งสี --}}
-              <div class="hidden sm:flex">
-                <div class="h-11 w-11 rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 shadow-sm grid place-items-center">
-                  <svg class="h-5 w-5 text-emerald-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M4 19V5a2 2 0 012-2h6.5M10 21h8a2 2 0 002-2V7.5a2 2 0 00-.586-1.414l-3.5-3.5A2 2 0 0014.5 2H12" />
-                    <path d="M8 13.5L10.5 16 16 10.5" />
-                  </svg>
-                </div>
+      {{-- HEADER รายงาน + FILTER PANEL (sticky เลื่อนตามลงมาเต็มดุ้นใต้ Navbar) --}}
+      <div class="sticky z-30" style="top: var(--topbar-h, 4rem);">
+        <div class="overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm">
+          <div class="flex flex-wrap items-start gap-4 px-4 py-3 sm:px-5 sm:py-4">
+
+            {{-- กล่องไอคอนหัวรายงาน --}}
+            <div class="hidden sm:flex">
+              <div class="h-11 w-11 rounded-xl bg-emerald-600/95 grid place-items-center">
+                <svg class="h-5 w-5 text-emerald-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M4 19V5a2 2 0 012-2h6.5M10 21h8a2 2 0 002-2V7.5a2 2 0 00-.586-1.414l-3.5-3.5A2 2 0 0014.5 2H12" />
+                  <path d="M8 13.5L10.5 16 16 10.5" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="flex-1 min-w-0">
+              {{-- แคปชันบนหัวรายงาน --}}
+              <div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-[10px] text-emerald-50">
+                  DB
+                </span>
+                <span>รายงานสรุปภาพรวมการแจ้งซ่อมครุภัณฑ์</span>
               </div>
 
-              <div class="flex-1 min-w-0">
-                {{-- แถบชื่อแดชบอร์ด --}}
-                <div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                  <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-[10px] text-emerald-50 shadow-sm">
-                    DB
-                  </span>
-                  <span>Asset Repair Dashboard กลาง</span>
-                </div>
+              <h1 class="mt-2 text-base sm:text-lg md:text-xl font-semibold text-zinc-900 leading-snug">
+                รายงานภาพรวมการแจ้งซ่อมครุภัณฑ์ของโรงพยาบาลพระปกเกล้า
+              </h1>
 
-                <div class="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <h1 class="text-base sm:text-lg font-semibold text-zinc-900 leading-snug">
-                    รายงานภาพรวมการแจ้งซ่อมครุภัณฑ์ของโรงพยาบาลพระปกเกล้า
-                  </h1>
-                </div>
+              <p class="mt-1 text-xs text-zinc-600 max-w-3xl">
+                จัดทำโดยกลุ่มงานเทคโนโลยีสารสนเทศ เพื่อแสดงภาพรวมภาระงานซ่อมบำรุงครุภัณฑ์ แยกตามสถานะ หน่วยงาน และช่วงเวลา
+                สำหรับใช้ประกอบการติดตามงานและรายงานต่อผู้บริหาร
+              </p>
+            </div>
 
-                <p class="mt-1 text-xs text-zinc-500 max-w-2xl">
-                  กลุ่มงานเทคโนโลยีสารสนเทศ — แสดงภาพรวมภาระงานซ่อมบำรุงครุภัณฑ์ แยกตามช่วงเวลาและหน่วยงาน
-                  เพื่อสนับสนุนการติดตามและการวางแผนงบประมาณเชิงหลักฐาน
-                </p>
+            {{-- มุมขวา: ปุ่มตัวกรอง + วันที่ --}}
+            <div class="ms-auto flex flex-col items-end gap-2">
+              <div class="text-[11px] text-emerald-900/80">
+                วันที่ออกรายงาน:
+                <span class="font-semibold">{{ now()->format('d/m/Y') }}</span>
               </div>
 
-              <div class="ms-auto flex flex-col items-end gap-2">
+              <div class="flex items-center gap-2">
                 @if ($filtersActive)
                   <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200">
                     ใช้ตัวกรองอยู่
@@ -121,48 +130,36 @@
                 </button>
               </div>
             </div>
+          </div>
 
-            {{-- แถบเมต้าใต้หัวข้อ --}}
-            <div class="border-t border-emerald-100 bg-emerald-50/80 px-4 py-1.5 sm:px-5 flex flex-wrap items-center gap-2 justify-between">
-              <div class="text-[11px] text-emerald-900">
-                ข้อมูลที่แสดงเป็นภาพรวมเชิงสถิติของระบบแจ้งซ่อมครุภัณฑ์ในปัจจุบัน
-              </div>
-              <div class="text-[11px] text-emerald-900/80">
-                วันที่ออกรายงาน: <span class="font-semibold">{{ now()->format('d/m/Y') }}</span>
-              </div>
+          {{-- แถบเมต้าใต้หัวข้อ --}}
+          <div class="border-t border-emerald-100 bg-emerald-50/70 px-4 py-1.5 sm:px-5 flex flex-wrap items-center gap-2 justify-between">
+            <div class="text-[11px] text-emerald-900">
+              ข้อมูลนี้เป็นภาพรวมเชิงสถิติของระบบแจ้งซ่อมครุภัณฑ์ ณ ปัจจุบัน
+            </div>
+            <div class="text-[11px] text-emerald-900/80">
+              ระบบ: Asset Repair Management — Phrapokklao Hospital
             </div>
           </div>
-        </div>
-      </div>
 
-      {{-- ทั้งหมดรวมเป็น "ก้อนเดียว" --}}
-      <section class="mt-3 rounded-2xl border border-zinc-200 bg-white shadow-sm">
-        <div class="px-4 py-4 sm:px-6 sm:py-5 space-y-6">
-
-          {{-- ส่วนที่ 0: Filters --}}
+          {{-- FILTER PANEL: พื้นหลังเทาอ่อน --}}
           <div
             id="filtersPanel"
-            class="border border-dashed border-zinc-200 rounded-xl bg-zinc-50/60 px-3 py-3 sm:px-4 sm:py-4 {{ $filtersActive ? '' : 'hidden' }}"
+            class="border-t border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 sm:px-5 sm:py-4 {{ $filtersActive ? '' : 'hidden' }}"
           >
             <div class="flex flex-col gap-1">
-              <div class="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] text-indigo-50 shadow-sm">
-                  0
-                </span>
-                <span>ส่วนที่ 0 • ตัวกรองข้อมูล</span>
-              </div>
-              <h2 class="text-sm font-semibold text-zinc-900">
-                กำหนดเงื่อนไขการแสดงผลข้อมูลงานซ่อม
+              <h2 class="text-xs font-semibold text-zinc-900">
+                ตัวกรองข้อมูลภาพรวมงานซ่อม
               </h2>
-              <p class="mt-0.5 text-xs text-zinc-500 max-w-xl">
-                เลือกช่วงเวลาและสถานะ เพื่อดูเฉพาะงานซ่อมที่เกี่ยวข้องกับการพิจารณา
+              <p class="mt-0.5 text-[11px] text-zinc-600 max-w-xl">
+                เลือกช่วงเวลาและสถานะ เพื่อดูเฉพาะงานซ่อมที่สนใจ
               </p>
             </div>
 
             <form method="GET" class="mt-3">
               <div class="grid grid-cols-2 gap-3 md:grid-cols-6">
                 <div class="md:col-span-2">
-                  <label for="f_status" class="block text-xs font-medium text-zinc-700">สถานะงานซ่อม</label>
+                  <label for="f_status" class="block text-xs font-medium text-zinc-800">สถานะงานซ่อม</label>
                   <select id="f_status" name="status"
                           class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
                     <option value="">ทั้งหมด</option>
@@ -173,13 +170,13 @@
                 </div>
 
                 <div>
-                  <label for="f_from" class="block text-xs font-medium text-zinc-700">จากวันที่ (From)</label>
+                  <label for="f_from" class="block text-xs font-medium text-zinc-800">จากวันที่ (From)</label>
                   <input id="f_from" type="date" name="from" value="{{ e(request('from','')) }}"
                          class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
                 </div>
 
                 <div>
-                  <label for="f_to" class="block text-xs font-medium text-zinc-700">ถึงวันที่ (To)</label>
+                  <label for="f_to" class="block text-xs font-medium text-zinc-800">ถึงวันที่ (To)</label>
                   <input id="f_to" type="date" name="to" value="{{ e(request('to','')) }}"
                          class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
                 </div>
@@ -196,76 +193,163 @@
               </div>
             </form>
           </div>
+        </div>
+      </div>
 
-          {{-- Divider --}}
-          <div class="h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent"></div>
+      {{-- CARD หลักของ Dashboard --}}
+      <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 space-y-6">
 
-          {{-- ส่วนที่ 1: Overview --}}
-          <div class="space-y-3">
+          {{-- ส่วนที่ 1: ภาพรวมสถิติ + กราฟสถานะ --}}
+          <div class="space-y-4">
             <div class="flex flex-col gap-1">
               <div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-[10px] text-emerald-50 shadow-sm">
+                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-[10px] text-emerald-50">
                   1
                 </span>
                 <span>ส่วนที่ 1 • ภาพรวมสถิติ</span>
               </div>
               <h2 class="text-sm sm:text-base font-semibold text-zinc-900">
-                ภาพรวมจำนวนงานซ่อมและค่าใช้จ่ายหลักของระบบ
+                ภาพรวมจำนวนงานซ่อมในระบบ
               </h2>
               <p class="mt-0.5 text-xs text-zinc-500 max-w-2xl">
-                แสดงจำนวนงานซ่อมทั้งหมด แยกตามสถานะ และค่าใช้จ่ายรวมในเดือนปัจจุบัน เพื่อประกอบการตัดสินใจและติดตามผล
+                แสดงจำนวนงานซ่อมทั้งหมดและจำแนกตามสถานะหลัก เพื่อเห็นปริมาณงานในระบบโดยรวม
               </p>
             </div>
 
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <div class="rounded-xl border border-zinc-200 bg-zinc-50/60 p-4">
-                <div class="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide">
-                  Total Jobs
+            {{-- การ์ดสถิติ 4 ใบ เต็มความกว้าง --}}
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+
+              {{-- TOTAL JOBS --}}
+              <article class="relative overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+                <div class="absolute inset-y-0 left-0 w-1.5 bg-zinc-400"></div>
+                <div class="flex items-start justify-between gap-3 px-4 pt-3 pb-1 pl-5">
+                  <div>
+                    <p class="text-[11px] font-semibold tracking-[0.12em] text-zinc-500 uppercase">
+                      TOTAL JOBS
+                    </p>
+                    <p class="mt-1 text-3xl font-semibold text-zinc-900 leading-tight">
+                      {{ number_format($stats['total'] ?? 0) }}
+                    </p>
+                  </div>
+                  <div class="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 p-2">
+                    <svg class="h-5 w-5 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path d="M4 4h16v4H4z" />
+                      <path d="M4 10h10v4H4z" />
+                      <path d="M4 16h7v4H4z" />
+                    </svg>
+                  </div>
                 </div>
-                <div class="mt-1 text-2xl font-semibold text-zinc-900">
-                  {{ number_format($stats['total'] ?? 0) }}
+                <div class="px-4 pb-3 pt-1 pl-5">
+                  <p class="text-[11px] text-zinc-500">
+                    จำนวนงานซ่อมทั้งหมดที่บันทึกในระบบ (ทุกสถานะ)
+                  </p>
                 </div>
-                <div class="text-xs text-zinc-500">จำนวนงานซ่อมทั้งหมดในระบบ</div>
+              </article>
+
+              {{-- PENDING --}}
+              <article class="relative overflow-hidden rounded-xl border border-amber-200 bg-white shadow-sm">
+                <div class="absolute inset-y-0 left-0 w-1.5 bg-amber-500"></div>
+                <div class="flex items-start justify-between gap-3 px-4 pt-3 pb-1 pl-5">
+                  <div>
+                    <p class="text-[11px] font-semibold tracking-[0.12em] text-amber-700 uppercase">
+                      PENDING
+                    </p>
+                    <p class="mt-1 text-3xl font-semibold text-amber-700 leading-tight">
+                      {{ number_format($stats['pending'] ?? 0) }}
+                    </p>
+                  </div>
+                  <div class="shrink-0 rounded-full border border-amber-200 bg-amber-50 p-2">
+                    <svg class="h-5 w-5 text-amber-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 7v5l3 2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="px-4 pb-3 pt-1 pl-5">
+                  <p class="text-[11px] text-amber-800/90">
+                    งานที่ยังรอรับ/รอดำเนินการจากช่างหรือหน่วยงานที่เกี่ยวข้อง
+                  </p>
+                </div>
+              </article>
+
+              {{-- IN PROGRESS --}}
+              <article class="relative overflow-hidden rounded-xl border border-sky-200 bg-white shadow-sm">
+                <div class="absolute inset-y-0 left-0 w-1.5 bg-sky-500"></div>
+                <div class="flex items-start justify-between gap-3 px-4 pt-3 pb-1 pl-5">
+                  <div>
+                    <p class="text-[11px] font-semibold tracking-[0.12em] text-sky-700 uppercase">
+                      IN PROGRESS
+                    </p>
+                    <p class="mt-1 text-3xl font-semibold text-sky-700 leading-tight">
+                      {{ number_format($stats['inProgress'] ?? 0) }}
+                    </p>
+                  </div>
+                  <div class="shrink-0 rounded-full border border-sky-200 bg-sky-50 p-2">
+                    <svg class="h-5 w-5 text-sky-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path d="M3 12h4l3 7 4-14 3 7h4" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="px-4 pb-3 pt-1 pl-5">
+                  <p class="text-[11px] text-sky-800/90">
+                    งานที่ช่างกำลังดำเนินการตรวจสอบ แก้ไข หรือรอดำเนินการขั้นต่อไป
+                  </p>
+                </div>
+              </article>
+
+              {{-- COMPLETED --}}
+              <article class="relative overflow-hidden rounded-xl border border-emerald-200 bg-white shadow-sm">
+                <div class="absolute inset-y-0 left-0 w-1.5 bg-emerald-600"></div>
+                <div class="flex items-start justify-between gap-3 px-4 pt-3 pb-1 pl-5">
+                  <div>
+                    <p class="text-[11px] font-semibold tracking-[0.12em] text-emerald-700 uppercase">
+                      COMPLETED
+                    </p>
+                    <p class="mt-1 text-3xl font-semibold text-emerald-700 leading-tight">
+                      {{ number_format($stats['completed'] ?? 0) }}
+                    </p>
+                  </div>
+                  <div class="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 p-2">
+                    <svg class="h-5 w-5 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M8.5 12.5L11 15l4.5-5.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="px-4 pb-3 pt-1 pl-5">
+                  <p class="text-[11px] text-emerald-800/90">
+                    งานที่ดำเนินการเสร็จเรียบร้อยและบันทึกผลในระบบแล้ว
+                  </p>
+                </div>
+              </article>
+            </div>
+
+            {{-- กราฟภาพรวมสถานะ (Bar แนวนอน) เต็มความกว้าง --}}
+            <div class="rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 py-4 sm:px-5 sm:py-4 mt-1">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-medium text-zinc-700">
+                    กราฟที่ 1 — ภาพรวมสถานะงานซ่อม
+                  </div>
+                  <h3 class="mt-2 text-sm sm:text-base font-semibold text-zinc-900">
+                    เทียบจำนวนงานซ่อมตามสถานะ (Total / Pending / In Progress / Completed)
+                  </h3>
+                  <p class="mt-0.5 text-xs text-zinc-500 max-w-xl">
+                    แสดงจำนวนงานซ่อมในแต่ละสถานะในรูปแบบกราฟแท่งแนวนอน เพื่อเปรียบเทียบได้ชัดเจน
+                  </p>
+                </div>
               </div>
 
-              <div class="rounded-xl border border-amber-100 bg-amber-50/60 p-4">
-                <div class="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">
-                  Pending
-                </div>
-                <div class="mt-1 text-2xl font-semibold text-amber-700">
-                  {{ number_format($stats['pending'] ?? 0) }}
-                </div>
-                <div class="text-xs text-amber-700/80">งานที่ยังรอรับ/รอดำเนินการ</div>
-              </div>
-
-              <div class="rounded-xl border border-sky-100 bg-sky-50/60 p-4">
-                <div class="text-[11px] font-semibold text-sky-700 uppercase tracking-wide">
-                  In Progress
-                </div>
-                <div class="mt-1 text-2xl font-semibold text-sky-700">
-                  {{ number_format($stats['inProgress'] ?? 0) }}
-                </div>
-                <div class="text-xs text-sky-700/80">งานที่กำลังดำเนินการโดยช่าง</div>
-              </div>
-
-              <div class="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
-                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">
-                  Completed
-                </div>
-                <div class="mt-1 text-2xl font-semibold text-emerald-700">
-                  {{ number_format($stats['completed'] ?? 0) }}
-                </div>
-                <div class="text-xs text-emerald-700/80">งานที่ดำเนินการเสร็จเรียบร้อยแล้ว</div>
-              </div>
-
-              <div class="rounded-xl border border-zinc-200 bg-zinc-50/60 p-4">
-                <div class="text-[11px] font-semibold text-zinc-700 uppercase tracking-wide">
-                  Monthly Cost
-                </div>
-                <div class="mt-1 text-2xl font-semibold text-zinc-900">
-                  {{ number_format($stats['monthCost'] ?? 0, 2) }}
-                </div>
-                <div class="text-xs text-zinc-500">ค่าใช้จ่ายรวมของเดือนปัจจุบัน (บาท)</div>
+              <div class="mt-4 h-56 w-full">
+                <canvas
+                  id="statusTrend"
+                  class="block w-full h-full"
+                  data-pending="{{ $stats['pending'] ?? 0 }}"
+                  data-progress="{{ $stats['inProgress'] ?? 0 }}"
+                  data-completed="{{ $stats['completed'] ?? 0 }}"
+                  data-total="{{ $stats['total'] ?? 0 }}"
+                ></canvas>
               </div>
             </div>
           </div>
@@ -273,11 +357,11 @@
           {{-- Divider --}}
           <div class="h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent"></div>
 
-          {{-- ส่วนที่ 2: Charts (แยกเป็นก้อน ๆ ไม่อัดกัน) --}}
+          {{-- ส่วนที่ 2: กราฟ & การวิเคราะห์ --}}
           <div class="space-y-4">
             <div class="flex flex-col gap-1">
               <div class="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] text-indigo-50 shadow-sm">
+                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] text-indigo-50">
                   2
                 </span>
                 <span>ส่วนที่ 2 • กราฟและการวิเคราะห์</span>
@@ -285,32 +369,28 @@
               <h2 class="text-sm sm:text-base font-semibold text-zinc-900">
                 กราฟภาพรวมงานซ่อมตามหน่วยงาน ช่วงเวลา และหมวดหมู่ครุภัณฑ์
               </h2>
-              <p class="mt-0.5 text-xs text-zinc-500 max-w-3xl">
-                กราฟแต่ละชุดมีวัตถุประสงค์ชัดเจน ใช้ติดตามภาระงานของหน่วยงาน แนวโน้มจำนวนการแจ้งซ่อมรายเดือน
-                และหมวดหมู่ครุภัณฑ์ที่มีการซ่อมบ่อย เพื่อรองรับการวางแผนกำลังคนและงบประมาณเชิงหลักฐาน (Evidence-based)
-              </p>
             </div>
 
-            {{-- Chart 1: By department --}}
+            {{-- กราฟตามหน่วยงาน (Bar chart) --}}
             <div class="rounded-xl border border-zinc-200 bg-white/80 px-4 py-4 sm:px-5 sm:py-4">
               <div class="flex items-start justify-between gap-3">
                 <div>
                   <div class="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-medium text-indigo-700">
-                    กราฟที่ 1 — จำนวนงานซ่อมตามหน่วยงาน (Bar chart)
+                    กราฟที่ 2 — จำนวนงานซ่อมตามหน่วยงาน (Bar chart)
                   </div>
                   <h3 class="mt-2 text-sm sm:text-base font-semibold text-zinc-900">
-                    Top 8 แผนกที่มีการแจ้งซ่อมสูงสุด
+                    จำนวนงานซ่อมแยกตามหน่วยงาน (ทั้งหมด)
                   </h3>
                   <p class="mt-0.5 text-xs text-zinc-500 max-w-xl">
-                    แสดงจำนวนคำขอซ่อม (แกนตั้ง) ของแต่ละหน่วยงาน (แกนนอน) โดยเลือกเฉพาะ 8 หน่วยงานที่มีงานมากที่สุด
-                    เพื่อดูหน่วยงานที่ควรให้ความสำคัญด้านการซ่อมบำรุงเป็นพิเศษ
+                    แสดงภาพรวมจำนวนงานซ่อมของทุกหน่วยงานที่มีการแจ้งซ่อมในระบบ อ่านง่ายในรูปแบบแท่งแนวตั้ง
                   </p>
                 </div>
               </div>
 
               @if (count($deptLabels) && count($deptCounts))
-                <div class="mt-4 h-64">
+                <div class="mt-4 h-72 w-full">
                   <canvas id="deptBar"
+                          class="block w-full h-full"
                           data-labels='@json($deptLabels, JSON_INVALID_UTF8_SUBSTITUTE)'
                           data-values='@json($deptCounts, JSON_INVALID_UTF8_SUBSTITUTE)'></canvas>
                 </div>
@@ -321,29 +401,28 @@
               @endif
             </div>
 
-            {{-- Chart 2 & 3: แยกเป็น 2 ก้อน เต็มความกว้างคนละแถว --}}
-            <div class="grid grid-cols-1 gap-5">
-              {{-- Chart 2: Trend --}}
-              <div class="rounded-xl border border-zinc-200 bg-white/80 px-4 py-4 sm:px-5 sm:py-4">
+            {{-- กราฟแนวโน้ม + Donut --}}
+            <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
+              {{-- Trend: เปลี่ยนเป็น Bar chart --}}
+              <div class="lg:col-span-2 rounded-xl border border-zinc-200 bg-white/80 px-4 py-4 sm:px-5 sm:py-4">
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <div class="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-[11px] font-medium text-sky-700">
-                      กราฟที่ 2 — แนวโน้มจำนวนงานซ่อม (Line chart)
+                      กราฟที่ 3 — แนวโน้มจำนวนงานซ่อม (Bar chart)
                     </div>
                     <h3 class="mt-2 text-sm sm:text-base font-semibold text-zinc-900">
-                      แนวโน้มจำนวนงานซ่อมรายเดือน (6 เดือนล่าสุด)
+                      แนวโน้มจำนวนงานซ่อมตามเดือนที่มีข้อมูล
                     </h3>
                     <p class="mt-0.5 text-xs text-zinc-500">
-                      ใช้ดูทิศทางว่าจำนวนงานซ่อมเพิ่มขึ้น หรือลดลงในช่วง 6 เดือนหลังสุด
-                      เหมาะสำหรับการวางแผนกำลังคนและงบประมาณในรอบถัดไป
+                      แสดงจำนวนงานซ่อมในแต่ละเดือนด้วยกราฟแท่งสีน้ำเงินแบบชัดเจน เหมาะสำหรับดูเทรนด์ขึ้นลงของปริมาณงาน
                     </p>
                   </div>
                 </div>
 
                 @if (count($trendLabels) && count($trendCounts))
-                  {{-- สูงขึ้นหน่อย ให้เส้นดูลอย ๆ แบบกราฟหุ้น --}}
-                  <div class="mt-4 h-72">
+                  <div class="mt-4 h-80 w-full">
                     <canvas id="trendChart"
+                            class="block w-full h-full"
                             data-labels='@json($trendLabels, JSON_INVALID_UTF8_SUBSTITUTE)'
                             data-values='@json($trendCounts, JSON_INVALID_UTF8_SUBSTITUTE)'></canvas>
                   </div>
@@ -354,26 +433,26 @@
                 @endif
               </div>
 
-              {{-- Chart 3: Asset types --}}
+              {{-- Donut chart --}}
               <div class="rounded-xl border border-zinc-200 bg-white/80 px-4 py-4 sm:px-5 sm:py-4">
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <div class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
-                      กราฟที่ 3 — สัดส่วนหมวดหมู่ครุภัณฑ์ (Pie chart)
+                      กราฟที่ 4 — สัดส่วนหมวดหมู่ครุภัณฑ์ (Donut chart)
                     </div>
                     <h3 class="mt-2 text-sm sm:text-base font-semibold text-zinc-900">
-                      สัดส่วนหมวดหมู่ครุภัณฑ์ที่ถูกแจ้งซ่อม (Top 8 + หมวดอื่น ๆ)
+                      สัดส่วนหมวดหมู่ครุภัณฑ์ที่ถูกแจ้งซ่อม (ทั้งหมด)
                     </h3>
                     <p class="mt-0.5 text-xs text-zinc-500">
-                      แสดงสัดส่วนของหมวดหมู่ครุภัณฑ์ที่มีการแจ้งซ่อม เพื่อดูว่าครุภัณฑ์ประเภทใดมีปัญหาบ่อย
-                      สามารถใช้เป็นข้อมูลประกอบการจัดทำแผนซ่อมบำรุงและเปลี่ยนทดแทน
+                      แสดงสัดส่วนของหมวดหมู่ครุภัณฑ์ในรูปแบบวงแหวน พร้อมเปอร์เซ็นต์ใน Tooltip โดยใช้ข้อมูลทุกหมวดหมู่ที่มี
                     </p>
                   </div>
                 </div>
 
                 @if (count($typeLabels) && count($typeCounts))
-                  <div class="mt-4 h-72">
+                  <div class="mt-4 h-80 w-full">
                     <canvas id="typePie"
+                            class="block w-full h-full"
                             data-labels='@json($typeLabels, JSON_INVALID_UTF8_SUBSTITUTE)'
                             data-values='@json($typeCounts, JSON_INVALID_UTF8_SUBSTITUTE)'></canvas>
                   </div>
@@ -389,11 +468,11 @@
           {{-- Divider --}}
           <div class="h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent"></div>
 
-          {{-- ส่วนที่ 3: Recent jobs --}}
+          {{-- ส่วนที่ 3: รายการล่าสุด --}}
           <div class="space-y-3">
             <div class="flex flex-col gap-1">
               <div class="inline-flex items-center gap-2 rounded-full bg-zinc-900/5 px-3 py-1 text-[11px] font-semibold text-zinc-800">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-[10px] text-zinc-50 shadow-sm">
+                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-[10px] text-zinc-50">
                   3
                 </span>
                 <span>ส่วนที่ 3 • รายการแจ้งซ่อมล่าสุด</span>
@@ -401,10 +480,6 @@
               <h2 class="text-sm sm:text-base font-semibold text-zinc-900">
                 รายการงานซ่อมล่าสุด (Recent Jobs)
               </h2>
-              <p class="mt-0.5 text-xs text-zinc-500 max-w-2xl">
-                แสดงคำขอซ่อมล่าสุดไม่เกิน 12 รายการ พร้อมข้อมูลครุภัณฑ์ ผู้แจ้ง ผู้รับผิดชอบ และวันที่แล้วเสร็จ
-                เหมาะสำหรับติดตามสถานะงานแบบวันต่อวัน
-              </p>
             </div>
 
             <div class="overflow-x-auto rounded-xl border border-zinc-200 bg-white/80">
@@ -518,12 +593,11 @@
 
   <script>
   (function(){
-    // Toggle filters panel
+    // Toggle filters panel (panel อยู่ใน Header sticky)
     document.addEventListener('DOMContentLoaded', () => {
       const btn = document.getElementById('filterToggle');
       const panel = document.getElementById('filtersPanel');
       if (btn && panel) {
-        // default hidden/visible ตาม class เดิม
         if (!@json($filtersActive)) {
           panel.classList.add('hidden');
         }
@@ -559,29 +633,51 @@
     ];
     const CHART_INSTANCES = {};
 
+    // Bar chart หน่วยงาน: สีอ่อน + แท่งมุมโค้ง
     function makeBarChart(el){
       const { labels, values } = parseData(el);
       if (!labels.length || !values.length) return;
       const id = el.id || 'deptBar';
       if (CHART_INSTANCES[id]) CHART_INSTANCES[id].destroy();
 
+      const pastel = [
+        'rgba(37,99,235,0.45)',
+        'rgba(16,185,129,0.45)',
+        'rgba(245,158,11,0.45)',
+        'rgba(239,68,68,0.4)',
+        'rgba(14,165,233,0.45)',
+        'rgba(139,92,246,0.45)',
+        'rgba(20,184,166,0.45)',
+        'rgba(249,115,22,0.45)',
+      ];
+
       CHART_INSTANCES[id] = new Chart(el.getContext('2d'), {
         type: 'bar',
         data: {
           labels,
           datasets: [{
-            label: 'Jobs',
+            label: 'จำนวนงานซ่อม',
             data: values,
-            backgroundColor: labels.map((_,i)=> palette[i % palette.length]),
-            borderWidth: 0
+            backgroundColor: labels.map((_,i)=> pastel[i % pastel.length]),
+            borderColor: 'rgba(148,163,184,0.4)',
+            borderWidth: 1,
+            borderRadius: 8,
+            maxBarThickness: 32,
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            x: { grid: { display:false }, ticks: { color:'#475569' } },
-            y: { grid: { color:'rgba(0,0,0,.05)' }, ticks: { color:'#475569' }, beginAtZero:true, precision:0 }
+            x: {
+              grid: { display:false },
+              ticks: { color:'#475569' }
+            },
+            y: {
+              grid: { color:'rgba(148,163,184,0.18)' },
+              ticks: { color:'#475569', precision:0 },
+              beginAtZero:true
+            }
           },
           plugins: {
             legend: { display:false },
@@ -591,107 +687,195 @@
       });
     }
 
-    function makeLineChart(el){
-        const { labels, values } = parseData(el);
-        if (labels.length < 2 || values.length < 2) {
-            console.warn("ต้องมีข้อมูลอย่างน้อย 2 จุด ไม่งั้น Chart.js วาดเส้นไม่ได้");
+    // Trend chart: เปลี่ยนเป็น Bar chart แนวตั้ง
+    function makeTrendBarChart(el){
+      const { labels, values } = parseData(el);
+      if (!labels.length || !values.length) return;
+
+      if (CHART_INSTANCES[el.id]) CHART_INSTANCES[el.id].destroy();
+      const ctx = el.getContext('2d');
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, el.clientHeight || 260);
+      gradient.addColorStop(0, 'rgba(37,99,235,0.9)');
+      gradient.addColorStop(1, 'rgba(191,219,254,0.15)');
+
+      CHART_INSTANCES[el.id] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'จำนวนงานซ่อม / เดือน',
+            data: values,
+            backgroundColor: gradient,
+            borderColor: '#1d4ed8',
+            borderWidth: 1.5,
+            borderRadius: 6,
+            maxBarThickness: 40,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#6b7280' }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#6b7280' },
+              grid: { color: 'rgba(148,163,184,0.25)' }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { color: '#374151', usePointStyle: true, boxWidth: 10 }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15,23,42,0.92)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              callbacks: {
+                label: ctx => {
+                  const v = ctx.parsed.y ?? 0;
+                  return ` ${ctx.dataset.label}: ${v} งาน`;
+                }
+              }
+            }
+          }
         }
-
-        if (CHART_INSTANCES[el.id]) CHART_INSTANCES[el.id].destroy();
-
-        const ctx = el.getContext('2d');
-
-        // แก้ปัญหา gradient ไม่ขึ้นเพราะ canvas height = 0
-        const h = el.clientHeight || 200;
-
-        const gradient = ctx.createLinearGradient(0, 0, 0, h);
-        gradient.addColorStop(0, 'rgba(37,99,235,0.35)');
-        gradient.addColorStop(0.5, 'rgba(37,99,235,0.10)');
-        gradient.addColorStop(1, 'rgba(37,99,235,0.00)');
-
-        CHART_INSTANCES[el.id] = new Chart(ctx, {
-            type: 'line',
-            data: {
-            labels,
-            datasets: [{
-                label: 'จำนวนงานซ่อม',
-                data: values,
-                borderColor: '#1d4ed8',   // เส้นชัด
-                borderWidth: 3,            // หนา ชัดเจน
-                backgroundColor: gradient, // พื้นหลังฟ้าไล่เฉด
-                tension: 0.35,
-                fill: true,
-
-                // จุดชัด ๆ
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#1d4ed8',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2
-            }]
-            },
-            options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            scales: {
-                x: { grid: { display: false }, ticks: { color: '#475569' }},
-                y: {
-                beginAtZero: true,
-                ticks: { color: '#475569' },
-                grid: { color: 'rgba(148,163,184,0.25)' }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                backgroundColor: 'rgba(15,23,42,0.92)',
-                titleColor: '#fff',
-                bodyColor: '#fff',
-                callbacks: {
-                    label: ctx => ` ${ctx.parsed.y} งาน`
-                }
-                }
-            }
-            }
-        });
+      });
     }
 
+    // Donut chart
     function makePieChart(el){
       const { labels, values } = parseData(el);
       if (!labels.length || !values.length) return;
       const id = el.id || 'typePie';
       if (CHART_INSTANCES[id]) CHART_INSTANCES[id].destroy();
 
+      const total = values.reduce((a,b)=> a + (Number(b)||0), 0);
+
       CHART_INSTANCES[id] = new Chart(el.getContext('2d'), {
-        type: 'pie',
+        type: 'doughnut',
         data: {
           labels,
           datasets: [{
             data: values,
             backgroundColor: labels.map((_,i)=> palette[i % palette.length]),
-            borderWidth: 0
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            borderRadius: 4,
           }]
         },
         options: {
           responsive:true,
           maintainAspectRatio:false,
+          cutout: '60%',
           plugins:{
-            legend:{ position:'bottom', labels:{ color:'#334155' } }
+            legend:{
+              position:'right',
+              labels:{ color:'#334155', usePointStyle:true, boxWidth:10 }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15,23,42,0.92)',
+              titleColor: '#e5e7eb',
+              bodyColor: '#f9fafb',
+              callbacks: {
+                label: (ctx) => {
+                  const value = ctx.parsed;
+                  const percent = total ? (value / total * 100).toFixed(1) : 0;
+                  return ` ${ctx.label}: ${value} งาน (${percent}%)`;
+                }
+              }
+            }
           }
         }
       });
     }
 
+    // สรุปสถานะ: bar แนวนอน
+    function makeStatusTrend(el) {
+      el.style.width  = '100%';
+      el.style.height = '100%';
+
+      const pending   = Number(el.dataset.pending || 0);
+      const progress  = Number(el.dataset.progress || 0);
+      const completed = Number(el.dataset.completed || 0);
+      const total     = Number(el.dataset.total || 0);
+
+      const labels = ['Pending', 'In Progress', 'Completed', 'Total'];
+      const data   = [pending, progress, completed, total];
+
+      const ctx = el.getContext('2d');
+
+      if (CHART_INSTANCES['statusTrend']) {
+        CHART_INSTANCES['statusTrend'].destroy();
+      }
+
+      CHART_INSTANCES['statusTrend'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'จำนวนงานซ่อม',
+              data,
+              backgroundColor: [
+                'rgba(251,191,36,0.85)',
+                'rgba(59,130,246,0.85)',
+                'rgba(16,185,129,0.85)',
+                'rgba(15,23,42,0.92)',
+              ],
+              borderRadius: 8,
+              borderSkipped: false,
+              maxBarThickness: 36,
+            },
+          ],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: { color: '#475569' },
+              grid: { color: 'rgba(148,163,184,0.25)' },
+            },
+            y: {
+              ticks: { color: '#475569' },
+              grid: { display: false },
+            },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(15,23,42,0.92)',
+              titleColor: '#e5e7eb',
+              bodyColor: '#f9fafb',
+              callbacks: {
+                label: (ctx) => ` ${ctx.parsed.x} งาน`,
+              },
+            },
+          },
+        },
+      });
+    }
+
     async function renderCharts(){
       try { await waitFor(()=> window.Chart?.registry); } catch(_) { return; }
-      const deptBar    = document.getElementById('deptBar');
-      const trendChart = document.getElementById('trendChart');
-      const typePie    = document.getElementById('typePie');
+      const deptBar     = document.getElementById('deptBar');
+      const trendChart  = document.getElementById('trendChart');
+      const typePie     = document.getElementById('typePie');
+      const statusTrend = document.getElementById('statusTrend');
 
-      if (deptBar)    makeBarChart(deptBar);
-      if (trendChart) makeLineChart(trendChart);
-      if (typePie)    makePieChart(typePie);
+      if (statusTrend) makeStatusTrend(statusTrend);
+      if (deptBar)     makeBarChart(deptBar);
+      if (trendChart)  makeTrendBarChart(trendChart);
+      if (typePie)     makePieChart(typePie);
     }
 
     const LOTTIE = {
@@ -775,59 +959,58 @@
       card.append(icon, msg, btn, bar);
       posEl.appendChild(card);
 
+      // แสดงการ์ด + แถบเวลา
       requestAnimationFrame(() => {
         card.classList.add('show');
+        fill.style.transitionDuration = timeout + 'ms';
         requestAnimationFrame(() => {
-          fill.style.transition = `width ${timeout}ms linear`;
           fill.style.width = '100%';
         });
       });
 
-      let timer = setTimeout(close, timeout + 60);
-      function close(){
+      let closed = false;
+      function close() {
+        if (closed) return;
+        closed = true;
         card.classList.remove('show');
-        setTimeout(()=> card.remove(), 200);
+        setTimeout(() => {
+          card.remove();
+        }, 220);
       }
-      btn.addEventListener('click', close);
 
+      btn.addEventListener('click', () => {
+        close();
+      });
+
+      const autoTimer = setTimeout(close, timeout);
       card.addEventListener('mouseenter', () => {
-        fill.style.transition = 'none';
-        const w = getComputedStyle(fill).width;
-        fill.style.width = w;
-        clearTimeout(timer);
+        clearTimeout(autoTimer);
       });
-      card.addEventListener('mouseleave', () => {
-        const done = parseFloat(getComputedStyle(fill).width) / card.clientWidth;
-        const remainMs = Math.max(0, 1 - done) * timeout;
-        requestAnimationFrame(() => {
-          fill.style.transition = `width ${remainMs}ms linear`;
-          fill.style.width = '100%';
-        });
-        timer = setTimeout(close, remainMs + 50);
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') close();
-      }, { once:true });
     }
 
+    // export ไว้เรียกจากที่อื่นได้ถ้าต้องการ
     window.showToast = showToast;
-    window.addEventListener('app:toast', e => showToast(e.detail || {}));
+    window.AppToast  = { show: showToast };
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      try { await renderCharts(); } catch(e) { /* noop */ }
+    // โหลดกราฟ + แสดง Toast อัตโนมัติถ้ามี message จาก backend
+    document.addEventListener('DOMContentLoaded', () => {
+      // สร้างกราฟทั้งหมด
+      renderCharts();
 
-      @if (($type ?? null) && ($message ?? null))
-        await lottieReady().catch(()=>{});
-        window.showToast({
-          type: @json($type),
-          message: @json($message),
-          position: @json($position),
-          timeout: @json($timeout),
-          size: @json($size ?? 'lg')
+      const hasMessage = @json((bool) $message);
+      if (hasMessage) {
+        lottieReady().finally(() => {
+          showToast({
+            type: @json($type ?? 'info'),
+            message: @json($message ?? ''),
+            position: @json($position ?? 'tc'),
+            timeout: @json($timeout ?? 3200),
+            size: @json($size ?? 'lg'),
+          });
         });
-      @endif
+      }
     });
+
   })();
   </script>
 @endsection

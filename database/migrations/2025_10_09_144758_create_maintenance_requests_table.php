@@ -30,6 +30,8 @@ return new class extends Migration {
             $table->string('reporter_name')->nullable();
             $table->string('reporter_phone', 30)->nullable();
             $table->string('reporter_email')->nullable();
+            $table->string('reporter_position')->nullable();   // <- เพิ่ม
+            $table->string('reporter_ip', 45)->nullable();     // <- เพิ่ม
 
             // หน่วยงาน/ตำแหน่ง/สถานที่ซ่อม
             $table->foreignId('department_id')->nullable()

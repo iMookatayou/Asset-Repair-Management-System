@@ -1,307 +1,268 @@
 {{-- resources/views/components/navbar.blade.php --}}
 @props([
-  'hospitalName' => 'โรงพยาบาลพระปกเกล้า PHRAPOKKLAO HOSPITAL',
-  'appName'      => 'PPK Information Technology Group',
-  'subtitle'     => 'Asset Repair Management',
-  'logo'         => asset('images/logoppk.png'),
-  'showLogout'   => Auth::check(),
+    'hospitalName'   => 'โรงพยาบาลพระปกเกล้าจันทบุรี',
+    'hospitalNameEn' => 'PHRAPOKKLAO HOSPITAL',
+    'appName'        => 'PPK Information Technology Group',
+    'systemName'     => 'Asset Repair Management',
+    'logo'           => asset('images/logoppk.png'),
+    'showLogout'     => Auth::check(),
 ])
 
 @php $user = Auth::user(); @endphp
 
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top navbar-hero">
-  <div class="container-xl">
-    <div class="d-flex align-items-stretch w-100">
+<nav class="navbar navbar-expand-lg fixed-top navbar-ppk">
+    <div class="container-fluid px-4 h-100 position-relative">
 
-      {{-- LEFT LOGO + TEXT --}}
-      <a class="navbar-brand d-flex align-items-center gap-3 brand-block" href="{{ url('/') }}" data-no-loader>
-        <div class="brand-logo-wrap d-flex align-items-center justify-content-center flex-shrink-0">
-          <img src="{{ $logo }}" alt="Logo" class="brand-logo">
+        {{-- ========== LEFT SIDE: SYSTEM NAME + HOSPITAL + LINE เข้าหาโลโก้ ========== --}}
+        <div class="nav-side nav-left d-none d-lg-flex align-items-center h-100">
+
+            <div class="nav-left-text d-flex flex-column justify-content-center lh-sm">
+                {{-- บรรทัดบน: Asset Repair Management --}}
+                <span class="brand-system-main ff-sarabun">
+                    {{ $systemName }}
+                </span>
+                {{-- บรรทัดสอง: PHRAPOKKLAO HOSPITAL --}}
+                <span class="brand-hospital-en ff-sarabun">
+                    {{ $hospitalNameEn }}
+                </span>
+                {{-- บรรทัดสาม: โรงพยาบาลพระปกเกล้า --}}
+                <span class="brand-hospital-th ff-sarabun">
+                    {{ $hospitalName }}
+                </span>
+            </div>
+
+            <div class="brand-divider mx-3"></div>
+
+            {{-- เส้นจากข้อความซ้ายไปหาตรงกลาง --}}
+            <div class="nav-line nav-line-left ms-4 flex-grow-1"></div>
         </div>
 
-        <div class="d-flex flex-column lh-sm brand-text ff-sarabun">
-          {{-- บรรทัดชื่อโรงพยาบาล (ไทย+อังกฤษ) --}}
-          <div class="brand-title-wrap">
-            <span class="brand-hospital-th">
-              {{ $hospitalName }}
-            </span>
-          </div>
-
-          {{-- แถบข้อมูลระบบ (พยายามรวม 2 บรรทัดให้เป็นแถวเดียวกัน) --}}
-          <div class="brand-meta-wrap">
-            <span class="brand-app-en">
-              {{ $appName }}
-            </span>
-
-            <span class="brand-subtitle">
-              {{ $subtitle }}
-            </span>
-          </div>
+        {{-- ========== CENTER LOGO (อยู่กลางจอจริง ๆ) ========== --}}
+        <div class="nav-center-logo">
+            <a href="{{ url('/') }}" class="d-block" data-no-loader>
+                <img src="{{ $logo }}" alt="Logo" class="logo-img">
+            </a>
         </div>
-      </a>
 
-      <div class="flex-grow-1"></div>
+        {{-- ========== RIGHT SIDE: LINE เข้าหาโลโก้ + PROFILE ========== --}}
+        <div class="nav-side nav-right d-none d-lg-flex align-items-center h-100">
+            {{-- เส้นจากด้านขวาเข้าหาโลโก้ --}}
+            <div class="nav-line nav-line-right me-4 flex-grow-1"></div>
 
-      {{-- MOBILE BUTTONS --}}
-      <div class="d-flex align-items-center gap-2 d-lg-none me-2">
-        <button id="btnSidebar" class="btn btn-outline-light btn-sm" type="button">☰</button>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#topNav" aria-controls="topNav"
-                aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-      </div>
+            @auth
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 p-0 profile-trigger"
+                           href="#"
+                           id="profileDropdown"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false">
+                            <img src="{{ $user->avatar_url ?? asset('images/default-avatar.png') }}"
+                                 class="avatar-img" alt="Avatar">
+                            <span class="d-none d-xl-inline text-white ff-sarabun fw-semibold">
+                                {{ $user->name }}
+                            </span>
+                        </a>
 
-      {{-- RIGHT SIDE --}}
-      <div class="collapse navbar-collapse" id="topNav">
-        <ul class="navbar-nav ms-auto align-items-center gap-lg-3">
-          @auth
-            {{-- AVATAR BUTTON --}}
-            <li class="nav-item">
-              <a href="#"
-                 id="profilePopoverBtn"
-                 class="nav-link d-flex align-items-center gap-2 p-0 profile-trigger"
-                 role="button"
-                 data-no-loader
-                 aria-describedby="profilePopover">
-                <img src="{{ $user->avatar_url ?? asset('images/default-avatar.png') }}"
-                     alt="Avatar" class="avatar-img">
-                <span class="d-none d-md-inline fw-semibold ff-sarabun">{{ $user->name }}</span>
-                <i class="bi bi-caret-down-fill ms-1"></i>
-              </a>
-            </li>
-          @else
-            <li class="nav-item">
-              <a href="{{ route('login') }}" class="btn btn-light btn-sm ff-sarabun" data-no-loader>
-                เข้าสู่ระบบ
-              </a>
-            </li>
-          @endauth
-        </ul>
-      </div>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm profile-dropdown-menu"
+                            aria-labelledby="profileDropdown">
+                            <li class="px-3 pt-2 pb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="{{ $user->avatar_url ?? asset('images/default-avatar.png') }}"
+                                         width="42" height="42" class="rounded-circle" alt="Avatar">
+                                    <div class="ff-sarabun">
+                                        <div class="fw-semibold">{{ $user->name }}</div>
+                                        <div class="small text-muted">{{ $user->email }}</div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <a href="{{ route('profile.show') }}"
+                                   class="dropdown-item ff-sarabun d-flex align-items-center gap-2">
+                                    <i class="bi bi-person-lines-fill"></i>
+                                    โปรไฟล์ของฉัน
+                                </a>
+                            </li>
+                            @if($showLogout)
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li class="px-3 pb-2">
+                                    <form action="{{ route('logout') }}" method="POST" class="mb-0">
+                                        @csrf
+                                        <button class="btn btn-outline-danger btn-sm w-100 ff-sarabun d-flex justify-content-center align-items-center gap-2">
+                                            <i class="bi bi-box-arrow-right"></i>
+                                            ออกจากระบบ
+                                        </button>
+                                    </form>
+                                </li>
+                            @endif
+                        </ul>
+                    </li>
+                </ul>
+            @endauth
+
+            @guest
+                <a href="{{ route('login') }}"
+                   class="btn btn-light btn-sm ff-sarabun rounded-pill px-3">
+                    เข้าสู่ระบบ
+                </a>
+            @endguest
+        </div>
+
+        {{-- ========== MOBILE HEADER ========== --}}
+        <div class="d-flex d-lg-none w-100 align-items-center justify-content-between">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}" data-no-loader>
+                <img src="{{ $logo }}" width="40" height="40" alt="Logo">
+                <div class="d-flex flex-column lh-1">
+                    <span class="text-amber-300 fw-semibold" style="font-size: 0.82rem;">
+                        {{ $systemName }}
+                    </span>
+                    <span class="text-white fw-semibold" style="font-size: 0.9rem;">
+                        {{ $hospitalNameEn }}
+                    </span>
+                    <span class="text-white-50" style="font-size: 0.75rem;">
+                        {{ $hospitalName }}
+                    </span>
+                </div>
+            </a>
+            <button class="navbar-toggler custom-toggler" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#mobileMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+
     </div>
-  </div>
 </nav>
 
-@auth
-{{-- Profile Popover Template --}}
-<div id="profilePopoverContent" class="d-none">
-  <div class="p-2 ff-sarabun" style="min-width: 260px;">
-    <div class="d-flex align-items-center gap-2 mb-2">
-      <img src="{{ $user->avatar_url ?? asset('images/default-avatar.png') }}"
-           class="rounded-circle" width="40" height="40" alt="Avatar">
-      <div>
-        <div class="fw-semibold">{{ $user->name }}</div>
-        <div class="small text-muted">{{ $user->email }}</div>
-      </div>
+{{-- ========== MOBILE MENU ========== --}}
+<div class="collapse navbar-collapse bg-navy d-lg-none" id="mobileMenu">
+    <div class="p-3">
+        <div class="text-amber-300 mb-1 small ff-sarabun fw-semibold">
+            {{ $systemName }}
+        </div>
+        <div class="text-white ff-sarabun mb-3">
+            {{ $hospitalName }}
+        </div>
+
+        @auth
+            <div class="border-top border-secondary pt-3">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <img src="{{ $user->avatar_url ?? asset('images/default-avatar.png') }}"
+                         width="32" class="rounded-circle">
+                    <div class="text-white ff-sarabun">{{ $user->name }}</div>
+                </div>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button class="btn btn-danger w-100 btn-sm ff-sarabun">ออกจากระบบ</button>
+                </form>
+            </div>
+        @endauth
     </div>
-
-    <a href="{{ route('profile.show') }}" class="dropdown-item py-2 d-flex align-items-center gap-2" data-no-loader>
-      <i class="bi bi-person-lines-fill"></i> โปรไฟล์ของฉัน
-    </a>
-
-    @if($showLogout)
-      <div class="mt-2">
-        <form method="POST" action="{{ route('logout') }}" class="mb-0" data-no-loader>
-          @csrf
-          <button class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
-            <i class="bi bi-box-arrow-right"></i> ออกจากระบบ
-          </button>
-        </form>
-      </div>
-    @endif
-  </div>
 </div>
-@endauth
 
 <style>
-  :root {
-    --navbar-bg-grad: linear-gradient(90deg, #0a1f46 0%, #0F2D5C 40%, #16407f 100%);
-    --navbar-text: #EAF2FF;
-  }
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 
-  .navbar-hero {
-    background: var(--navbar-bg-grad);
-    color: var(--navbar-text);
-    padding-block: 0.85rem;
-    min-height: 86px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    border-bottom: none !important;
-  }
+:root {
+    --nav-height: 96px;      /* สูงขึ้นให้มีทรงมากขึ้น */
+    --nav-bg: #0F2D5C;
+}
 
-  /* LOGO */
-  .brand-logo-wrap {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-  }
+.ff-sarabun { font-family: 'Sarabun', sans-serif !important; }
 
-  .brand-logo {
-    width: 70px;
-    height: 70px;
-    object-fit: contain;
-  }
+.navbar-ppk {
+    height: var(--nav-height);
+    background-color: var(--nav-bg);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.22);
+    padding: 0;
+    z-index: 1200;
+}
 
-  .brand-block {
-    position: relative;
-  }
-
-  .brand-text {
-    position: relative;
+/* ซ้าย/ขวา ใช้พื้นที่ครึ่งละไม่ล้ำเข้าโลโก้ */
+.nav-side {
+    flex: 1;
     min-width: 0;
-    padding-left: 1.25rem;
-  }
+    max-width: calc(50% - 90px);
+}
 
-  /* เส้นนำสายตาแนวตั้งเพิ่มมิติ */
-  .brand-text::before {
-    content: "";
+/* กล่องข้อความฝั่งซ้ายให้สูงกลาง nav */
+.nav-left-text span { display: block; }
+
+/* โลโก้ตรงกลางจอ 100% */
+.nav-center-logo {
     position: absolute;
-    left: 0;
-    top: 8%;
-    bottom: 8%;
-    width: 2px;
-    border-radius: 999px;
-    background: linear-gradient(to bottom, rgba(255,255,255,.95), rgba(255,255,255,.05));
-    box-shadow: 0 0 8px rgba(0,0,0,.4);
-    opacity: .9;
-  }
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+}
 
-  /* ชื่อโรงพยาบาล (ไทย + ENG) */
-  .brand-title-wrap {
-    position: relative;
-  }
+.logo-img {
+    height: 78px;
+    width: auto;
+}
 
-  .brand-hospital-th {
-    font-size: 1.24rem;
+/* Text styles */
+.brand-system-main {
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fbbf24;
+    font-weight: 600;
+}
+.brand-hospital-en {
+    font-size: 1.25rem;
     font-weight: 700;
     color: #ffffff;
-    letter-spacing: .02em;
-    text-shadow:
-      0 1px 3px rgba(0,0,0,.55),
-      0 0 22px rgba(0,0,0,.35);
-    white-space: nowrap;
-  }
-
-  /* block ข้างล่าง (รวม 2 บรรทัดให้เป็นแถวเดียวในจอใหญ่) */
-  .brand-meta-wrap {
-    margin-top: 6px;
-    padding-top: 4px;
-    border-top: 1px solid rgba(234,242,255,.28);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    column-gap: .75rem;
-    row-gap: .08rem;
-  }
-
-  /* PPK Information Technology Group */
-  .brand-app-en {
-    font-size: 0.88rem;
-    font-weight: 500;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: rgba(234,242,255,.95);
-    white-space: nowrap;
-  }
-
-  .brand-dot {
+    letter-spacing: 0.03em;
+}
+.brand-hospital-th {
     font-size: 0.9rem;
-    opacity: .8;
-    color: rgba(234,242,255,.7);
-  }
+    color: rgba(255,255,255,0.9);
+}
 
-  /* Subtitle */
-  .brand-subtitle {
-    font-size: 0.8rem;
-    color: rgba(234,242,255,.85);
-    white-space: nowrap;
-  }
+/* เส้นแบ่งเล็กระหว่าง block และเส้นยาว */
+.brand-divider {
+    width: 1px;
+    height: 40px;
+    background-color: rgba(255,255,255,0.45);
+}
 
-  /* AVATAR */
-  .avatar-img {
-    width: 40px !important;
-    height: 40px !important;
+/* เส้นยาวจากสองฝั่งมาหาโลโก้ */
+.nav-line {
+    height: 2px;
+    opacity: 0.7;
+}
+.nav-line-left {
+    background: linear-gradient(to right, rgba(255,255,255,0.9), rgba(255,255,255,0.1), transparent);
+}
+.nav-line-right {
+    background: linear-gradient(to left, rgba(255,255,255,0.9), rgba(255,255,255,0.1), transparent);
+}
+
+/* Avatar / Profile */
+.avatar-img {
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    border: 2px solid rgba(255,255,255,.85);
+    border: 2px solid rgba(255,255,255,0.4);
     object-fit: cover;
-  }
+}
+.profile-dropdown-menu {
+    min-width: 260px;
+    border-radius: 10px;
+    border: none;
+}
 
-  .ff-sarabun {
-    font-family: 'Sarabun', system-ui, -apple-system, BlinkMacSystemFont,
-                 "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-  }
+/* Mobile */
+.bg-navy { background-color: var(--nav-bg); }
 
-  .popover { z-index: 2300; }
-  .popover .popover-body { padding: 0; }
-
-  @media (max-width: 1199.98px) {
-    .brand-hospital-th {
-      font-size: 1.12rem;
-      white-space: normal;
+@media (max-width: 991px) {
+    .navbar-ppk {
+        height: 68px;
+        padding: 0 1rem;
     }
-  }
-
-  @media (max-width: 991.98px) {
-    .brand-text {
-      padding-left: 0.9rem;
-    }
-
-    .brand-text::before {
-      left: 0;
-      top: 10%;
-      bottom: 10%;
-      opacity: .75;
-    }
-
-    .brand-hospital-th {
-      font-size: 1.02rem;
-    }
-
-    .brand-app-en {
-      font-size: 0.82rem;
-      letter-spacing: .12em;
-      white-space: normal;
-    }
-
-    .brand-subtitle {
-      font-size: 0.76rem;
-      white-space: normal;
-    }
-  }
+    .nav-center-logo { display: none; }
+}
 </style>
-
-@auth
-@push('scripts')
-<script>
-  (function () {
-    const btn = document.getElementById('profilePopoverBtn');
-    const tpl = document.getElementById('profilePopoverContent');
-
-    if (!btn || !tpl || !window.bootstrap) return;
-
-    const pop = new bootstrap.Popover(btn, {
-      html: true,
-      content: tpl.innerHTML,
-      placement: 'bottom',
-      trigger: 'manual',
-      sanitize: false
-    });
-
-    function closeAll() {
-      document.querySelectorAll('.popover.show').forEach(e => e.remove());
-    }
-
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      document.querySelector('.popover.show') ? closeAll() : pop.show();
-    });
-
-    document.addEventListener('click', (e) => {
-      const isBtn = e.target.closest('#profilePopoverBtn');
-      const isPop = e.target.closest('.popover');
-      if (!isBtn && !isPop) closeAll();
-    }, true);
-  })();
-</script>
-@endpush
-@endauth

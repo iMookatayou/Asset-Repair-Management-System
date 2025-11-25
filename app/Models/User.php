@@ -17,15 +17,19 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    // บทบาทตามที่ตกลง (เก็บเป็นโค้ดสั้นสำหรับระบบ)
-    public const ROLE_ADMIN             = 'admin';     // ผู้ดูแลระบบ Admin
-    public const ROLE_SUPERVISOR        = 'supervisor';// หัวหน้า Supervisor
-    public const ROLE_IT_SUPPORT        = 'it_support';// ไอทีซัพพอร์ต IT Support
-    public const ROLE_NETWORK           = 'network';   // เน็ตเวิร์ค Network
-    public const ROLE_DEVELOPER         = 'developer'; // นักพัฒนา Developer
-    public const ROLE_MEMBER            = 'member';    // บุคลากรทั่วไป (ในตาราง roles)
-    public const ROLE_COMPUTER_OFFICER  = self::ROLE_MEMBER; // alias เดิม (กันโค้ดเก่า)
-    public const ROLE_TECHNICIAN        = 'technician';      // ช่างซ่อมบำรุง Technician
+    /* -------------------------------------------------------------
+     |  Role Constants
+     |--------------------------------------------------------------*/
+
+    public const ROLE_ADMIN       = 'admin';
+    public const ROLE_SUPERVISOR  = 'supervisor';
+    public const ROLE_IT_SUPPORT  = 'it_support';
+    public const ROLE_NETWORK     = 'network';
+    public const ROLE_DEVELOPER   = 'developer';
+    public const ROLE_MEMBER      = 'member';
+    public const ROLE_COMPUTER_OFFICER = self::ROLE_MEMBER;
+    public const ROLE_TECHNICIAN  = 'technician';
+
     protected $fillable = [
         'name',
         'email',
@@ -46,8 +50,6 @@ class User extends Authenticatable
         'avatar_thumb_url',
         'department_name',
         'role_label',
-        // 'rating_average',
-        // 'rating_count',
     ];
 
     protected function casts(): array
@@ -57,6 +59,37 @@ class User extends Authenticatable
             'password'          => 'hashed',
         ];
     }
+
+    /* -------------------------------------------------------------
+     |  Assignment Relations (NEW SYSTEM)
+     |--------------------------------------------------------------*/
+
+    // assignment ทุกงานที่ user คนนี้ถูกมอบหมาย
+    public function maintenanceAssignments()
+    {
+        return $this->hasMany(MaintenanceAssignment::class, 'user_id');
+    }
+
+    // ดึง "งานทั้งหมดที่คนนี้ต้องทำ" – ชื่อใหม่ที่เราออกแบบ
+    public function assignedMaintenanceRequests()
+    {
+        return $this->belongsToMany(MaintenanceRequest::class, 'maintenance_assignments')
+                    ->withPivot(['role', 'is_lead', 'assigned_at', 'status'])
+                    ->withTimestamps();
+    }
+
+    /**
+     * alias สำหรับโค้ดเก่า:
+     * เดิมเคยใช้ assignedRequests() → ตอนนี้ให้ชี้มาที่ของใหม่
+     */
+    public function assignedRequests()
+    {
+        return $this->assignedMaintenanceRequests();
+    }
+
+    /* -------------------------------------------------------------
+     |  Role Helpers
+     |--------------------------------------------------------------*/
 
     public function isAdmin(): bool
     {
@@ -68,26 +101,18 @@ class User extends Authenticatable
         return $this->role === self::ROLE_SUPERVISOR;
     }
 
-    // สมาชิกธรรมดา (บุคลากร Member)
     public function isMember(): bool
     {
-        return in_array($this->role, [self::ROLE_MEMBER, self::ROLE_COMPUTER_OFFICER], true);
-    }
-
-    public function isTechnician(): bool
-    {
         return in_array($this->role, [
-            self::ROLE_IT_SUPPORT,
-            self::ROLE_NETWORK,
-            self::ROLE_DEVELOPER,
-            self::ROLE_TECHNICIAN,
+            self::ROLE_MEMBER,
+            self::ROLE_COMPUTER_OFFICER,
         ], true);
     }
 
-    // Legacy compatibility method (staff removed); always false
-    public function isStaff(): bool
+    // คนที่ “ทำงานได้” (ทุก role ยกเว้น member)
+    public function isTechnician(): bool
     {
-        return false;
+        return in_array($this->role, self::workerRoles(), true);
     }
 
     public function isWorker(): bool
@@ -95,11 +120,9 @@ class User extends Authenticatable
         return $this->isTechnician();
     }
 
-    // helper generic
     public function hasRole(string|array $roles): bool
     {
-        $roles = (array) $roles;
-        return in_array($this->role, $roles, true);
+        return in_array($this->role, (array) $roles, true);
     }
 
     public static function availableRoles(): array
@@ -111,11 +134,9 @@ class User extends Authenticatable
             ->all();
     }
 
-    // บทบาทที่ถือว่าเป็นทีมปฏิบัติการ (worker)
+    // กลุ่มที่ถือว่าคือ “ทีมช่าง / ทีมปฏิบัติการ”
     public static function workerRoles(): array
     {
-        // ถ้าอยากให้มาจาก DB ทั้งหมด ก็ไปดึงจาก Role table ได้เหมือนกัน
-        // ตอนนี้ยัง fix กลุ่มที่เป็นช่างไว้ก่อน
         return [
             self::ROLE_IT_SUPPORT,
             self::ROLE_NETWORK,
@@ -124,15 +145,15 @@ class User extends Authenticatable
         ];
     }
 
-    // บทบาทที่แสดงใน Team Drawer (หัวหน้า + ทีมปฏิบัติการ)
     public static function teamRoles(): array
     {
         return array_merge([self::ROLE_SUPERVISOR], self::workerRoles());
     }
 
-    /**
-     * แผนที่บทบาท -> ป้ายกำกับ ไทย (ดึงจาก roles.name_th)
-     */
+    /* -------------------------------------------------------------
+     |  Role Labels + RoleRef
+     |--------------------------------------------------------------*/
+
     public static function roleLabels(): array
     {
         return Role::query()
@@ -145,15 +166,17 @@ class User extends Authenticatable
     public function getRoleLabelAttribute(): string
     {
         $labels = self::roleLabels();
-        return $labels[$this->role] ?? (ucfirst((string) $this->role) ?: '-');
+        return $labels[$this->role] ?? ucfirst((string) $this->role);
     }
 
-    // relation อ้างอิง role record จริง
     public function roleRef()
     {
-        // users.role (local key) → roles.code (owner key)
         return $this->belongsTo(Role::class, 'role', 'code');
     }
+
+    /* -------------------------------------------------------------
+     |  Scopes
+     |--------------------------------------------------------------*/
 
     public function scopeRole($q, string $role)
     {
@@ -181,25 +204,23 @@ class User extends Authenticatable
         return $q->whereIn('role', self::workerRoles());
     }
 
-    // งานซ่อมที่ user คนนี้เป็นผู้แจ้ง
+    /* -------------------------------------------------------------
+     |  Other Relations
+     |--------------------------------------------------------------*/
+
+    // ผู้แจ้งงาน
     public function reportedRequests()
     {
         return $this->hasMany(MaintenanceRequest::class, 'reporter_id');
     }
 
-    // งานซ่อมที่ user คนนี้เป็นช่างผู้รับผิดชอบ
-    public function assignedRequests()
-    {
-        return $this->hasMany(MaintenanceRequest::class, 'technician_id');
-    }
-
-    // log ต่าง ๆ
+    // Log การทำงานของ user
     public function logs()
     {
         return $this->hasMany(MaintenanceLog::class, 'user_id');
     }
 
-    // แผนกอ้างอิง (ถ้ามี table departments แยก)
+    // แผนกอ้างอิง
     public function departmentRef()
     {
         return $this->belongsTo(Department::class, 'department', 'code');
@@ -209,6 +230,10 @@ class User extends Authenticatable
     {
         return $this->departmentRef?->name;
     }
+
+    /* -------------------------------------------------------------
+     |  Ratings (คะแนนหลังซ่อม)
+     |--------------------------------------------------------------*/
 
     public function givenRatings()
     {
@@ -225,7 +250,6 @@ class User extends Authenticatable
         if (!$this->technicianRatings()->exists()) {
             return null;
         }
-
         return round((float) $this->technicianRatings()->avg('score'), 2);
     }
 
@@ -233,6 +257,10 @@ class User extends Authenticatable
     {
         return (int) $this->technicianRatings()->count();
     }
+
+    /* -------------------------------------------------------------
+     |  Avatar URL Logic
+     |--------------------------------------------------------------*/
 
     public function getAvatarUrlAttribute(): string
     {
@@ -264,6 +292,7 @@ class User extends Authenticatable
         $palette = ['0D8ABC','0E2B51','16A34A','7C3AED','EA580C','DB2777','374151'];
         $idx = crc32(strtolower($this->name ?? 'user')) % count($palette);
         $bg  = $palette[$idx];
+
         return "https://ui-avatars.com/api/?name={$name}&background={$bg}&color=fff&size={$size}&bold=true";
     }
 }

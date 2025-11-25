@@ -322,13 +322,19 @@
   </script>
 
   {{-- ===== Global Team Drawer (accessible on all authenticated pages) ===== --}}
-  @if(Auth::check())
+    @if(Auth::check())
     @php
       // Query team (admins + technicians) with active workload counts
       $globalTeam = \App\Models\User::query()
         ->whereIn('role', \App\Models\User::teamRoles())
         ->withCount([
-          'assignedRequests as active_count' => fn($q) => $q->whereNotIn('status',[ 'resolved','closed','cancelled' ]),
+          'assignedRequests as active_count' => function ($q) {
+            $q->whereNotIn('maintenance_requests.status', [
+                \App\Models\MaintenanceRequest::STATUS_RESOLVED,
+                \App\Models\MaintenanceRequest::STATUS_CLOSED,
+                \App\Models\MaintenanceRequest::STATUS_CANCELLED,
+            ]);
+        },
           'assignedRequests as total_count',
         ])
         ->orderBy('name')
