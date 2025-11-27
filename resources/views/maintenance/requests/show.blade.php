@@ -47,108 +47,110 @@
   @endphp
 
   <div class="bg-slate-50 border-b border-slate-200">
-    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-5">
-      <div class="flex flex-wrap items-start justify-between gap-4">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
+    <div class="flex flex-wrap justify-between gap-4 items-start">
 
-        {{-- LEFT: Title + meta --}}
-        <div class="space-y-2">
-          <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-3">
-            <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                <path d="M4 7h16M4 12h10M4 17h6"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+      {{-- LEFT: Title + meta --}}
+      <div class="space-y-1">
+        <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-3">
+          <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none">
+              <path d="M4 7h16M4 12h10M4 17h6"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="flex flex-wrap items-baseline gap-2">
+            <span class="text-[18px] sm:text-[20px]">แบบฟอร์มสรุปงานซ่อม</span>
+            <span class="text-sm text-slate-500 flex items-center gap-1">
+              หมายเลขใบงาน
+              <span id="rid" class="font-medium text-slate-800">#{{ $req->id }}</span>
             </span>
-            <span class="flex flex-wrap items-baseline gap-2">
-              <span class="text-[18px] sm:text-[20px]">แบบฟอร์มสรุปงานซ่อม</span>
-              <span class="text-sm text-slate-500 flex items-center gap-1">
-                หมายเลขใบงาน
-                <span id="rid" class="font-medium text-slate-800">#{{ $req->id }}</span>
+            @if($req->request_no)
+              <span class="inline-flex items-center rounded-full border border-slate-300 bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-700">
+                เลขอ้างอิง: {{ $req->request_no }}
               </span>
-              @if($req->request_no)
-                <span class="inline-flex items-center rounded-full border border-slate-300 bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-700">
-                  เลขอ้างอิง: {{ $req->request_no }}
-                </span>
-              @endif
-            </span>
-          </h1>
-
-          <div class="flex flex-wrap items-center gap-2 text-xs sm:text-[13px]">
-            {{-- Asset --}}
-            <span class="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-slate-700">
-              <svg class="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none">
-                <path d="M4 7h16v10H4zM9 17V7"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              {{ $req->asset->name ?? $req->asset_id ?? 'ไม่ระบุครุภัณฑ์' }}
-            </span>
-
-            {{-- Status --}}
-            <span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 {{ $statusTone }}">
-              <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-              {{ $statusLabel }}
-            </span>
-
-            {{-- Priority --}}
-            <span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 {{ $prioTone }}">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                <path d="M12 3l3.5 7.5L23 11l-5.5 5.2L18.5 21 12 17.8 5.5 21l1-4.8L1 11l7.5-0.5L12 3z"
-                      stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-              </svg>
-              {{ $prioLabel }}
-            </span>
-
-            {{-- Workers --}}
-            <span class="inline-flex items-center gap-1 rounded-full border border-indigo-300 bg-indigo-50 px-2.5 py-1 text-indigo-800">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2"/>
-                <path d="M20 21v-2a3 3 0 0 0-2-2.82M15 3.5a3 3 0 0 1 0 5"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              ทีมช่าง: {{ $workerCount ? $workerCount.' คน' : 'ยังไม่มอบหมาย' }}
-            </span>
-          </div>
-        </div>
-
-        {{-- RIGHT: actions --}}
-        <div class="ml-auto flex flex-wrap items-center gap-2">
-          <button id="copyIdBtn" type="button"
-                  class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 hover:bg-slate-50">
-            <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
-              <path d="M9 9V5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2h-4M5 9h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2z"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            คัดลอกหมายเลขงาน
-          </button>
-
-          <button type="button" onclick="window.print()"
-                  class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 hover:bg-slate-50">
-            <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
-              <path d="M6 9V4h12v5M6 19h12v-6H6v6z"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M6 14h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            พิมพ์ใบสรุป
-          </button>
-
-          <a href="{{ route('maintenance.requests.index') }}"
-             class="inline-flex items-centeroly gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
-              <path d="M15 18l-6-6 6-6"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            กลับหน้ารายการ
-          </a>
-        </div>
+            @endif
+          </span>
+        </h1>
       </div>
 
-      <p class="mt-2 text-xs sm:text-sm text-slate-600">
-        แบบฟอร์มนี้ใช้สำหรับสรุปรายละเอียดงานซ่อม การมอบหมายทีมช่าง การเปลี่ยนสถานะ และไฟล์แนบที่เกี่ยวข้อง
-      </p>
+      {{-- RIGHT: actions --}}
+      <div class="ml-auto flex flex-wrap gap-2 items-center self-start">
+        <button id="copyIdBtn" type="button"
+                class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 hover:bg-slate-50">
+          <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
+            <path d="M9 9V5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2h-4M5 9h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2z"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          คัดลอกหมายเลขงาน
+        </button>
+
+        <a href="{{ route('maintenance.requests.work-order', ['req' => $req->id]) }}"
+           target="_blank"
+           class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 hover:bg-slate-50">
+          <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9V4h12v5M6 19h12v-6H6v6z"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 14h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          พิมพ์ Maintenance Work Order
+        </a>
+
+        <a href="{{ route('maintenance.requests.index') }}"
+           class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+            <path d="M15 18l-6-6 6-6"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          กลับหน้ารายการ
+        </a>
+      </div>
     </div>
+
+    {{-- แถวล่าง: แท็กสถานะ / ทรัพย์สิน / ทีมช่าง --}}
+    <div class="mt-3 flex flex-wrap items-center gap-2 text-xs sm:text-[13px]">
+      {{-- Asset --}}
+      <span class="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-slate-700">
+        <svg class="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none">
+          <path d="M4 7h16v10H4zM9 17V7"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        {{ $req->asset->name ?? $req->asset_id ?? 'ไม่ระบุครุภัณฑ์' }}
+      </span>
+
+      {{-- Status --}}
+      <span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 {{ $statusTone }}">
+        <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+        {{ $statusLabel }}
+      </span>
+
+      {{-- Priority --}}
+      <span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 {{ $prioTone }}">
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3l3.5 7.5L23 11l-5.5 5.2L18.5 21 12 17.8 5.5 21l1-4.8L1 11l7.5-0.5L12 3z"
+                stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        {{ $prioLabel }}
+      </span>
+
+      {{-- Workers --}}
+      <span class="inline-flex items-center gap-1 rounded-full border border-indigo-300 bg-indigo-50 px-2.5 py-1 text-indigo-800">
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2"/>
+          <path d="M20 21v-2a3 3 0 0 0-2-2.82M15 3.5a3 3 0 0 1 0 5"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        ทีมช่าง: {{ $workerCount ? $workerCount.' คน' : 'ยังไม่มอบหมาย' }}
+      </span>
+    </div>
+
+    <p class="mt-3 text-xs sm:text-sm text-slate-600">
+      แบบฟอร์มนี้ใช้สำหรับสรุปรายละเอียดงานซ่อม การมอบหมายทีมช่าง การเปลี่ยนสถานะ และไฟล์แนบที่เกี่ยวข้อง
+    </p>
   </div>
+</div>
 @endsection
 
 @section('content')

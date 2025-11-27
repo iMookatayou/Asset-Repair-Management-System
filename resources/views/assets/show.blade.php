@@ -107,17 +107,16 @@
             แก้ไขข้อมูล
           </a>
 
-          <button type="button"
-                  onclick="window.print()"
-                  class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+          <a href="{{ route('assets.print', $asset) }}"
+            target="_blank"
+            class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
             <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
-              <path d="M6 9V4h12v5M6 19h12v-6H6v6z"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M6 14h12"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M6 9V4h12v5M6 19h12v-6H6v6z"
+                    stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            พิมพ์ข้อมูล
-          </button>
+            พิมพ์ PDF
+            </a>
 
           <a href="{{ url('/api/assets/'.$asset->id.'?pretty=1') }}"
              target="_blank"

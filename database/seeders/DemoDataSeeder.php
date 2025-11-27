@@ -273,6 +273,7 @@ class DemoDataSeeder extends Seeder
         $hasReporterName  = Schema::hasColumn('maintenance_requests', 'reporter_name');
         $hasReporterPhone = Schema::hasColumn('maintenance_requests', 'reporter_phone');
         $hasReporterEmail = Schema::hasColumn('maintenance_requests', 'reporter_email');
+       // (มีคอลัมน์ใหม่อย่าง reporter_position, reporter_ip ก็เติมได้ภายหลังถ้าจะ seed)
         $hasDeptMR        = Schema::hasColumn('maintenance_requests', 'department_id');
         $hasLocationText  = Schema::hasColumn('maintenance_requests', 'location_text');
         $hasPriority      = Schema::hasColumn('maintenance_requests', 'priority');
@@ -356,9 +357,9 @@ class DemoDataSeeder extends Seeder
             return [$assigned, $accepted, $started, $onHold, $resolved, $closed, $completedLegacy];
         };
 
-        // Prepare idempotent, unique request number generator per period (MR-yyMM-####)
-        $existingSet     = [];
-        $prefixCounters  = [];
+        // ===== NEW: generator เลขเอกสารแบบ 681010687 (YY + XXXXXXX) =====
+        $existingSet    = [];
+        $yearCounters   = [];  // key = 'YY', value = last running (int)
 
         if (Schema::hasTable('maintenance_requests') && $hasRequestNo) {
             $existing = DB::table('maintenance_requests')
@@ -369,27 +370,29 @@ class DemoDataSeeder extends Seeder
             foreach ($existing as $no) {
                 $existingSet[$no] = true;
 
-                if (preg_match('/^MR-(\d{4})-(\d{4})$/', $no, $m)) {
-                    $prefix = $m[1];
-                    $suffix = (int) $m[2];
-
-                    $prefixCounters[$prefix] = max($prefixCounters[$prefix] ?? 1000, $suffix);
+                // match เฉพาะเลข 9 หลัก
+                if (preg_match('/^(\d{2})(\d{7})$/', $no, $m)) {
+                    $yy   = $m[1];
+                    $seq  = (int) $m[2];
+                    $yearCounters[$yy] = max($yearCounters[$yy] ?? 0, $seq);
                 }
             }
         }
 
         $usedInRun = [];
 
-        $makeRequestNo = function (Carbon $date) use (&$prefixCounters, &$existingSet, &$usedInRun) {
-            $prefix = $date->format('ym');
-            $last   = $prefixCounters[$prefix] ?? 1000;
+        $makeRequestNo = function (Carbon $date) use (&$yearCounters, &$existingSet, &$usedInRun) {
+            // ใช้ปี พ.ศ. 2 หลักสุดท้าย เช่น 2568 → 68
+            $beYear    = $date->year + 543;
+            $yy        = substr((string) $beYear, -2); // '68'
+            $lastSeq   = $yearCounters[$yy] ?? 0;
 
             do {
-                $last++;
-                $candidate = sprintf('MR-%s-%04d', $prefix, $last);
+                $lastSeq++;
+                $candidate = $yy . sprintf('%07d', $lastSeq); // ex. 68 + 0000687 → 680000687
             } while (isset($existingSet[$candidate]) || isset($usedInRun[$candidate]));
 
-            $prefixCounters[$prefix] = $last;
+            $yearCounters[$yy] = $lastSeq;
             $existingSet[$candidate] = true;
             $usedInRun[$candidate]   = true;
 

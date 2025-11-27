@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Support\Toast;
 
 class AssetController extends Controller
@@ -407,5 +408,33 @@ class AssetController extends Controller
         ]);
 
         return response()->json($payload, $status, [], $this->jsonOptions($request));
+    }
+
+    public function printPage(Request $request, Asset $asset)
+    {
+        $asset->load(['categoryRef','department'])
+            ->loadCount([
+                'maintenanceRequests as maintenance_requests_count',
+                'requestAttachments as attachments_count',
+            ]);
+
+        // ถ้าอยากส่งโลโก้ รพ. ไปด้วย
+        $hospital = [
+            'name_th' => 'โรงพยาบาลพระปกเกล้า',
+            'name_en' => 'PHRAPOKKLAO HOSPITAL',
+            'subtitle' => 'Asset Repair Management',
+            'logo' => asset('images/logoppk1.png'),
+        ];
+
+        $pdf = Pdf::loadView('assets.print', [
+            'asset'    => $asset,
+            'hospital' => $hospital,
+        ])->setPaper('A4', 'portrait'); // หรือ landscape ถ้าอยากแนวนอน
+
+        // ถ้าจะให้โหลดในแท็บใหม่
+        return $pdf->stream('asset-'.$asset->asset_code.'.pdf');
+
+        // ถ้าจะให้ดาวน์โหลดเลย
+        // return $pdf->download('asset-'.$asset->asset_code.'.pdf');
     }
 }

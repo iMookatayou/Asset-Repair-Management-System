@@ -80,6 +80,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/maintenance/requests/{maintenanceRequest}/assignments', [MaintenanceAssignmentController::class, 'store'])->name('maintenance-assignments.store');
     Route::delete('/maintenance/assignments/{assignment}', [MaintenanceAssignmentController::class, 'destroy'])->name('maintenance-assignments.destroy');
+    Route::get( '/maintenance/requests/{req}/work-order', [MaintenanceRequestController::class, 'printWorkOrder'])->name('maintenance.requests.work-order');
 
     // ===== Attachments (serve private files after auth) =====
     Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');
@@ -100,6 +101,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/assets/{asset}/edit',    [AssetController::class,'editPage'])->name('assets.edit');
     Route::put('/assets/{asset}',         [AssetController::class,'updatePage'])->name('assets.update');
     Route::delete('/assets/{asset}',      [AssetController::class,'destroyPage'])->name('assets.destroy');
+    Route::get('/assets/{asset}/print',   [AssetController::class,'printPage'])->name('assets.print');
 
     Route::prefix('admin')->name('admin.')->middleware('can:manage-users')->group(function () {
         Route::prefix('users')->name('users.')->group(function () {

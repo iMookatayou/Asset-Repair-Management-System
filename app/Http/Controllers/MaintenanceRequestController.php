@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MaintenanceRequestController extends Controller
 {
@@ -894,6 +895,47 @@ class MaintenanceRequestController extends Controller
             'cancelled'   => 'ยกเลิกคำขอ',
             default       => 'อัปเดตสถานะ',
         };
+    }
+
+    public function printWorkOrder(Request $request, MR $req)
+    {
+        \Gate::authorize('view', $req);
+
+        // โหลดความสัมพันธ์ที่ต้องใช้ในใบงาน
+        $req->loadMissing([
+            'asset',
+            'reporter:id,name,email',
+            'technician:id,name',
+            'attachments' => fn($qq) => $qq->with('file'),
+            'logs.user:id,name',
+            'rating',
+            'rating.rater:id,name',
+        ]);
+
+        // ข้อมูลหัวกระดาษสำหรับ Maintenance Work Order
+        $hospital = [
+            'name_th' => 'โรงพยาบาลพระปกเกล้า',
+            'name_en' => 'PHRAPOKKLAO HOSPITAL',
+            'subtitle' => 'Maintenance Work Order',
+            // ใช้ public_path เพื่อให้ DomPDF หาไฟล์เจอแน่นอน
+            'logo'     => public_path('images/logoppk1.png'),
+        ];
+
+        // ตั้งชื่อไฟล์
+        $fileName = sprintf(
+            'maintenance-work-order-%s.pdf',
+            $req->request_no ?? $req->id
+        );
+
+        $pdf = Pdf::loadView('maintenance.requests.print', [
+                'req'      => $req,
+                'hospital' => $hospital,
+            ])
+            ->setPaper('A4', 'portrait');
+
+        // เปิดในแท็บใหม่
+        return $pdf->stream($fileName);
+        // หรือถ้าอยากโหลดเลย: return $pdf->download($fileName);
     }
 
 }
