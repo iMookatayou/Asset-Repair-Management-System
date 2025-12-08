@@ -108,15 +108,15 @@
           </a>
 
           <a href="{{ route('assets.print', $asset) }}"
-            target="_blank"
-            class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+             target="_blank"
+             class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
             <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
-                <path d="M6 9V4h12v5M6 19h12v-6H6v6z"
+              <path d="M6 9V4h12v5M6 19h12v-6H6v6z"
                     stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             พิมพ์ PDF
-            </a>
+          </a>
 
           <a href="{{ url('/api/assets/'.$asset->id.'?pretty=1') }}"
              target="_blank"
@@ -172,63 +172,114 @@
         </div>
       </div>
 
-      {{-- SECTION 1: ข้อมูลครุภัณฑ์และการจัดหมวดหมู่ --}}
+      {{-- SECTION 1: ข้อมูลครุภัณฑ์และการจัดหมวดหมู่ (แบบทางการ) --}}
       <section class="px-6 py-5 border-b border-slate-200">
         <header class="mb-3 border-b border-slate-200 pb-2">
           <h2 class="text-sm font-semibold text-slate-900">
             ส่วนที่ 1 — ข้อมูลครุภัณฑ์และการจัดหมวดหมู่
           </h2>
           <p class="mt-0.5 text-xs text-slate-500">
-            รหัสครุภัณฑ์ ชื่อ หมวดหมู่ หน่วยงาน และข้อมูลจำเพาะหลักของครุภัณฑ์
+            รายละเอียดทะเบียนครุภัณฑ์ หน่วยงานเจ้าของ และข้อมูลจำเพาะหลัก ใช้สำหรับอ้างอิงในงานบริหารทรัพย์สิน
           </p>
         </header>
 
-        <div class="grid gap-y-3 gap-x-8 md:grid-cols-2 text-sm">
-          <x-asset.meta label="รหัสครุภัณฑ์"
-                        :value="$asset->asset_code ?? '—'" />
+        <div class="rounded-xl border border-slate-200 overflow-hidden text-sm">
+          {{-- หัวตารางเล็ก --}}
+          <div class="bg-slate-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between">
+            <div class="text-[13px] font-medium text-slate-700">
+              ข้อมูลทะเบียนครุภัณฑ์
+            </div>
+            <div class="text-[11px] text-slate-500">
+              เลขทะเบียน: {{ $asset->asset_code ?? '—' }}
+            </div>
+          </div>
 
-          <x-asset.meta label="ชื่อครุภัณฑ์"
-                        :value="$asset->name ?? '—'" />
+          {{-- ตารางข้อมูลแบบราชการ --}}
+          <div class="divide-y divide-slate-200">
+            <div class="grid md:grid-cols-[190px,minmax(0,1fr)]">
+              <div class="bg-slate-50 px-4 py-2.5 text-[13px] font-medium text-slate-600">
+                ชื่อครุภัณฑ์
+              </div>
+              <div class="px-4 py-2.5 text-slate-900">
+                {{ $asset->name ?? '—' }}
+              </div>
+            </div>
 
-          <x-asset.meta label="หมวดหมู่"
-                        :value="$categoryName" />
+            <div class="grid md:grid-cols-[190px,minmax(0,1fr)]">
+              <div class="bg-slate-50 px-4 py-2.5 text-[13px] font-medium text-slate-600">
+                หมวดหมู่
+              </div>
+              <div class="px-4 py-2.5 text-slate-900">
+                {{ $categoryName }}
+              </div>
+            </div>
 
-          <x-asset.meta label="หน่วยงานเจ้าของ"
-                        :value="$deptName" />
+            <div class="grid md:grid-cols-[190px,minmax(0,1fr)]">
+              <div class="bg-slate-50 px-4 py-2.5 text-[13px] font-medium text-slate-600">
+                หน่วยงานเจ้าของ
+              </div>
+              <div class="px-4 py-2.5 text-slate-900">
+                {{ $deptName }}
+              </div>
+            </div>
 
-          <x-asset.meta label="ที่ตั้ง / สถานที่ใช้งาน"
-                        :value="$asset->location ?? '—'" />
+            <div class="grid md:grid-cols-[190px,minmax(0,1fr)]">
+              <div class="bg-slate-50 px-4 py-2.5 text-[13px] font-medium text-slate-600">
+                ที่ตั้ง / สถานที่ใช้งาน
+              </div>
+              <div class="px-4 py-2.5 text-slate-900">
+                {{ $asset->location ?? '—' }}
+              </div>
+            </div>
 
-          <x-asset.meta label="ประเภท (Type)"
-                        :value="$asset->type ?? '—'" />
+            <div class="grid md:grid-cols-[190px,minmax(0,1fr)]">
+              <div class="bg-slate-50 px-4 py-2.5 text-[13px] font-medium text-slate-600">
+                ประเภท (Type)
+              </div>
+              <div class="px-4 py-2.5 text-slate-900">
+                {{ $asset->type ?? '—' }}
+              </div>
+            </div>
 
-          <x-asset.meta label="ยี่ห้อ / รุ่น"
-                        :value="trim(($asset->brand ?? '').' '.($asset->model ?? '')) ?: '—'" />
+            <div class="grid md:grid-cols-[190px,minmax(0,1fr)]">
+              <div class="bg-slate-50 px-4 py-2.5 text-[13px] font-medium text-slate-600">
+                ยี่ห้อ / รุ่น
+              </div>
+              <div class="px-4 py-2.5 text-slate-900">
+                {{ trim(($asset->brand ?? '').' '.($asset->model ?? '')) ?: '—' }}
+              </div>
+            </div>
 
-          <x-asset.meta label="Serial Number"
-                        :value="$asset->serial_number ?? '—'" />
-        </div>
+            <div class="grid md:grid-cols-[190px,minmax(0,1fr)]">
+              <div class="bg-slate-50 px-4 py-2.5 text-[13px] font-medium text-slate-600">
+                Serial Number
+              </div>
+              <div class="px-4 py-2.5 text-slate-900">
+                {{ $asset->serial_number ?? '—' }}
+              </div>
+            </div>
+          </div>
 
-        <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 text-xs">
-          <div class="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-            <div class="px-3 py-2.5">
-              <div class="text-[11px] font-medium text-slate-500">วันที่ซื้อ</div>
-              <div class="mt-0.5 text-slate-900">
+          {{-- แถบสรุปวันที่ด้านล่าง --}}
+          <div class="bg-slate-50 border-t border-slate-200 px-4 py-2.5 text-[11px] text-slate-600 flex flex-wrap gap-3 justify-between">
+            <span>
+              วันที่ซื้อ:
+              <span class="font-medium text-slate-800">
                 {{ optional($asset->purchase_date)->format('Y-m-d') ?? '—' }}
-              </div>
-            </div>
-            <div class="px-3 py-2.5">
-              <div class="text-[11px] font-medium text-slate-500">วันหมดประกัน</div>
-              <div class="mt-0.5 text-slate-900">
+              </span>
+            </span>
+            <span>
+              วันหมดประกัน:
+              <span class="font-medium text-slate-800">
                 {{ optional($asset->warranty_expire)->format('Y-m-d') ?? '—' }}
-              </div>
-            </div>
-            <div class="px-3 py-2.5">
-              <div class="text-[11px] font-medium text-slate-500">อัปเดตล่าสุด</div>
-              <div class="mt-0.5 text-slate-900">
+              </span>
+            </span>
+            <span>
+              อัปเดตข้อมูลล่าสุด:
+              <span class="font-medium text-slate-800">
                 {{ $asset->updated_at?->format('Y-m-d H:i') ?? '—' }}
-              </div>
-            </div>
+              </span>
+            </span>
           </div>
         </div>
       </section>

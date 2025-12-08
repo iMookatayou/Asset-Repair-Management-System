@@ -24,32 +24,35 @@ return new class extends Migration
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
 
-            // รายการซ่อมสำหรับ "วันที่"
+            // วันที่ปฏิบัติงาน / วันที่ลงรายงาน
             $table->date('operation_date')->nullable();
 
             // วิธีการปฏิบัติ : ตามใบเบิก / ค่าบริการ / อื่น ๆ
             $table->enum('operation_method', ['requisition', 'service_fee', 'other'])
                 ->nullable();
 
-            // ระบุ รพ. / หน่วยงาน (ตามฟอร์ม)
-            $table->string('hospital_name')->nullable();
+            // รพจ. = รหัสครุภัณฑ์ (Property Code) เช่น 68101068718
+            $table->string('property_code', 100)
+                ->nullable()
+                ->comment('รหัสครุภัณฑ์ (รพจ.)');
 
-            // ต้องระบุขอปิดงาน/ปิดเครื่องก่อนเสมอ (checkbox)
+            // ยืนยันว่าได้แจ้ง/ขออนุญาตผู้ใช้งาน/หน่วยงานก่อนปฏิบัติงาน/ปิดเครื่อง
             $table->boolean('require_precheck')->default(false);
 
-            // หมายเหตุ/รายละเอียดเพิ่มเติม
+            // หมายเหตุ/รายละเอียดเพิ่มเติมในการปฏิบัติงาน
             $table->text('remark')->nullable();
 
-            // ประเภทงาน
+            // ประเภทปัญหา
             $table->boolean('issue_software')->default(false);
             $table->boolean('issue_hardware')->default(false);
 
             $table->timestamps();
 
-            // บังคับ 1 ใบงาน → 1 รายงานการปฏิบัติงาน
+            // บังคับ 1 ใบงาน → มีได้ 1 รายงานการปฏิบัติงาน
             $table->unique('maintenance_request_id', 'uniq_operation_log_request');
 
             $table->index(['operation_date']);
+            $table->index(['property_code']);
         });
     }
 

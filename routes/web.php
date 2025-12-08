@@ -23,6 +23,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Auth;
 
+use App\Http\Controllers\Api\ChatController as ApiChatController;
+
 // หน้าแรก → login
 Route::redirect('/', '/login');
 
@@ -92,6 +94,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chat/threads/{thread}/messages', [ChatController::class, 'messages'])->name('chat.messages');
     Route::post('/chat/threads/{thread}/messages', [ChatController::class, 'storeMessage'])->name('chat.messages.store');
     Route::get('/chat/my-updates', [\App\Http\Controllers\ChatController::class, 'myUpdates'])->name('chat.my_updates');
+    Route::post('/chat/threads/{thread}/lock',   [ChatController::class, 'lock'])->name('chat.lock');
+    Route::post('/chat/threads/{thread}/unlock', [ChatController::class, 'unlock'])->name('chat.unlock');
 
     // Assets
     Route::get('/assets',                 [AssetController::class,'indexPage'])->name('assets.index');

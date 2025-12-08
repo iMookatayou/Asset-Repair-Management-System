@@ -384,156 +384,166 @@
       </section>
 
       {{-- SECTION 3: รายงานการปฏิบัติงานและค่าใช้จ่าย --}}
-      <section class="px-6 py-5 border-b border-slate-200">
+        <section class="px-6 py-5 border-b border-slate-200">
         <header class="mb-3 border-b border-slate-200 pb-2">
-          <h2 class="text-sm font-semibold text-slate-900">
+            <h2 class="text-sm font-semibold text-slate-900">
             ส่วนที่ 3 — รายงานการปฏิบัติงานและค่าใช้จ่าย
-          </h2>
-          <p class="mt-0.5 text-xs text-slate-500">
+            </h2>
+            <p class="mt-0.5 text-xs text-slate-500">
             สรุปการปฏิบัติงาน วิธีการคิดค่าใช้จ่าย และรายละเอียดประกอบ ตามแบบฟอร์มราชการเดิม
-          </p>
+            </p>
         </header>
 
         <form method="post"
-              action="{{ route('maintenance.requests.operation-log', $req) }}"
-              class="space-y-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-4"
-              novalidate>
-          @csrf
+                action="{{ route('maintenance.requests.operation-log', $req) }}"
+                class="space-y-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-4"
+                novalidate>
+            @csrf
 
-          <div>
+            {{-- วันที่รายการซ่อม --}}
+            <div>
             <label for="operation_date" class="mb-1 block text-xs font-medium text-slate-700">
-              รายการซ่อมสำหรับวันที่
+                รายการซ่อมสำหรับวันที่
             </label>
             <input
-              id="operation_date"
-              type="date"
-              name="operation_date"
-              value="{{ old('operation_date', optional($opLog?->operation_date)->format('Y-m-d')) }}"
-              class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
+                id="operation_date"
+                type="date"
+                name="operation_date"
+                value="{{ old('operation_date', optional($opLog?->operation_date)->format('Y-m-d')) }}"
+                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
             >
             @if(!$opLog)
-              <p class="mt-1 text-[11px] text-slate-400">ยังไม่ได้บันทึก จะเริ่มบันทึกจากฟิลด์นี้</p>
+                <p class="mt-1 text-[11px] text-slate-400">ยังไม่ได้บันทึก จะเริ่มบันทึกจากฟิลด์นี้</p>
             @endif
-          </div>
+            </div>
 
-          <div>
+            {{-- วิธีการปฏิบัติ / การคิดค่าใช้จ่าย --}}
+            <div>
             <span class="mb-1 block text-xs font-medium text-slate-700">
-              วิธีการปฏิบัติ / การคิดค่าใช้จ่าย
+                วิธีการปฏิบัติ / การคิดค่าใช้จ่าย
             </span>
             @php
-              $method = old('operation_method', $opLog->operation_method ?? null);
+                $method = old('operation_method', $opLog->operation_method ?? null);
             @endphp
             <div class="space-y-1.5 text-xs">
-              <label class="inline-flex items-center gap-2">
+                <label class="inline-flex items-center gap-2">
                 <input type="radio" name="operation_method" value="requisition"
-                       @checked($method === 'requisition')
-                       class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                        @checked($method === 'requisition')
+                        class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                 <span>ตามใบเบิกครุภัณฑ์ / วัสดุ</span>
-              </label>
-              <label class="inline-flex items-center gap-2">
+                </label>
+                <label class="inline-flex items-center gap-2">
                 <input type="radio" name="operation_method" value="service_fee"
-                       @checked($method === 'service_fee')
-                       class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                        @checked($method === 'service_fee')
+                        class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                 <span>ค่าบริการ / ค่าแรงช่าง</span>
-              </label>
-              <label class="inline-flex items-center gap-2">
+                </label>
+                <label class="inline-flex items-center gap-2">
                 <input type="radio" name="operation_method" value="other"
-                       @checked($method === 'other')
-                       class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                        @checked($method === 'other')
+                        class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                 <span>อื่น ๆ</span>
-              </label>
+                </label>
             </div>
-          </div>
+            </div>
 
-          <div>
-            <label for="hospital_name" class="mb-1 block text-xs font-medium text-slate-700">
-              โรงพยาบาล / หน่วยงานที่เกี่ยวข้อง
+            {{-- รพจ. (รหัสครุภัณฑ์) --}}
+            <div>
+            <label for="property_code" class="mb-1 block text-xs font-medium text-slate-700">
+                ระบุรพจ. (รหัสครุภัณฑ์)
             </label>
             <input
-              id="hospital_name"
-              type="text"
-              name="hospital_name"
-              value="{{ old('hospital_name', $opLog->hospital_name ?? 'โรงพยาบาลพระปกเกล้า') }}"
-              class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
+                id="property_code"
+                type="text"
+                name="property_code"
+                value="{{ old('property_code', $opLog->property_code ?? ($req->asset->code ?? '')) }}"
+                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
+                placeholder="เช่น 68101068718"
             >
-          </div>
+            <p class="mt-0.5 text-[11px] text-slate-500">
+                ระบุเลขทะเบียนครุภัณฑ์ (รพจ.) ที่ใช้ในการเบิก/ซ่อม หากมี
+            </p>
+            </div>
 
-          <div class="pt-1">
+            {{-- ยืนยันแจ้งผู้ใช้งาน / หน่วยงาน --}}
+            <div class="pt-1">
             <label class="inline-flex items-center gap-2 text-xs text-slate-700">
-              <input
+                <input
                 type="checkbox"
                 name="require_precheck"
                 value="1"
                 @checked(old('require_precheck', $opLog->require_precheck ?? false))
                 class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-              >
-              ยืนยันว่าได้แจ้งผู้ใช้งาน / หน่วยงาน และขออนุญาตก่อนปฏิบัติงาน/ปิดเครื่อง
+                >
+                ยืนยันว่าได้แจ้งผู้ใช้งาน / หน่วยงาน และขออนุญาตก่อนปฏิบัติงาน/ปิดเครื่อง
             </label>
             <p class="mt-0.5 text-[11px] text-slate-500">
-              ใช้บันทึกว่าช่างได้แจ้งผลกระทบและขออนุญาตผู้เกี่ยวข้องแล้ว
+                ใช้บันทึกว่าช่างได้แจ้งผลกระทบและขออนุญาตผู้เกี่ยวข้องแล้ว
             </p>
-          </div>
+            </div>
 
-          <div>
+            {{-- ประเภทงานที่ปฏิบัติ --}}
+            <div>
             <div class="mb-1 text-xs font-medium text-slate-700">
-              ประเภทงานที่ปฏิบัติ
+                ประเภทงานที่ปฏิบัติ
             </div>
             <div class="space-y-1 text-xs">
-              <label class="inline-flex items-center gap-2">
+                <label class="inline-flex items-center gap-2">
                 <input
-                  type="checkbox"
-                  name="issue_software"
-                  value="1"
-                  @checked(old('issue_software', $opLog->issue_software ?? false))
-                  class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    type="checkbox"
+                    name="issue_software"
+                    value="1"
+                    @checked(old('issue_software', $opLog->issue_software ?? false))
+                    class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 >
                 Software
-              </label>
-              <label class="inline-flex items-center gap-2">
+                </label>
+                <label class="inline-flex items-center gap-2">
                 <input
-                  type="checkbox"
-                  name="issue_hardware"
-                  value="1"
-                  @checked(old('issue_hardware', $opLog->issue_hardware ?? false))
-                  class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    type="checkbox"
+                    name="issue_hardware"
+                    value="1"
+                    @checked(old('issue_hardware', $opLog->issue_hardware ?? false))
+                    class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 >
                 Hardware
-              </label>
+                </label>
             </div>
-          </div>
+            </div>
 
-          <div>
+            {{-- หมายเหตุ --}}
+            <div>
             <label for="remark" class="mb-1 block text-xs font-medium text-slate-700">
-              หมายเหตุ / รายละเอียดประกอบ
+                หมายเหตุ / รายละเอียดประกอบ
             </label>
             <textarea
-              id="remark"
-              name="remark"
-              rows="3"
-              class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
-              placeholder="เช่น ตรวจเช็คเบื้องต้นแล้ว พบว่า..., ใช้อะไหล่จากใบเบิกเลขที่..., ผู้ใช้ทดสอบแล้วเรียบร้อย"
+                id="remark"
+                name="remark"
+                rows="3"
+                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
+                placeholder="เช่น ตรวจเช็คเบื้องต้นแล้ว พบว่า..., ใช้อะไหล่จากใบเบิกเลขที่..., ผู้ใช้ทดสอบแล้วเรียบร้อย"
             >{{ old('remark', $opLog->remark ?? '') }}</textarea>
-          </div>
+            </div>
 
-          <div class="flex items-center justify-end pt-1">
+            <div class="flex items-center justify-end pt-1">
             <button type="submit"
                     class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
-              <svg class="mr-1.5 h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <svg class="mr-1.5 h-4 w-4" viewBox="0 0 24 24" fill="none">
                 <path d="M5 12h14M12 5l7 7-7 7"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              บันทึกรายงานการปฏิบัติงาน
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                บันทึกรายงานการปฏิบัติงาน
             </button>
-          </div>
+            </div>
         </form>
 
         @if($opLog)
-          <p class="mt-2 text-[11px] text-slate-500">
+            <p class="mt-2 text-[11px] text-slate-500">
             บันทึกล่าสุดโดย {{ $opLog->user->name ?? 'ไม่ระบุผู้บันทึก' }}
             เมื่อ {{ $opLog->updated_at?->format('Y-m-d H:i') ?? '-' }}
-          </p>
+            </p>
         @endif
-      </section>
+        </section>
 
       {{-- SECTION 4: ไฟล์แนบ / รูปถ่าย --}}
       <section class="px-6 py-5">

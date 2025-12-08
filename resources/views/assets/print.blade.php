@@ -27,8 +27,8 @@
         }
 
         body {
-            font-size: 13px;
-            margin: 22px 26px;
+            font-size: 12px;
+            margin: 16px 20px;
             color: #000;
         }
 
@@ -36,18 +36,18 @@
         .text-right  { text-align: right; }
         .text-left   { text-align: left; }
 
-        .mt-4  { margin-top: 4px;  }
-        .mt-8  { margin-top: 8px;  }
-        .mt-12 { margin-top: 12px; }
-        .mb-4  { margin-bottom: 4px; }
-        .mb-8  { margin-bottom: 8px; }
+        /* กันโดนตัดกลาง section */
+        .section-block {
+            page-break-inside: avoid;
+            margin-bottom: 6px;
+        }
 
-        /* ====== HEADER ====== */
+        /* ====== HEADER (โทนเดียวกับใบงานซ่อม) ====== */
         .header-wrapper {
             width: 100%;
-            border-bottom: 2px solid #0f4c81;
-            padding-bottom: 6px;
-            margin-bottom: 8px;
+            border-bottom: 1px solid #0f4c81;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .header-table {
@@ -60,63 +60,48 @@
         }
 
         .header-logo {
-            width: 15%;
-            text-align: left;
+            width: 14%;
         }
 
         .header-logo img {
-            max-width: 60px;
-            max-height: 60px;
+            max-width: 50px;
+            max-height: 50px;
             object-fit: contain;
         }
 
         .header-center {
-            width: 60%;
-            text-align: center;
+            width: 56%;
+            text-align: left;
+            padding-left: 4px;
         }
 
         .header-right {
-            width: 25%;
-            font-size: 11px;
+            width: 30%;
+            font-size: 10px;
             text-align: right;
-        }
-
-        .h-name-th {
-            font-size: 12px;
-        }
-
-        .h-name-en {
-            font-size: 14px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-
-        .h-subtitle {
-            font-size: 11px;
-            color: #555;
+            line-height: 1.4;
         }
 
         .h-doc-title {
-            font-size: 15px;
+            font-size: 11px;
             font-weight: bold;
-            margin-top: 6px;
-            color: #0f4c81;
+            margin-top: 4px;
         }
 
         /* ====== SECTION TITLE ====== */
         .section-title {
             font-weight: bold;
-            font-size: 13px;
-            margin-top: 10px;
-            margin-bottom: 3px;
-            padding: 4px 6px;
-            border-radius: 3px;
-            background: #e6f0fb;      /* ฟ้าอ่อน */
+            font-size: 12px;
+            margin-top: 8px;
+            margin-bottom: 2px;
+            padding: 3px 5px;
+            border-radius: 2px;
+            background: #e6f0fb;
             border-left: 3px solid #0f4c81;
         }
 
         .section-sub {
-            font-size: 11px;
+            font-size: 10px;
             color: #555;
             margin-top: 1px;
             margin-left: 2px;
@@ -151,7 +136,7 @@
         table.grid td {
             border: 1px solid #999;
             padding: 3px 4px;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         table.grid th {
@@ -161,12 +146,14 @@
         }
 
         .footer-note {
-            margin-top: 14px;
-            font-size: 11px;
+            margin-top: 10px;
+            font-size: 10px;
+            color: #555;
         }
 
+        /* ====== SIGNATURE ====== */
         .signature-line {
-            margin-top: 26px;
+            margin-top: 18px;
         }
 
         .sig-col {
@@ -174,8 +161,8 @@
         }
 
         .sig-label {
-            font-size: 12px;
-            margin-bottom: 40px;
+            font-size: 11px;
+            margin-bottom: 30px;
         }
 
         .sig-underline {
@@ -198,9 +185,10 @@
     ];
     $statusLabel = $asset->status ? ($statusMap[$asset->status] ?? '') : '';
 
-    $deptName = $asset->department->display_name
-        ?? $asset->department->name_th
-        ?? $asset->department->name_en
+    $dept      = $asset->department ?? null;
+    $deptName  = $dept?->display_name
+        ?? $dept?->name_th
+        ?? $dept?->name_en
         ?? '';
 
     $categoryName = $asset->categoryRef->name ?? '';
@@ -208,158 +196,164 @@
 
     $hospitalNameTh = 'โรงพยาบาลพระปกเกล้า';
     $hospitalNameEn = 'PHRAPOKKLAO HOSPITAL';
-    $subtitle       = 'Asset Repair Management';
 
     $logoPath = public_path('images/logoppk.png');
+
+    // ใช้ concept เดียวกับหน้า show
+    $reqCount = $asset->maintenance_requests_count ?? 0;
+    $attCount = $asset->attachments_count ?? 0;
 @endphp
 
 {{-- ================= HEADER ================= --}}
-<div class="header-wrapper">
+<div class="header-wrapper section-block">
     <table class="header-table">
         <tr>
+            {{-- LOGO --}}
             <td class="header-logo">
                 @if(file_exists($logoPath))
                     <img src="{{ $logoPath }}" alt="Logo">
-                @else
-                    {{-- ถ้าไม่มีไฟล์โลโก้ ปล่อยว่างไว้ --}}
                 @endif
             </td>
+
+            {{-- HOSPITAL NAME + DOC TITLE --}}
             <td class="header-center">
-                <div class="h-name-th">{{ $hospitalNameTh }}</div>
-                <div class="h-name-en">{{ $hospitalNameEn }}</div>
-                <div class="h-subtitle">{{ $subtitle }}</div>
-                <div class="h-doc-title">แบบฟอร์มข้อมูลครุภัณฑ์ / ทรัพย์สิน</div>
+                <div style="font-size:11px; font-weight:bold;">
+                    {{ $hospitalNameTh }}&nbsp;&nbsp;{{ $hospitalNameEn }}
+                </div>
+                <div class="h-doc-title">
+                    แบบฟอร์มข้อมูลครุภัณฑ์ / Asset Information Sheet
+                </div>
             </td>
+
+            {{-- RIGHT META --}}
             <td class="header-right">
-                <div>เลขที่เอกสาร: {{-- ใส่ทีหลังบนกระดาษ --}}</div>
-                <div>วันที่พิมพ์: {{ now()->format('d/m/Y') }}</div>
+                <div>รหัสครุภัณฑ์: <strong>{{ $asset->asset_code ?? $asset->id }}</strong></div>
+                <div>พิมพ์เมื่อ: {{ now()->format('d/m/Y H:i') }}</div>
             </td>
         </tr>
     </table>
 </div>
 
-{{-- ================= GENERAL INFO ================= --}}
-<table class="meta">
-    <tr>
-        <td class="label">วันที่พิมพ์ฟอร์ม</td>
-        <td>{{ now()->format('d/m/Y') }}</td>
-        <td class="label">ผู้พิมพ์</td>
-        <td>{{ '' }}</td>
-    </tr>
-</table>
-
 {{-- ================= SECTION 1 ================= --}}
-<div class="section-title">ส่วนที่ 1: ข้อมูลครุภัณฑ์</div>
-<div class="section-sub">ข้อมูลพื้นฐานของครุภัณฑ์ เพื่อใช้ในการระบุทรัพย์สินให้ชัดเจน</div>
+<div class="section-block">
+    <div class="section-title">ส่วนที่ 1 : ข้อมูลครุภัณฑ์และการจัดหมวดหมู่</div>
+    <div class="section-sub">
+        รหัสครุภัณฑ์ ชื่อ หมวดหมู่ หน่วยงาน และข้อมูลจำเพาะหลักของครุภัณฑ์
+    </div>
 
-<table class="meta">
-    <tr>
-        <td class="label">รหัสครุภัณฑ์</td>
-        <td>{{ $f($asset->asset_code) }}</td>
-        <td class="label">หมวดหมู่</td>
-        <td>{{ $f($categoryName) }}</td>
-    </tr>
-    <tr>
-        <td class="label">ชื่อครุภัณฑ์</td>
-        <td>{{ $f($asset->name) }}</td>
-        <td class="label">ประเภท (Type)</td>
-        <td>{{ $f($asset->type) }}</td>
-    </tr>
-    <tr>
-        <td class="label">ยี่ห้อ / รุ่น</td>
-        <td>{{ $f($brandModel) }}</td>
-        <td class="label">Serial</td>
-        <td>{{ $f($asset->serial_number) }}</td>
-    </tr>
-    <tr>
-        <td class="label">หน่วยงานเจ้าของ</td>
-        <td>{{ $f($deptName) }}</td>
-        <td class="label">สถานที่ใช้งาน</td>
-        <td>{{ $f($asset->location) }}</td>
-    </tr>
-    <tr>
-        <td class="label">สถานะปัจจุบัน</td>
-        <td>{{ $f($statusLabel) }}</td>
-        <td class="label"></td>
-        <td></td>
-    </tr>
-</table>
+    <table class="meta">
+        <tr>
+            <td class="label">รหัสครุภัณฑ์</td>
+            <td>{{ $f($asset->asset_code) }}</td>
+            <td class="label">หมวดหมู่</td>
+            <td>{{ $f($categoryName) }}</td>
+        </tr>
+        <tr>
+            <td class="label">ชื่อครุภัณฑ์</td>
+            <td>{{ $f($asset->name) }}</td>
+            <td class="label">ประเภท (Type)</td>
+            <td>{{ $f($asset->type) }}</td>
+        </tr>
+        <tr>
+            <td class="label">ยี่ห้อ / รุ่น</td>
+            <td>{{ $f($brandModel) }}</td>
+            <td class="label">Serial</td>
+            <td>{{ $f($asset->serial_number) }}</td>
+        </tr>
+        <tr>
+            <td class="label">หน่วยงานเจ้าของ</td>
+            <td>{{ $f($deptName) }}</td>
+            <td class="label">สถานที่ใช้งาน</td>
+            <td>{{ $f($asset->location) }}</td>
+        </tr>
+        <tr>
+            <td class="label">สถานะปัจจุบัน</td>
+            <td>{{ $f($statusLabel) }}</td>
+            <td class="label"></td>
+            <td></td>
+        </tr>
+    </table>
+</div>
 
 {{-- ================= SECTION 2 ================= --}}
-<div class="section-title">ส่วนที่ 2: ข้อมูลการจัดซื้อและอายุการใช้งาน</div>
-<div class="section-sub">ข้อมูลวันที่จัดซื้อ ระยะเวลารับประกัน และรายละเอียดอื่น ๆ</div>
+<div class="section-block">
+    <div class="section-title">ส่วนที่ 2 : ข้อมูลการจัดซื้อและภาพรวมการใช้งาน</div>
+    <div class="section-sub">
+        ข้อมูลวันที่จัดซื้อ ระยะเวลารับประกัน และจำนวนคำขอซ่อม/ไฟล์แนบที่เกี่ยวข้อง
+    </div>
 
-<table class="meta">
-    <tr>
-        <td class="label">วันที่จัดซื้อ</td>
-        <td>{{ $fd($asset->purchase_date) }}</td>
-        <td class="label">วันหมดประกัน</td>
-        <td>{{ $fd($asset->warranty_expire) }}</td>
-    </tr>
-    <tr>
-        <td class="label">หมายเหตุเพิ่มเติม</td>
-        <td colspan="3">
-            {{-- เว้นไว้ให้เขียนเพิ่มเติมบนกระดาษ --}}
-        </td>
-    </tr>
-</table>
+    <table class="meta">
+        <tr>
+            <td class="label">วันที่จัดซื้อ</td>
+            <td>{{ $fd($asset->purchase_date) }}</td>
+            <td class="label">วันหมดประกัน</td>
+            <td>{{ $fd($asset->warranty_expire) }}</td>
+        </tr>
+        <tr>
+            <td class="label">จำนวนคำขอซ่อม</td>
+            <td>{{ $reqCount }} งาน</td>
+            <td class="label">ไฟล์แนบของครุภัณฑ์</td>
+            <td>{{ $attCount }} ไฟล์</td>
+        </tr>
+    </table>
+</div>
 
 {{-- ================= SECTION 3 ================= --}}
-<div class="section-title">ส่วนที่ 3: ประวัติงานซ่อม (สำหรับกรอกหรือแนบข้อมูลเพิ่มเติม)</div>
-<div class="section-sub">ลำดับ เลขที่ใบงาน วันที่แจ้ง อาการ / รายละเอียดปัญหา สถานะ</div>
+<div class="section-block">
+    <div class="section-title">ส่วนที่ 3 : ประวัติงานซ่อม (เติมข้อมูลเอง / แนบเพิ่ม)</div>
+    <div class="section-sub">
+        สำหรับบันทึกใบงานซ่อมหลัก ๆ ที่เกี่ยวข้องกับครุภัณฑ์นี้
+    </div>
 
-<table class="grid">
-    <thead>
-    <tr>
-        <th style="width: 8%;">ลำดับ</th>
-        <th style="width: 20%;">เลขที่ใบงาน</th>
-        <th style="width: 18%;">วันที่แจ้ง</th>
-        <th>อาการ / รายละเอียดปัญหา</th>
-        <th style="width: 16%;">สถานะ</th>
-    </tr>
-    </thead>
-    <tbody>
-    {{-- ตอนนี้ให้แถวว่างไว้กรอกเอง ถ้าอนาคตอยากดึง log จริงค่อย loop --}}
-    @for($i = 1; $i <= 5; $i++)
+    <table class="grid">
+        <thead>
         <tr>
-            <td class="text-center">&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
+            <th style="width: 8%;">ลำดับ</th>
+            <th style="width: 20%;">เลขที่ใบงาน</th>
+            <th style="width: 18%;">วันที่แจ้ง</th>
+            <th>อาการ / รายละเอียดปัญหา</th>
+            <th style="width: 16%;">สถานะ</th>
         </tr>
-    @endfor
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+        {{-- เว้นแถวไว้กรอกเอง ถ้าอนาคตอยากดึง log จริงค่อย loop --}}
+        @for($i = 1; $i <= 4; $i++)
+            <tr>
+                <td class="text-center">&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+            </tr>
+        @endfor
+        </tbody>
+    </table>
+</div>
 
 {{-- ================= SECTION 4 ================= --}}
-<div class="section-title">ส่วนที่ 4: หมายเหตุ / การรับรองข้อมูล</div>
-<div class="section-sub">สำหรับผู้รับผิดชอบครุภัณฑ์หรือผู้ตรวจสอบข้อมูลลงนามรับรอง</div>
+<div class="section-block">
+    <div class="section-title">ส่วนที่ 4 : หมายเหตุและการรับรองข้อมูล</div>
+    <div class="section-sub">
+        สำหรับผู้ดูแลครุภัณฑ์และผู้บังคับบัญชาลงนามรับรองข้อมูล
+    </div>
 
-<table class="meta">
-    <tr>
-        <td class="label">ผู้ตรวจสอบข้อมูล</td>
-        <td>{{ '' }}</td>
-        <td class="label">วันที่ตรวจสอบ</td>
-        <td>{{ '' }}</td>
-    </tr>
-</table>
+    <table class="meta signature-line">
+        <tr>
+            <td class="sig-col text-center">
+                <div class="sig-label">ผู้ดูแลครุภัณฑ์</div>
+                <div class="sig-underline">&nbsp;</div>
+            </td>
+            <td class="sig-col text-center">
+                <div class="sig-label">ผู้ตรวจสอบ / หัวหน้าหน่วยงาน</div>
+                <div class="sig-underline">&nbsp;</div>
+            </td>
+        </tr>
+    </table>
 
-<table class="meta signature-line">
-    <tr>
-        <td class="sig-col text-center">
-            <div class="sig-label">ผู้ดูแลครุภัณฑ์</div>
-            <div class="sig-underline">&nbsp;</div>
-        </td>
-        <td class="sig-col text-center">
-            <div class="sig-label">ผู้ตรวจสอบ / หัวหน้าหน่วยงาน</div>
-            <div class="sig-underline">&nbsp;</div>
-        </td>
-    </tr>
-</table>
-
-<div class="footer-note">
-    หมายเหตุ: ฟอร์มนี้จัดทำจากระบบ Asset Repair Management ของโรงพยาบาล เพื่อใช้เป็นข้อมูลประกอบการบริหารจัดการครุภัณฑ์
+    <div class="footer-note">
+        หมายเหตุ: ฟอร์มนี้จัดทำจากระบบ Asset Repair Management ของโรงพยาบาล
+        เพื่อใช้เป็นเอกสารประกอบการบริหารจัดการครุภัณฑ์
+    </div>
 </div>
 
 </body>

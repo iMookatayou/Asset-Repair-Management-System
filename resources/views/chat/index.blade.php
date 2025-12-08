@@ -113,24 +113,40 @@
         @endif
       </div>
 
-      @php
-      @endphp
-
       @if($threads->count())
         <ul class="divide-y divide-slate-200">
           @foreach($threads as $th)
             <li>
               <a href="{{ route('chat.show', $th) }}" class="block px-5 py-4 hover:bg-slate-50 focus:bg-slate-50">
                 <div class="flex items-start gap-3">
-                  @if($th->is_locked)
-                    <span class="chip shrink-0" title="Thread locked">
+                  {{-- สถานะกระทู้: Locked / เปิดรับข้อความ --}}
+                  @php $locked = (bool)$th->is_locked; @endphp
+                  <span class="chip shrink-0"
+                        @if($locked)
+                          style="background:#FEF3C7;color:#92400E;"
+                          title="Thread locked"
+                        @else
+                          style="background:#ECFDF5;color:#047857;"
+                          title="เปิดรับข้อความ"
+                        @endif
+                  >
+                    @if($locked)
                       <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                               d="M7 10V7a5 5 0 0 1 10 0v3M6 10h12v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-9z"/>
                       </svg>
                       Locked
-                    </span>
-                  @endif
+                    @else
+                      {{-- ไอคอนใหม่: bubble แชต + เปิดรับข้อความ --}}
+                      <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                              d="M5 6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H11l-3.5 3.5a.7.7 0 0 1-1.2-.5V15A3 3 0 0 1 5 12V6z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                              d="M9 9h6"/>
+                      </svg>
+                      เปิดรับข้อความ
+                    @endif
+                  </span>
 
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">

@@ -73,7 +73,7 @@
                   name="s"
                   value="{{ $filters['s'] }}"
                   placeholder="เช่น ชื่อผู้ใช้, อีเมล, หน่วยงาน"
-                  class="w-full rounded-md border border-zinc-300 pl-10 pr-3 py-2 text-sm placeholder:text-zinc-400
+                  class="w-full rounded-md border border-zinc-300 pl-10 pr-3 py-2 text-[13px] placeholder:text-zinc-400
                          focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600"
                 >
                 <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-zinc-400">
@@ -85,7 +85,7 @@
               </div>
             </div>
 
-            {{-- Role (TomSelect + พิมพ์ในปุ่มได้ + แว่นขยาย) --}}
+            {{-- Role (TomSelect) --}}
             <div class="lg:col-span-3">
               <label for="filter_role" class="mb-1 block text-[12px] text-zinc-600">บทบาท</label>
               <div class="relative">
@@ -105,7 +105,7 @@
               </div>
             </div>
 
-            {{-- Department (TomSelect + พิมพ์ในปุ่มได้ + แว่นขยาย) --}}
+            {{-- Department (TomSelect) --}}
             <div class="lg:col-span-3">
               <label for="filter_department" class="mb-1 block text-[12px] text-zinc-600">หน่วยงาน</label>
               <div class="relative">
@@ -132,13 +132,13 @@
             {{-- Buttons --}}
             <div class="lg:col-span-1 flex items-end gap-2">
               <button type="submit"
-                      class="inline-flex items-center justify-center rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                      class="inline-flex items-center justify-center rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-[13px] font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
                 ค้นหา
               </button>
 
               @if(request()->hasAny(['s','role','department']))
                 <a href="{{ route('admin.users.index') }}"
-                   class="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400">
+                   class="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-800 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400">
                   ล้างค่า
                 </a>
               @endif
@@ -150,15 +150,15 @@
 
     {{-- ===== Table ===== --}}
     <div class="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
-      <table class="min-w-full divide-y divide-zinc-200">
-        <thead class="bg-zinc-50 text-left text-xs font-medium text-zinc-700">
+      <table class="min-w-full divide-y divide-zinc-200 text-[13px]">
+        <thead class="bg-zinc-50 text-zinc-700">
           <tr>
-            <th class="px-3 py-2">ชื่อ</th>
-            <th class="px-3 py-2">อีเมล</th>
-            <th class="px-3 py-2 hidden lg:table-cell">หน่วยงาน</th>
-            <th class="px-3 py-2 hidden md:table-cell">บทบาท</th>
-            <th class="px-3 py-2 hidden xl:table-cell">สร้างเมื่อ</th>
-            <th class="px-3 py-2 text-center min-w-[180px]">การดำเนินการ</th>
+            <th class="px-3 py-2 text-center font-semibold whitespace-nowrap">ชื่อ</th>
+            <th class="px-3 py-2 text-center font-semibold whitespace-nowrap">อีเมล</th>
+            <th class="px-3 py-2 text-center font-semibold whitespace-nowrap hidden lg:table-cell">หน่วยงาน</th>
+            <th class="px-3 py-2 text-center font-semibold whitespace-nowrap hidden md:table-cell">บทบาท</th>
+            <th class="px-3 py-2 text-center font-semibold whitespace-nowrap hidden xl:table-cell">สร้างเมื่อ</th>
+            <th class="px-3 py-2 text-center font-semibold whitespace-nowrap min-w-[180px]">การดำเนินการ</th>
           </tr>
         </thead>
 
@@ -192,8 +192,8 @@
                 @php
                   $isSup = method_exists($u,'isSupervisor') ? $u->isSupervisor() : false;
                 @endphp
-                <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] leading-5
-                  {{ $isSup ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-zinc-50 text-zinc-700 border-zinc-300' }}">
+                {{-- บทบาท: คำสี ๆ ไม่มีกรอบ --}}
+                <span class="text-[12px] font-medium {{ $isSup ? 'text-emerald-700' : 'text-zinc-700' }}">
                   {{ $u->role_label ?? ($roleLabels[$u->role] ?? ucfirst($u->role)) }}
                 </span>
               </td>
@@ -268,7 +268,7 @@
   }
 
   .user-filter .ts-wrapper.ts-basic .ts-control {
-    position: relative;                    /* 👈 ให้ตัวกล่องเป็น relative */
+    position: relative;
     border-radius: 0.375rem;               /* rounded-md */
     border: 1px solid rgb(212 212 216);    /* zinc-300 */
     padding: 0 0.75rem;
@@ -283,7 +283,6 @@
     overflow: hidden;
   }
 
-  /* เวลามีไอคอนแว่นขยาย ให้เว้นซ้ายเพิ่ม */
   .user-filter .ts-wrapper.ts-basic.ts-with-icon .ts-control {
     padding-left: 2.6rem;
   }
@@ -334,7 +333,6 @@
     background-color: rgb(226,232,240);
   }
 
-  /* ไอคอนแว่นขยาย — ผูกกับ ts-control (กล่อง) โดยตรง */
   .user-filter .ts-select-icon {
     position: absolute;
     left: 0.85rem;
@@ -352,7 +350,6 @@
     height: 16px;
   }
 
-  /* ซ่อน select เดิมที่ TomSelect mark ว่า ts-hidden-accessible */
   .user-filter select.ts-hidden-accessible {
     display: none !important;
   }
@@ -374,19 +371,16 @@
         searchField: ['text'],
       });
 
-      // รอให้ TomSelect build เสร็จก่อนค่อยจับ DOM
       setTimeout(function () {
         const wrapper = ts.wrapper;
-        const control = ts.control; // div.ts-control ด้านใน
+        const control = ts.control;
         if (!wrapper || !control) return;
 
         wrapper.classList.add('ts-basic', 'ts-with-icon');
 
-        // ลบ icon เก่า (กันซ้ำ เวลา reload)
         const oldIcon = control.querySelector('.ts-select-icon');
         if (oldIcon) oldIcon.remove();
 
-        // ====== ใส่ไอคอนแว่นขยายลงใน ts-control ======
         const icon = document.createElement('span');
         icon.className = 'ts-select-icon';
         icon.innerHTML = `
@@ -400,11 +394,9 @@
       }, 0);
     }
 
-    // เหมือนหน้า create: ใช้กับ role + department
     initTomSelectWithIcon('#filter_role', 'บทบาททั้งหมด');
     initTomSelectWithIcon('#filter_department', 'ทุกหน่วยงาน');
 
-    // ฟังก์ชันลบผู้ใช้
     window.confirmDeleteUser = function(url){
       if(!confirm('ยืนยันการลบผู้ใช้นี้?')) return false;
       const f = document.getElementById('delete-user-form');
@@ -416,7 +408,6 @@
   });
 </script>
 
-{{-- hidden delete form --}}
 <form id="delete-user-form" method="POST" class="hidden">
   @csrf
   @method('DELETE')

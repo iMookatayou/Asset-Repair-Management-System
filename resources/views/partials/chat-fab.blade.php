@@ -23,17 +23,19 @@
       <div class="flex items-center gap-2 border-b px-4 py-3">
         <div class="h-8 w-8 rounded-full bg-[#0E2B51]/10 grid place-items-center text-[#0E2B51] font-bold">C</div>
         <div class="mr-auto min-w-0">
-          <div class="truncate font-medium">My Topic</div>
-          <div class="text-xs text-zinc-500">Auto Updated</div>
+          <div class="truncate font-medium">My Topics</div>
+          <div class="text-xs text-zinc-500">จากกระทู้ที่คุณมีส่วนร่วม</div>
         </div>
         <button id="chatClose" class="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100" aria-label="ปิด">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.3 5.7a1 1 0 0 0-1.4-1.4L12 9.17 7.1 4.3a1 1 0 1 0-1.4 1.4L10.83 12l-5.13 4.9a1 1 0 1 0 1.4 1.4L12 14.83l4.9 5.13a1 1 0 0 0 1.4-1.4L13.17 12l5.13-4.9Z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.3 5.7a1 1 0 0 0-1.4-1.4L12 9.17 7.1 4.3a1 1 0 1 0-1.4 1.4L10.83 12l-5.13 4.9a1 1 0 1 0 1.4 1.4L12 14.83l4.9 5.13a1 1 0 0 0 1.4-1.4L13.17 12l5.13-4.9Z"/>
+          </svg>
         </button>
       </div>
 
-      {{-- Search (optional) --}}
+      {{-- Search --}}
       <div class="px-4 py-2 border-b">
-        <input id="chatSearch" type="search" placeholder="ค้นหาหัวข้อ..."
+        <input id="chatSearch" type="search" placeholder="ค้นหาหัวข้อของฉัน..."
                class="w-full rounded-lg border px-3 py-2 text-[14px] focus:ring-2 focus:ring-[#0E2B51]/30">
       </div>
 
@@ -63,6 +65,7 @@
   let isOpen = false;
   let unreadTotal = 0;
   let allItems = []; // เก็บ items ทั้งหมดสำหรับ filter
+  let firstLoaded = false;
 
   function openDrawer() {
     isOpen = true;
@@ -70,17 +73,21 @@
     drawer.setAttribute('aria-hidden','false');
     drawer.classList.remove('translate-y-4','opacity-0','pointer-events-none');
     drawer.classList.add('translate-y-0','opacity-100');
-    unreadTotal = 0; renderBadge();
+    unreadTotal = 0;
+    renderBadge();
   }
+
   function closeDrawer() {
     isOpen = false;
-    // ทำให้เนื้อหาภายใน drawer ไม่โฟกัส/คลิกได้เมื่อปิด เพื่อลดโอกาสนำทางโดยไม่ตั้งใจ
     drawer.setAttribute('inert','');
     drawer.setAttribute('aria-hidden','true');
     drawer.classList.add('translate-y-4','opacity-0','pointer-events-none');
     drawer.classList.remove('translate-y-0','opacity-100');
   }
-  function toggleDrawer(){ isOpen ? closeDrawer() : openDrawer(); }
+
+  function toggleDrawer() {
+    isOpen ? closeDrawer() : openDrawer();
+  }
 
   function renderBadge() {
     if (unreadTotal > 0) {
@@ -93,31 +100,56 @@
   }
 
   function fmtTime(iso) {
-    try { return new Date(iso).toLocaleString(); } catch { return ''; }
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString();
+    } catch {
+      return '';
+    }
+  }
+
+  function renderEmpty() {
+    listEl.innerHTML = `
+      <div class="px-3 py-5 text-center text-sm text-zinc-500">
+        ยังไม่มีกระทู้ที่คุณมีส่วนร่วม<br>
+        <span class="text-[12px] text-zinc-400">
+          เริ่มต้นสร้างกระทู้หรือคอมเมนต์ในห้องแชต แล้วรายการจะมาปรากฏที่นี่
+        </span>
+      </div>`;
   }
 
   function renderList(items) {
     listEl.innerHTML = '';
+
     if (!items.length) {
-      listEl.innerHTML = `
-        <div class="px-3 py-5 text-center text-sm text-zinc-500">
-          ไม่มีการอัปเดต
-        </div>`;
+      renderEmpty();
       return;
     }
+
     for (const it of items) {
       const a = document.createElement('a');
       a.href = it.show_url;
       a.setAttribute('data-no-loader','');
       a.className = 'group flex items-start gap-3 rounded-xl px-3 py-2 hover:bg-zinc-50';
+
+      const hasUnread = (it.unread || 0) > 0;
+
       a.innerHTML = `
         <div class="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-slate-200 grid place-items-center text-xs text-slate-700">
           ${ (it.title || '?').slice(0,1).toUpperCase() }
         </div>
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
-            <div class="truncate font-medium text-[14px]">${ it.title || 'Untitled' }</div>
-            ${ it.unread > 0 ? `<span class="ml-auto inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700 ring-1 ring-rose-200">${ it.unread }</span>` : '' }
+            <div class="truncate font-medium text-[14px]">
+              ${ it.title || 'Untitled' }
+            </div>
+            ${
+              hasUnread
+                ? `<span class="ml-auto inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-200">
+                     ใหม่ ${ it.unread > 99 ? '99+' : it.unread }
+                   </span>`
+                : ''
+            }
           </div>
           <div class="mt-0.5 text-[12px] text-zinc-500 truncate">
             ${ it.last_user_name ? `<span class="font-medium text-zinc-700">${ it.last_user_name}</span>: ` : '' }
@@ -143,10 +175,39 @@
 
   async function poll() {
     try {
-      const res = await fetch(`{{ route('chat.my_updates') }}`, { headers: { 'Accept':'application/json' }});
-      if (!res.ok) return;
-      const data = await res.json(); // [{id,title,show_url,unread,last_user_name,last_body,last_created_at}, ...]
-      if (!Array.isArray(data)) return;
+      if (!firstLoaded) {
+        listEl.innerHTML = `
+          <div class="px-3 py-4 text-sm text-zinc-500">
+            กำลังโหลดกระทู้ที่คุณมีส่วนร่วม...
+          </div>`;
+      }
+
+      const res = await fetch(`{{ route('chat.my_updates') }}`, {
+        headers: { 'Accept':'application/json' }
+      });
+
+      if (!res.ok) {
+        console.error('chat.my_updates error', res.status);
+        if (!firstLoaded) {
+          listEl.innerHTML = `
+            <div class="px-3 py-5 text-center text-sm text-rose-500">
+              โหลดข้อมูลไม่สำเร็จ (${res.status})<br>
+              <span class="text-[12px] text-zinc-400">
+                ลองรีเฟรชหน้าหรือเข้าสู่ระบบใหม่อีกครั้ง
+              </span>
+            </div>`;
+        }
+        return;
+      }
+
+      const data = await res.json();
+      if (!Array.isArray(data)) {
+        console.error('chat.my_updates expected array but got', data);
+        if (!firstLoaded) renderEmpty();
+        return;
+      }
+
+      firstLoaded = true;
 
       allItems = data;
       renderList(allItems);
@@ -157,7 +218,16 @@
       }
       unreadTotal = sumUnread;
       renderBadge();
-    } catch (e) { /* เงียบไว้ */ }
+    } catch (e) {
+      console.error('chat.my_updates exception', e);
+      if (!firstLoaded) {
+        listEl.innerHTML = `
+          <div class="px-3 py-5 text-center text-sm text-rose-500">
+            เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย<br>
+            <span class="text-[12px] text-zinc-400">กรุณาลองใหม่อีกครั้ง</span>
+          </div>`;
+      }
+    }
   }
 
   fab.addEventListener('click', toggleDrawer);

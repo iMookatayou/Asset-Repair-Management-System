@@ -36,7 +36,10 @@
         .text-right  { text-align:right; }
         .small       { font-size:10px; }
 
-        /* ===== HEADER (เตี้ยลง / ประหยัดพื้นที่) ===== */
+        /* กันโดนตัดกลาง section */
+        .section-block { page-break-inside: avoid; }
+
+        /* ===== HEADER ===== */
         .header-wrapper {
             width: 100%;
             border-bottom: 1px solid #0f4c81;
@@ -49,13 +52,9 @@
             border-collapse: collapse;
         }
 
-        .header-table td {
-            vertical-align: top;
-        }
+        .header-table td { vertical-align: top; }
 
-        .header-logo {
-            width: 14%;
-        }
+        .header-logo { width: 14%; }
 
         .header-logo img {
             max-width: 50px;
@@ -75,24 +74,10 @@
             line-height: 1.4;
         }
 
-        .h-name-th {
-            font-size: 10px;
-        }
-
-        .h-name-en {
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .h-subtitle {
-            font-size: 9px;
-            color: #555;
-        }
-
         .h-doc-title {
             font-size: 11px;
             font-weight: bold;
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         /* ===== SECTION TITLE ===== */
@@ -145,6 +130,26 @@
             background:#eef3fb;
         }
 
+        /* ตารางทีมช่างให้แน่นขึ้น */
+        table.grid.grid-workers th,
+        table.grid.grid-workers td {
+            padding:1px 2px;
+            font-size:10px;
+        }
+
+        /* ===== TWO-COL (รายละเอียด + ทีมช่าง) ===== */
+        table.two-col {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4px;
+        }
+        table.two-col td {
+            vertical-align: top;
+            padding: 0 4px;
+        }
+        .two-col-left  { width: 55%; }
+        .two-col-right { width: 45%; }
+
         /* ===== BOXES ===== */
         .box {
             border:1px solid #d1d5db;
@@ -153,9 +158,7 @@
             margin-top:3px;
             font-size:11px;
         }
-        .box-muted {
-            background:#f9fafb;
-        }
+        .box-muted { background:#f9fafb; }
 
         /* ===== CHECKBOX LOOK ===== */
         .checkbox-box {
@@ -165,9 +168,7 @@
             border:1px solid #6b7280;
             margin-right:4px;
         }
-        .checkbox-box.checked {
-            background:#111827;
-        }
+        .checkbox-box.checked { background:#111827; }
 
         /* ===== SIGNATURE ===== */
         .signature-table {
@@ -185,36 +186,18 @@
             width:85%;
             height:16px;
         }
-
-        /* ===== BADGES (ใช้แบบจาง ๆ) ===== */
-        .badge {
-            display:inline-block;
-            padding:1px 6px;
-            border-radius:9999px;
-            font-size:10px;
-            border:1px solid #d1d5db;
-        }
-        .badge-status {
-            background:#eef3fb;
-            border-color:#cbd5f5;
-        }
-        .prio-low    { background:#f3f4f6; }
-        .prio-medium { background:#e0f2fe; color:#0369a1; }
-        .prio-high   { background:#fef3c7; color:#92400e; }
-        .prio-urgent { background:#fee2e2; color:#b91c1c; }
     </style>
 </head>
 
 <body>
 @php
-    // hospital array มาจาก controller: ['name_th' => ..., 'name_en' => ...]
     $hospitalNameTh = $hospital['name_th'] ?? 'โรงพยาบาลพระปกเกล้า';
     $hospitalNameEn = $hospital['name_en'] ?? 'PHRAPOKKLAO HOSPITAL';
     $logoPath       = public_path('images/logoppk.png');
 
     $opLog = $req->operationLog;
 
-    $status = strtolower($req->status ?? '');
+    $status = strtolower((string) $req->status);
     $statusLabel = [
         'pending'     => 'รอคิว',
         'accepted'    => 'รับงานแล้ว',
@@ -223,29 +206,21 @@
         'resolved'    => 'แก้ไขแล้ว',
         'closed'      => 'ปิดงาน',
         'cancelled'   => 'ยกเลิก',
-    ][$status] ?? '';
+    ][$status] ?? $status;
 
-    $prio = strtolower($req->priority ?? '');
-    // ให้เป็นคำไทยปกติ (เหมือนฟอร์มราชการ)
+    $prio = strtolower((string) $req->priority);
     $prioLabel = [
         'low'    => 'ต่ำ',
         'medium' => 'ปานกลาง',
         'high'   => 'สูง',
         'urgent' => 'เร่งด่วน',
-    ][$prio] ?? ($req->priority ?? '');
-
-    $prioClass = match ($prio) {
-        'medium' => 'prio-medium',
-        'high'   => 'prio-high',
-        'urgent' => 'prio-urgent',
-        default  => 'prio-low',
-    };
+    ][$prio] ?? ($req->priority ?? '—');
 
     $workers = $req->workers ?? collect();
 @endphp
 
 {{-- ================= HEADER ================= --}}
-<div class="header-wrapper">
+<div class="header-wrapper section-block">
     <table class="header-table">
         <tr>
             {{-- LOGO --}}
@@ -255,18 +230,18 @@
                 @endif
             </td>
 
-            {{-- HOSPITAL NAME: TH + EN (same line, no parentheses) --}}
+            {{-- HOSPITAL NAME --}}
             <td class="header-center">
                 <div style="font-size:11px; font-weight:bold;">
                     {{ $hospitalNameTh }}&nbsp;&nbsp;{{ $hospitalNameEn }}
                 </div>
 
-                <div class="h-doc-title" style="margin-top:4px;">
+                <div class="h-doc-title">
                     แบบฟอร์มใบแจ้งซ่อม / Maintenance Work Order
                 </div>
             </td>
 
-            {{-- RIGHT META --}}
+            {{-- META --}}
             <td class="header-right">
                 <div>เลขที่ใบงาน: <strong>{{ $req->request_no ?? $req->id }}</strong></div>
                 <div>พิมพ์เมื่อ: {{ now()->format('d/m/Y H:i') }}</div>
@@ -275,196 +250,215 @@
     </table>
 </div>
 
-{{-- ================= ส่วนที่ 1: ข้อมูลงานซ่อมและผู้แจ้ง ================= --}}
-<div class="section-title">ส่วนที่ 1 : ข้อมูลงานซ่อมและผู้แจ้ง</div>
-<div class="section-sub">ข้อมูลผู้แจ้ง ทรัพย์สิน และสถานะใบงาน</div>
+{{-- ================= ส่วนที่ 1 — ข้อมูลงานซ่อมและผู้แจ้ง ================= --}}
+<div class="section-block">
+    <div class="section-title">ส่วนที่ 1 : ข้อมูลงานซ่อมและผู้แจ้ง</div>
+    <div class="section-sub">รายละเอียดภาพรวมของใบงาน ผู้แจ้ง หน่วยงาน และเวลาเหตุการณ์หลัก</div>
 
-<table class="meta">
     <table class="meta">
-    <tr>
-        <td class="label">หมายเลขงานระบบ</td>
-        <td>#{{ $req->id }}</td>
-        <td class="label">สถานะปัจจุบัน</td>
-        <td>{{ $statusLabel }}</td>
-    </tr>
-    <tr>
-        <td class="label">ระดับความสำคัญ</td>
-        <td>{{ $prioLabel }}</td>
-        <td class="label">วันที่รับคำขอ</td>
-        <td>{{ optional($req->request_date ?? $req->created_at)->format('d/m/Y H:i') }}</td>
-    </tr>
+        <tr>
+            <td class="label">หมายเลขงาน</td>
+            <td>#{{ $req->id }}</td>
+            <td class="label">สถานะปัจจุบัน</td>
+            <td>{{ $statusLabel }}</td>
+        </tr>
+        <tr>
+            <td class="label">เลขอ้างอิงภายใน</td>
+            <td>{{ $req->request_no ?? '—' }}</td>
+            <td class="label">ระดับความสำคัญ</td>
+            <td>{{ $prioLabel }}</td>
+        </tr>
+        <tr>
+            <td class="label">ผู้แจ้ง</td>
+            <td>
+                {{ $req->reporter->name ?? $req->reporter_name ?? '-' }}<br>
+                @if($req->reporter_email)
+                    <span class="small">{{ $req->reporter_email }}</span><br>
+                @endif
+                @if($req->reporter_phone)
+                    <span class="small">โทร. {{ $req->reporter_phone }}</span>
+                @endif
+            </td>
+            <td class="label">หน่วยงาน / สถานที่ติดตั้ง</td>
+            <td>
+                {{ $req->location_text ?? $req->department->name_th ?? $req->department->name_en ?? '-' }}<br>
+                @if($req->department?->code)
+                    <span class="small">รหัสหน่วยงาน: {{ $req->department->code }}</span>
+                @endif
+            </td>
+        </tr>
+        <tr>
+            <td class="label">ทรัพย์สิน</td>
+            <td>
+                {{ $req->asset->name ?? ($req->asset_id ? '#'.$req->asset_id : '-') }}<br>
+                @if($req->asset?->asset_code)
+                    <span class="small">รหัสครุภัณฑ์: {{ $req->asset->asset_code }}</span>
+                @endif
+            </td>
+            <td class="label">ช่างหลัก</td>
+            <td>{{ $req->technician->name ?? '-' }}</td>
+        </tr>
+    </table>
 
-    <tr>
-        <td class="label">ผู้แจ้งซ่อม</td>
-        <td>
-            {{ $req->reporter->name ?? $req->reporter_name ?? '-' }}<br>
-            @if($req->reporter_phone)
-                <span class="small">โทร. {{ $req->reporter_phone }}</span><br>
-            @endif
-            @if($req->reporter_email)
-                <span class="small">{{ $req->reporter_email }}</span>
-            @endif
-        </td>
-        <td class="label">หน่วยงาน / สถานที่</td>
-        <td>
-            {{ $req->location_text ?? $req->department->name_th ?? '-' }}<br>
-            @if($req->department?->code)
-                <span class="small">รหัสหน่วยงาน: {{ $req->department->code }}</span>
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="label">ทรัพย์สินที่เกี่ยวข้อง</td>
-        <td>
-            {{ $req->asset->name ?? '-' }}<br>
-            @if($req->asset?->asset_code)
-                <span class="small">รหัสครุภัณฑ์: {{ $req->asset->asset_code }}</span>
-            @endif
-        </td>
-        <td class="label">ช่างหลัก</td>
-        <td>{{ $req->technician->name ?? '-' }}</td>
-    </tr>
-</table>
-
-<table class="grid">
-    <tr>
-        <th>รับคำขอ</th>
-        <th>มอบหมายทีมช่าง</th>
-        <th>เสร็จสิ้น / ปิดงาน</th>
-    </tr>
-    <tr>
-        <td class="text-center">
-            {{ optional($req->request_date ?? $req->created_at)->format('d/m/Y H:i') ?? '—' }}
-        </td>
-        <td class="text-center">{{ optional($req->assigned_date)->format('d/m/Y H:i') ?? '—' }}</td>
-        <td class="text-center">{{ optional($req->completed_date)->format('d/m/Y H:i') ?? '—' }}</td>
-    </tr>
-</table>
-
-{{-- ================= ส่วนที่ 2: รายละเอียดปัญหา ================= --}}
-<div class="section-title">ส่วนที่ 2 : หัวข้อและรายละเอียดปัญหา</div>
-
-<div class="box box-muted">
-    <div class="small" style="color:#555;">หัวข้อใบงาน</div>
-    <div style="font-weight:bold; margin-top:1px;">
-        {{ $req->title ?? '-' }}
-    </div>
-</div>
-
-<div class="box" style="min-height:45px;">
-    <div class="small" style="color:#555; margin-bottom:2px;">รายละเอียด / อาการเสีย</div>
-    {!! nl2br(e($req->description ?: '-')) !!}
-</div>
-
-{{-- ================= ส่วนที่ 3: ทีมช่าง ================= --}}
-<div class="section-title">ส่วนที่ 3 : ทีมช่างที่เกี่ยวข้อง</div>
-
-@if($workers->isEmpty())
-    <div class="box box-muted small">
-        ยังไม่ได้มอบหมายทีมช่าง (ช่างหลัก: {{ $req->technician->name ?? '-' }})
-    </div>
-@else
     <table class="grid">
         <tr>
-            <th style="width: 8%;">ลำดับ</th>
-            <th style="width: 42%;">ชื่อช่าง / ตำแหน่ง</th>
-            <th style="width: 20%;">บทบาท</th>
-            <th style="width: 20%;">สถานะ</th>
-            <th style="width: 10%;">หมายเหตุ</th>
+            <th>รับคำขอ</th>
+            <th>มอบหมายทีมช่าง</th>
+            <th>เสร็จสิ้น / ปิดงาน</th>
         </tr>
-
-        @foreach($workers as $i => $w)
-            @php
-                $assign = $req->assignments->firstWhere('user_id', $w->id);
-                $txt = $assign?->status === \App\Models\MaintenanceAssignment::STATUS_IN_PROGRESS ? 'กำลังดำเนินการ'
-                     : ($assign?->status === \App\Models\MaintenanceAssignment::STATUS_DONE ? 'เสร็จสิ้น'
-                     : ($assign?->status === \App\Models\MaintenanceAssignment::STATUS_CANCELLED ? 'ยกเลิก' : 'ไม่ระบุ'));
-            @endphp
-            <tr>
-                <td class="text-center">{{ $i + 1 }}</td>
-                <td>
-                    {{ $w->name }}<br>
-                    <span class="small">{{ $w->role_label }}</span>
-                </td>
-                <td class="small">{{ $assign?->role ?? '-' }}</td>
-                <td class="small">{{ $txt }}</td>
-                <td></td>
-            </tr>
-        @endforeach
+        <tr>
+            <td class="text-center">
+                {{ optional($req->request_date ?? $req->created_at)->format('d/m/Y H:i') ?? '—' }}
+            </td>
+            <td class="text-center">{{ optional($req->assigned_date)->format('d/m/Y H:i') ?? '—' }}</td>
+            <td class="text-center">{{ optional($req->completed_date)->format('d/m/Y H:i') ?? '—' }}</td>
+        </tr>
     </table>
-@endif
-
-{{-- ================= ส่วนที่ 4: รายงานการปฏิบัติงาน ================= --}}
-<div class="section-title">ส่วนที่ 4 : รายงานการปฏิบัติงาน</div>
-
-<table class="meta">
-    <tr>
-        <td class="label">วันที่ปฏิบัติงาน</td>
-        <td style="width:33%;">
-            {{ optional($opLog?->operation_date)->format('d/m/Y') ?? '—' }}
-        </td>
-        <td class="label">หน่วยงานที่เกี่ยวข้อง</td>
-        <td>{{ $opLog->hospital_name ?? $hospitalNameTh }}</td>
-    </tr>
-</table>
-
-<div class="box box-muted">
-    <div class="small" style="color:#555;">วิธีการปฏิบัติ / การคิดค่าใช้จ่าย</div>
-    <div>
-        <span class="checkbox-box {{ ($opLog->operation_method ?? '') === 'requisition' ? 'checked' : '' }}"></span>
-        ตามใบเบิกครุภัณฑ์ / วัสดุ
-    </div>
-    <div>
-        <span class="checkbox-box {{ ($opLog->operation_method ?? '') === 'service_fee' ? 'checked' : '' }}"></span>
-        ค่าบริการ / ค่าแรงช่าง
-    </div>
-    <div>
-        <span class="checkbox-box {{ ($opLog->operation_method ?? '') === 'other' ? 'checked' : '' }}"></span>
-        อื่น ๆ
-    </div>
 </div>
 
-<div class="box">
-    <div class="small" style="color:#555;">ประเภทงานที่ปฏิบัติ</div>
-    <div>
-        <span class="checkbox-box {{ ($opLog->issue_software ?? false) ? 'checked' : '' }}"></span>
-        Software
-    </div>
-    <div>
-        <span class="checkbox-box {{ ($opLog->issue_hardware ?? false) ? 'checked' : '' }}"></span>
-        Hardware
-    </div>
+{{-- ================= ส่วนที่ 2 — รายละเอียดปัญหา + ทีมช่าง ================= --}}
+<div class="section-block">
+    <table class="two-col">
+        <tr>
+            {{-- LEFT: รายละเอียดปัญหา --}}
+            <td class="two-col-left">
+                <div class="section-title">ส่วนที่ 2 : รายละเอียดปัญหาและหัวข้อใบงาน</div>
+
+                <div class="box box-muted">
+                    <div class="small" style="color:#555;">หัวข้อใบงาน</div>
+                    <div style="font-weight:bold; margin-top:1px;">
+                        {{ $req->title ?: '-' }}
+                    </div>
+                </div>
+
+                <div class="box" style="min-height:60px;">
+                    <div class="small" style="color:#555; margin-bottom:2px;">รายละเอียด / อาการเสีย</div>
+                    {!! nl2br(e($req->description ?: '-')) !!}
+                </div>
+            </td>
+
+            {{-- RIGHT: ทีมช่าง --}}
+            <td class="two-col-right">
+                <div class="section-title">ทีมช่างที่รับผิดชอบ</div>
+
+                @if($workers->isEmpty())
+                    <div class="box box-muted small">
+                        ยังไม่ได้มอบหมายทีมช่าง (ช่างหลัก: {{ $req->technician->name ?? '-' }})
+                    </div>
+                @else
+                    <table class="grid grid-workers">
+                        <tr>
+                            <th style="width: 12%;">ลำดับ</th>
+                            <th style="width: 58%;">ชื่อช่าง / บทบาทในทีม</th>
+                            <th style="width: 30%;">สถานะ</th>
+                        </tr>
+                        @foreach($workers as $i => $w)
+                            @php
+                                $assign = $req->assignments->firstWhere('user_id', $w->id);
+                                $aStatus = $assign?->status;
+                                $statusText = $aStatus === \App\Models\MaintenanceAssignment::STATUS_IN_PROGRESS ? 'กำลังดำเนินการ'
+                                             : ($aStatus === \App\Models\MaintenanceAssignment::STATUS_DONE ? 'เสร็จสิ้น'
+                                             : ($aStatus === \App\Models\MaintenanceAssignment::STATUS_CANCELLED ? 'ยกเลิก' : 'ไม่ระบุ'));
+                            @endphp
+                            <tr>
+                                <td class="text-center">{{ $i + 1 }}</td>
+                                <td>
+                                    {{ $w->name }}<br>
+                                    @if($w->role_label || $assign?->role)
+                                        <span class="small">
+                                            {{ $w->role_label }}
+                                            @if($assign?->role)
+                                                {{ $w->role_label ? ' · ' : '' }}{{ $assign->role }}
+                                            @endif
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="small">{{ $statusText }}</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                @endif
+            </td>
+        </tr>
+    </table>
 </div>
 
-<div class="box" style="min-height:40px;">
-    <div class="small" style="color:#555;">หมายเหตุ / รายละเอียดประกอบ</div>
-    {!! nl2br(e($opLog->remark ?? '-')) !!}
+{{-- ================= ส่วนที่ 3 — รายงานการปฏิบัติงานและค่าใช้จ่าย ================= --}}
+<div class="section-block">
+    <div class="section-title">ส่วนที่ 3 : รายงานการปฏิบัติงานและค่าใช้จ่าย</div>
+    <div class="section-sub">สรุปการปฏิบัติงาน วิธีการคิดค่าใช้จ่าย และรายละเอียดประกอบ</div>
+
+    <table class="meta">
+        <tr>
+            <td class="label">วันที่ปฏิบัติงาน</td>
+            <td style="width:35%;">
+                {{ optional($opLog?->operation_date)->format('d/m/Y') ?? '—' }}
+            </td>
+            <td class="label">หน่วยงานที่เกี่ยวข้อง</td>
+            <td>{{ $opLog->hospital_name ?? $hospitalNameTh }}</td>
+        </tr>
+    </table>
+
+    <div class="box box-muted">
+        <div class="small" style="color:#555;">วิธีการปฏิบัติ / การคิดค่าใช้จ่าย</div>
+        <div>
+            <span class="checkbox-box {{ ($opLog->operation_method ?? '') === 'requisition' ? 'checked' : '' }}"></span>
+            ตามใบเบิกครุภัณฑ์ / วัสดุ
+        </div>
+        <div>
+            <span class="checkbox-box {{ ($opLog->operation_method ?? '') === 'service_fee' ? 'checked' : '' }}"></span>
+            ค่าบริการ / ค่าแรงช่าง
+        </div>
+        <div>
+            <span class="checkbox-box {{ ($opLog->operation_method ?? '') === 'other' ? 'checked' : '' }}"></span>
+            อื่น ๆ
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="small" style="color:#555;">ประเภทงานที่ปฏิบัติ</div>
+        <div>
+            <span class="checkbox-box {{ ($opLog->issue_software ?? false) ? 'checked' : '' }}"></span>
+            Software
+        </div>
+        <div>
+            <span class="checkbox-box {{ ($opLog->issue_hardware ?? false) ? 'checked' : '' }}"></span>
+            Hardware
+        </div>
+    </div>
+
+    <div class="box" style="min-height:40px;">
+        <div class="small" style="color:#555;">หมายเหตุ / รายละเอียดประกอบ</div>
+        {!! nl2br(e($opLog->remark ?? '-')) !!}
+    </div>
 </div>
 
 {{-- ================= ลายเซ็น ================= --}}
-<table class="signature-table">
-    <tr>
-        <td>
-            <div class="small">ผู้แจ้งซ่อม</div>
-            <div class="signature-line"></div>
-            <div class="small">
-                ( {{ $req->reporter->name ?? '........................' }} )
-            </div>
-            <div class="small">วันที่ ....../....../..........</div>
-        </td>
-        <td>
-            <div class="small">ช่างผู้ปฏิบัติงาน</div>
-            <div class="signature-line"></div>
-            <div class="small">
-                ( {{ $req->technician->name ?? '........................' }} )
-            </div>
-            <div class="small">วันที่ ....../....../..........</div>
-        </td>
-    </tr>
-</table>
+<div class="section-block">
+    <table class="signature-table">
+        <tr>
+            <td>
+                <div class="small">ผู้แจ้งซ่อม</div>
+                <div class="signature-line"></div>
+                <div class="small">
+                    ( {{ $req->reporter->name ?? '........................' }} )
+                </div>
+                <div class="small">วันที่ ....../....../..........</div>
+            </td>
+            <td>
+                <div class="small">ช่างผู้ปฏิบัติงาน</div>
+                <div class="signature-line"></div>
+                <div class="small">
+                    ( {{ $req->technician->name ?? '........................' }} )
+                </div>
+                <div class="small">วันที่ ....../....../..........</div>
+            </td>
+        </tr>
+    </table>
 
-<div class="small" style="color:#555; margin-top:6px;">
-    หมายเหตุ: เอกสารนี้จัดทำจากระบบ Maintenance Work Order ของ{{ $hospitalNameTh }} เพื่อใช้ประกอบงานซ่อมบำรุง
+    <div class="small" style="color:#555; margin-top:6px;">
+        หมายเหตุ: เอกสารนี้จัดทำจากระบบ Maintenance Work Order ของ{{ $hospitalNameTh }} เพื่อใช้ประกอบงานซ่อมบำรุง
+    </div>
 </div>
 
 </body>

@@ -32,6 +32,7 @@ class ChatController extends Controller
         $thread = ChatThread::create([
             'title'     => $data['title'],
             'author_id' => Auth::id(),
+            'is_locked' => false,
         ]);
 
         return redirect()->route('chat.show', $thread);
@@ -67,6 +68,7 @@ class ChatController extends Controller
 
     public function storeMessage(Request $r, ChatThread $thread)
     {
+        // ถ้าล็อกแล้ว ห้ามโพสต์
         abort_if($thread->is_locked, 403, 'Thread locked');
 
         $data = $r->validate([
@@ -83,33 +85,71 @@ class ChatController extends Controller
 
     public function myUpdates(Request $request)
     {
-      $u = $request->user();
+        $u = $request->user();
 
-      $threads = \App\Models\ChatThread::query()
-          ->where(function ($q) use ($u) {
-              $q->where('author_id', $u->id)
-                ->orWhereHas('messages', fn ($mm) => $mm->where('user_id', $u->id)); // เคยคอมเมนต์
-          })
-          ->with(['messages' => function ($q) {
-              $q->with('user:id,name')->latest('id')->limit(1);
-          }])
-          ->latest('updated_at')
-          ->limit(30)
-          ->get();
+        $threads = ChatThread::query()
+            ->where(function ($q) use ($u) {
+                $q->where('author_id', $u->id)
+                  ->orWhereHas('messages', fn ($mm) => $mm->where('user_id', $u->id)); // เคยคอมเมนต์
+            })
+            ->with(['messages' => function ($q) {
+                $q->with('user:id,name')->latest('id')->limit(1);
+            }])
+            ->latest('updated_at')
+            ->limit(30)
+            ->get();
 
-      $items = $threads->map(function ($t) {
-          $last = $t->messages->first();
-          return [
-              'id'              => $t->id,
-              'title'           => $t->title ?? ('กระทู้ #' . $t->id),
-              'show_url'        => route('chat.show', $t),
-              'unread'          => 0,
-              'last_user_name'  => $last?->user?->name,
-              'last_body'       => $last?->body,
-              'last_created_at' => optional($last?->created_at)->toIso8601String(),
-          ];
-      })->values();
+        $items = $threads->map(function ($t) {
+            $last = $t->messages->first();
+            return [
+                'id'              => $t->id,
+                'title'           => $t->title ?? ('กระทู้ #' . $t->id),
+                'show_url'        => route('chat.show', $t),
+                'unread'          => 0, // ถ้าอยากนับ unread จริง ๆ ค่อยต่อ logic เพิ่มทีหลัง
+                'last_user_name'  => $last?->user?->name,
+                'last_body'       => $last?->body,
+                'last_created_at' => optional($last?->created_at)->toIso8601String(),
+            ];
+        })->values();
 
-      return response()->json($items);
-  }
+        return response()->json($items);
+    }
+
+    // ========= Lock / Unlock =========
+
+    public function lock(ChatThread $thread)
+    {
+        $this->authorizeLocking($thread);
+
+        $thread->is_locked = true;
+        $thread->save();
+
+        return back()->with('status', 'ล็อกกระทู้เรียบร้อยแล้ว');
+    }
+
+    public function unlock(ChatThread $thread)
+    {
+        $this->authorizeLocking($thread);
+
+        $thread->is_locked = false;
+        $thread->save();
+
+        return back()->with('status', 'ปลดล็อกกระทู้เรียบร้อยแล้ว');
+    }
+
+    protected function authorizeLocking(ChatThread $thread): void
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            abort(403, 'Forbidden');
+        }
+
+        $isOwner = (int) $user->id === (int) $thread->author_id;
+        $isAdmin = (bool) ($user->is_admin ?? false);
+
+        if (! $isOwner && ! $isAdmin) {
+            abort(403, 'Forbidden');
+        }
+    }
 }

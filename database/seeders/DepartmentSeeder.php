@@ -29,6 +29,7 @@ class DepartmentSeeder extends Seeder
             ['code' => 'NUT',   'th' => 'โภชนาการและอาหาร',               'en' => 'Nutrition & Dietetics'],
             ['code' => 'LOG',   'th' => 'ขนส่ง/คลังกลาง',                  'en' => 'Logistics & Central Supply'],
             ['code' => 'MED',   'th' => 'อายุรกรรม',                       'en' => 'Internal Medicine'],
+            ['code' => 'IPD',   'th' => 'หอผู้ป่วยใน',                       'en' => 'In-Patient Department'],
             ['code' => 'SURG',  'th' => 'ศัลยกรรม',                        'en' => 'Surgery'],
             ['code' => 'PED',   'th' => 'กุมารเวชกรรม',                    'en' => 'Pediatrics'],
             ['code' => 'OBG',   'th' => 'สูติ-นรีเวชกรรม',                 'en' => 'Obstetrics & Gynecology'],
@@ -49,7 +50,7 @@ class DepartmentSeeder extends Seeder
 
         $hasNameTh = Schema::hasColumn('departments', 'name_th');
         $hasNameEn = Schema::hasColumn('departments', 'name_en');
-        $hasName   = Schema::hasColumn('departments', 'name'); 
+        $hasName   = Schema::hasColumn('departments', 'name');
 
         foreach ($rows as $r) {
             if ($hasNameTh && $hasNameEn) {

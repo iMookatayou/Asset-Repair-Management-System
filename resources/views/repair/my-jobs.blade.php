@@ -6,10 +6,10 @@
 @php
   use Illuminate\Support\Str;
 
-  $q        = $q ?? request('q');
-  $status   = $status ?? request('status');
-  $filter   = $filter ?? 'all';
-  $tech     = $tech ?? request('tech');
+  $q      = $q ?? request('q');
+  $status = $status ?? request('status');
+  $filter = $filter ?? 'all';
+  $tech   = $tech ?? request('tech');
 
   $filterLabels = [
     'my'        => 'งานของฉัน',
@@ -17,6 +17,7 @@
     'all'       => 'ทั้งหมด',
   ];
 
+  // label สถานะ (เหมือนหน้าอื่น)
   $statusLabel = fn(?string $s) => [
     'pending'     => 'รอดำเนินการ',
     'accepted'    => 'รับงานแล้ว',
@@ -26,16 +27,26 @@
     'closed'      => 'ปิดงาน',
   ][strtolower((string)$s)] ?? Str::of((string)$s)->replace('_',' ')->title();
 
-  $statusClass = fn(?string $s) => match(strtolower((string)$s)) {
-    'pending'     => 'ring-1 ring-amber-300 text-amber-800 bg-white',
-    'accepted'    => 'ring-1 ring-indigo-300 text-indigo-800 bg-white',
-    'in_progress' => 'ring-1 ring-sky-300 text-sky-800 bg-white',
-    'on_hold'     => 'ring-1 ring-zinc-300 text-zinc-700 bg-white',
-    'resolved'    => 'ring-1 ring-emerald-300 text-emerald-800 bg-white',
-    'closed'      => 'ring-1 ring-zinc-300 text-zinc-700 bg-zinc-50',
-    default       => 'ring-1 ring-zinc-300 text-zinc-700 bg-white',
+  /*
+   * STATUS COLOR MAPPING (คำสี ๆ ไม่มีกรอบ – ใช้ให้เหมือนหน้าอื่น)
+   *   pending     => text-amber-700
+   *   accepted    => text-indigo-700
+   *   in_progress => text-sky-700
+   *   on_hold     => text-zinc-600
+   *   resolved    => text-emerald-700
+   *   closed      => text-zinc-500
+   */
+  $statusTextClass = fn(?string $s) => match(strtolower((string)$s)) {
+    'pending'     => 'text-amber-700',
+    'accepted'    => 'text-indigo-700',
+    'in_progress' => 'text-sky-700',
+    'on_hold'     => 'text-zinc-600',
+    'resolved'    => 'text-emerald-700',
+    'closed'      => 'text-zinc-500',
+    default       => 'text-zinc-700',
   };
 
+  // label ความสำคัญ
   $priorityLabel = fn(?string $p) => [
     'low'    => 'ต่ำ',
     'medium' => 'ปานกลาง',
@@ -43,18 +54,25 @@
     'urgent' => 'เร่งด่วน',
   ][strtolower((string)$p)] ?? '-';
 
-  $priorityClass = fn(?string $p) => match(strtolower((string)$p)) {
-    'low'    => 'ring-1 ring-zinc-300 text-zinc-700 bg-white',
-    'medium' => 'ring-1 ring-sky-300 text-sky-800 bg-white',
-    'high'   => 'ring-1 ring-amber-300 text-amber-800 bg-white',
-    'urgent' => 'ring-1 ring-rose-300 text-rose-800 bg-white',
-    default  => 'ring-1 ring-zinc-300 text-zinc-700 bg-white',
+  /*
+   * PRIORITY COLOR MAPPING (คำสี ๆ ไม่มีกรอบ – ให้ตรงกับหน้า Maintenance/Assets)
+   *   low    => text-zinc-500
+   *   medium => text-sky-700
+   *   high   => text-amber-700
+   *   urgent => text-rose-700
+   */
+  $priorityTextClass = fn(?string $p) => match(strtolower((string)$p)) {
+    'low'    => 'text-zinc-500',
+    'medium' => 'text-sky-700',
+    'high'   => 'text-amber-700',
+    'urgent' => 'text-rose-700',
+    default  => 'text-zinc-700',
   };
 @endphp
 
 <div class="pt-3 md:pt-4"></div>
 
-{{-- MAIN WRAPPER: ให้กว้างเท่าหน้าอื่นในระบบ ไม่ย่อซ้อน --}}
+{{-- MAIN WRAPPER --}}
 <div
   id="myJobsContainer"
   class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-5 pb-8"
@@ -113,7 +131,7 @@
             <div class="relative">
               <input type="text" id="q" name="q" value="{{ $q }}"
                      placeholder="ค้นหาเรื่อง, ทรัพย์สิน..."
-                     class="w-full rounded-md border border-zinc-300 pl-10 pr-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600" />
+                     class="w-full rounded-md border border-zinc-300 pl-10 pr-3 py-2 text-[13px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600" />
               <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-zinc-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -126,7 +144,7 @@
           <div class="md:col-span-2">
             <label for="filter" class="mb-1 block text-[12px] text-zinc-600">ช่วงงาน</label>
             <select id="filter" name="filter"
-                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                     onchange="this.form.submit()">
               @foreach($filterLabels as $key => $label)
                 <option value="{{ $key }}" @selected($filter===$key)>{{ $label }}</option>
@@ -138,7 +156,7 @@
           <div class="md:col-span-3">
             <label for="status" class="mb-1 block text-[12px] text-zinc-600">สถานะ</label>
             <select id="status" name="status"
-                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
               <option value="">ทุกสถานะ</option>
               @foreach(['pending','accepted','in_progress','on_hold','resolved','closed'] as $s)
                 <option value="{{ $s }}" @selected($status===$s)>{{ $statusLabel($s) }}</option>
@@ -154,12 +172,12 @@
           {{-- Buttons --}}
           <div class="md:col-span-2 flex items-end gap-2">
             <button type="submit"
-                    class="inline-flex items-center justify-center rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                    class="inline-flex items-center justify-center rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-[13px] font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
               ค้นหา
             </button>
             @if($q || $status)
               <a href="{{ route('repairs.my_jobs', ['filter' => $filter] + ($tech ? ['tech'=>$tech] : [])) }}"
-                 class="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50">
+                 class="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-800 hover:bg-zinc-50">
                 ล้างค่า
               </a>
             @endif
@@ -176,21 +194,21 @@
     @endphp
 
     @if($activeTech)
-      <div class="px-5 py-2.5 bg-emerald-50 text-emerald-900 border-b border-emerald-100 text-sm">
+      <div class="px-5 py-2.5 bg-emerald-50 text-emerald-900 border-b border-emerald-100 text-[13px]">
         กำลังดูงานของ: <span class="font-medium">{{ $activeTech->name }}</span>
       </div>
     @endif
 
     <div class="relative overflow-x-auto">
-      <table class="min-w-full text-sm">
+      <table class="min-w-full text-[13px]">
         <thead class="bg-zinc-50 border-b border-zinc-200">
           <tr class="text-zinc-700">
-            <th class="px-4 py-3 text-left font-medium w-[32%]">เรื่อง</th>
-            <th class="px-4 py-3 text-left font-medium w-40">ทรัพย์สิน</th>
-            <th class="px-4 py-3 text-left font-medium w-28">ความสำคัญ</th>
-            <th class="px-4 py-3 text-left font-medium w-36">สถานะ</th>
-            <th class="px-4 py-3 text-left font-medium w-40">ช่างผู้รับผิดชอบ</th>
-            <th class="px-4 py-3 text-center font-medium whitespace-nowrap min-w-[200px]">การดำเนินการ</th>
+            <th class="px-4 py-3 text-center font-semibold w-[32%] whitespace-nowrap">เรื่อง</th>
+            <th class="px-4 py-3 text-center font-semibold w-40 whitespace-nowrap">ทรัพย์สิน</th>
+            <th class="px-4 py-3 text-center font-semibold w-28 whitespace-nowrap">ความสำคัญ</th>
+            <th class="px-4 py-3 text-center font-semibold w-36 whitespace-nowrap">สถานะ</th>
+            <th class="px-4 py-3 text-center font-semibold w-40 whitespace-nowrap">ช่างผู้รับผิดชอบ</th>
+            <th class="px-4 py-3 text-center font-semibold whitespace-nowrap min-w-[200px]">การดำเนินการ</th>
           </tr>
         </thead>
 
@@ -200,55 +218,61 @@
             $canAccept = !$r->technician_id && in_array($r->status, ['pending','accepted']);
           @endphp
           <tr class="align-top hover:bg-zinc-50 border-b last:border-0">
+            {{-- เรื่อง --}}
             <td class="px-4 py-3">
               <a href="{{ route('maintenance.requests.show', $r) }}"
                  class="block max-w-full truncate font-medium text-zinc-900 hover:underline">
                 #{{ $r->id }} — {{ $r->title }}
               </a>
               @if($r->description)
-                <p class="mt-1 text-xs leading-relaxed text-zinc-600 max-w-full">
+                <p class="mt-1 text-[12px] leading-relaxed text-zinc-600 max-w-full">
                   {{ Str::limit($r->description, 80) }}
                 </p>
               @endif
             </td>
 
-            <td class="px-4 py-3 text-zinc-700 max-w-[220px] truncate">
+            {{-- ทรัพย์สิน --}}
+            <td class="px-4 py-3 text-zinc-700 max-w-[220px] truncate text-center">
               {{ $r->asset->name ?? '-' }}
             </td>
 
-            <td class="px-4 py-3">
-              <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] {{ $priorityClass($r->priority ?? null) }}">
+            {{-- ความสำคัญ: คำสี ๆ ไม่มีกรอบ --}}
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+              <span class="text-[12px] font-medium {{ $priorityTextClass($r->priority ?? null) }}">
                 {{ $priorityLabel($r->priority ?? null) }}
               </span>
             </td>
 
-            <td class="px-4 py-3">
-              <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] {{ $statusClass($r->status ?? null) }}">
+            {{-- สถานะ: คำสี ๆ ไม่มีกรอบ --}}
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+              <span class="text-[12px] font-medium {{ $statusTextClass($r->status ?? null) }}">
                 {{ $statusLabel($r->status ?? null) }}
               </span>
             </td>
 
-            <td class="px-4 py-3">
+            {{-- ช่างผู้รับผิดชอบ --}}
+            <td class="px-4 py-3 text-center whitespace-nowrap">
               @if($r->technician)
-                <span class="text-sm text-zinc-800">{{ $r->technician->name }}</span>
+                <span class="text-[13px] text-zinc-800">{{ $r->technician->name }}</span>
               @else
-                <span class="text-sm text-zinc-400">-</span>
+                <span class="text-[13px] text-zinc-400">-</span>
               @endif
             </td>
 
+            {{-- การดำเนินการ --}}
             <td class="px-4 py-3 text-center whitespace-nowrap align-middle">
               <div class="h-full flex items-center justify-center gap-2">
                 @if($canAccept)
                   <form method="POST" action="{{ route('repairs.accept', $r) }}">
                     @csrf
                     <button type="submit"
-                            class="inline-flex items-center gap-1.5 rounded-md border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                            class="inline-flex items-center gap-1.5 rounded-md border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[12px] font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 whitespace-nowrap">
                       รับงาน
                     </button>
                   </form>
                 @endif
                 <a href="{{ route('maintenance.requests.show', $r) }}"
-                   class="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-[11px] font-medium text-zinc-800 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400">
+                   class="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-[12px] font-medium text-zinc-800 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 whitespace-nowrap">
                   ดูรายละเอียด
                 </a>
               </div>
@@ -261,7 +285,7 @@
                 <svg class="w-10 h-10 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <p class="text-sm">ไม่พบรายการงานตามเงื่อนไขที่เลือก</p>
+                <p class="text-[13px]">ไม่พบรายการงานตามเงื่อนไขที่เลือก</p>
               </div>
             </td>
           </tr>
