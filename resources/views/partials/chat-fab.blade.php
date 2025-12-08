@@ -182,7 +182,7 @@
           </div>`;
       }
 
-      const res = await fetch(`{{ route('chat.my_updates') }}`, {
+      const res = await fetch(`{{ url('/chat/my-updates') }}`, {
         headers: { 'Accept':'application/json' }
       });
 

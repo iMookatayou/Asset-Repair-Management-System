@@ -168,9 +168,12 @@ HTML;
 
         {{-- Search / Filters --}}
         <form method="GET"
-              action="{{ route('maintenance.requests.index') }}"
-              class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end"
-              onsubmit="showLoader()">
+            action="{{ route('maintenance.requests.index') }}"
+            class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end"
+            onsubmit="showLoader()">
+
+        <input type="hidden" name="sort_by"  value="{{ request('sort_by') }}">
+        <input type="hidden" name="sort_dir" value="{{ request('sort_dir', 'desc') }}">
 
           {{-- Search --}}
           <div class="md:col-span-7 min-w-0">

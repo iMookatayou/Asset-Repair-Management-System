@@ -252,12 +252,12 @@ class ChatController extends Controller
             abort(403, 'Forbidden');
         }
 
-        $isOwner = (int) $user->id === (int) $thread->author_id;
-        $isAdmin = (bool) ($user->is_admin ?? false);
-
-        if (! $isOwner && ! $isAdmin) {
+        // ให้สิทธิ์ทุกคนที่ role ไม่ใช่ member
+        if ($user->role === 'member') {
             abort(403, 'Forbidden');
         }
+
+        // ถ้าไม่ใช่ member ก็ปล่อยผ่าน
     }
 
     public function myUpdates(Request $r)
@@ -268,12 +268,12 @@ class ChatController extends Controller
             return response()->json([]);
         }
 
-        // ***** ตรงนี้คือจุดสำคัญ: เอาเฉพาะกระทู้ที่ "เราเกี่ยวข้อง" *****
+        // เอาเฉพาะกระทู้ที่ "เราเกี่ยวข้อง" (เป็นคนตั้ง หรือเคยคอมเมนต์)
         $threads = ChatThread::query()
             ->where(function ($q) use ($user) {
                 $q->where('author_id', $user->id)
                   ->orWhereHas('messages', function ($mm) use ($user) {
-                      $mm->where('user_id', $user->id); // เคยพิมพ์ในกระทู้นี้
+                      $mm->where('user_id', $user->id);
                   });
             })
             ->with(['latestMessage.user'])

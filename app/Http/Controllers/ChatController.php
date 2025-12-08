@@ -145,11 +145,11 @@ class ChatController extends Controller
             abort(403, 'Forbidden');
         }
 
-        $isOwner = (int) $user->id === (int) $thread->author_id;
-        $isAdmin = (bool) ($user->is_admin ?? false);
-
-        if (! $isOwner && ! $isAdmin) {
+        // ให้สิทธิ์ทุกคนที่ role ไม่ใช่ member
+        if ($user->role === 'member') {
             abort(403, 'Forbidden');
         }
+
+        // ถ้าไม่ใช่ member ก็ผ่านได้เลย (admin, supervisor, technician, it_support, network, developer, ฯลฯ)
     }
 }
