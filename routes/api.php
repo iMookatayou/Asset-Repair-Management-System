@@ -69,7 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/threads/{thread}/lock',   [ChatController::class, 'lock'])->name('threads.lock');
     Route::post('/threads/{thread}/unlock', [ChatController::class, 'unlock'])->name('threads.unlock');
 
-    Route::get('/chat/my-updates', [ChatController::class, 'myUpdates'])->name('chat.my_updates');
+    Route::get('/chat/my-updates', [ChatController::class, 'myUpdates'])->name('api.chat.my_updates');
 
     // Auth (protected)
     Route::get('/auth/tokens',         [AuthController::class, 'tokens'])->name('auth.tokens');
