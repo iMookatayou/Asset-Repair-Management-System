@@ -11,8 +11,9 @@
   $priority = $priority ?? request('priority');
 
   // ===== Sorting เลขใบงาน (ใช้ id ไล่เก่า/ใหม่) =====
-  $sortBy  = request('sort_by');              // ไม่มี query ก็เป็น null
-  $sortDir = request('sort_dir', 'desc');     // ค่าเริ่มต้นเวลาเริ่ม sort = desc
+  // รับค่าจาก controller ถ้ามี ถ้าไม่มี fallback ไปที่ request / default
+  $sortBy  = $sortBy  ?? request('sort_by', 'id');     // default field = id
+  $sortDir = $sortDir ?? request('sort_dir', 'desc');  // default = ใหม่สุดก่อน
 
   $sortableWorkId = function() use ($sortBy, $sortDir) {
       $isActive = $sortBy === 'id';
@@ -128,9 +129,10 @@ HTML;
   ];
 @endphp
 
+{{-- ระยะใต้ navbar --}}
 <div class="pt-3 md:pt-4"></div>
 
-<div class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-5">
+<div class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-4">
   {{-- ===== Sticky Header + Filter Card ===== --}}
   <div class="sticky top-[6rem] z-20 bg-slate-50/90 backdrop-blur">
     <div class="rounded-lg border border-zinc-300 bg-white shadow-sm">
@@ -168,12 +170,13 @@ HTML;
 
         {{-- Search / Filters --}}
         <form method="GET"
-            action="{{ route('maintenance.requests.index') }}"
-            class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end"
-            onsubmit="showLoader()">
+              action="{{ route('maintenance.requests.index') }}"
+              class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end"
+              onsubmit="showLoader()">
 
-        <input type="hidden" name="sort_by"  value="{{ request('sort_by') }}">
-        <input type="hidden" name="sort_dir" value="{{ request('sort_dir', 'desc') }}">
+          {{-- ใช้ค่าที่ controller+session จัดการให้แล้ว --}}
+          <input type="hidden" name="sort_by"  value="{{ $sortBy }}">
+          <input type="hidden" name="sort_dir" value="{{ $sortDir }}">
 
           {{-- Search --}}
           <div class="md:col-span-7 min-w-0">
@@ -232,6 +235,9 @@ HTML;
       </div>
     </div>
   </div>
+
+  {{-- spacer ใต้ sticky header กันตารางโดนทับ / ระยะเท่า My Jobs ประมาณ ๆ --}}
+  <div class="h-3 md:h-4 lg:h-5"></div>
 
   {{-- ===== Table Card ===== --}}
   <div class="rounded-lg border border-zinc-300 bg-white overflow-hidden">

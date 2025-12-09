@@ -7,12 +7,12 @@
   <meta name="csrf-token" content="{{ csrf_token() }}" />
   <meta name="theme-color" content="#0E2B51">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
   {{-- Tom Select CSS สำหรับ searchable <select> เช่น หน่วยงาน --}}
   <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
   <title>@yield('title', config('app.name', 'Asset Repair'))</title>
 
   @yield('head')
@@ -23,136 +23,264 @@
 
   <style>
     @font-face {
-      font-family: 'Sarabun';
-      font-style: normal;
-      font-weight: 400;
-      src: url('{{ asset('fonts/Sarabun-Regular.woff2') }}') format('woff2'),
-           url('{{ asset('fonts/Sarabun-Regular.woff') }}') format('woff');
+        font-family: 'Sarabun';
+        font-style: normal;
+        font-weight: 400;
+        src: url('{{ asset('fonts/Sarabun-Regular.woff2') }}') format('woff2'),
+             url('{{ asset('fonts/Sarabun-Regular.woff') }}') format('woff');
     }
     @font-face {
-      font-family: 'Sarabun';
-      font-style: normal;
-      font-weight: 500;
-      src: url('{{ asset('fonts/Sarabun-Medium.woff2') }}') format('woff2'),
-           url('{{ asset('fonts/Sarabun-Medium.woff') }}') format('woff');
+        font-family: 'Sarabun';
+        font-style: normal;
+        font-weight: 500;
+        src: url('{{ asset('fonts/Sarabun-Medium.woff2') }}') format('woff2'),
+             url('{{ asset('fonts/Sarabun-Medium.woff') }}') format('woff');
     }
     @font-face {
-      font-family: 'Sarabun';
-      font-style: normal;
-      font-weight: 600;
-      src: url('{{ asset('fonts/Sarabun-SemiBold.woff2') }}') format('woff2'),
-           url('{{ asset('fonts/Sarabun-SemiBold.woff') }}') format('woff');
+        font-family: 'Sarabun';
+        font-style: normal;
+        font-weight: 600;
+        src: url('{{ asset('fonts/Sarabun-SemiBold.woff2') }}') format('woff2'),
+             url('{{ asset('fonts/Sarabun-SemiBold.woff') }}') format('woff');
     }
     @font-face {
-      font-family: 'Sarabun';
-      font-style: normal;
-      font-weight: 700;
-      src: url('{{ asset('fonts/Sarabun-Bold.woff2') }}') format('woff2'),
-           url('{{ asset('fonts/Sarabun-Bold.woff') }}') format('woff');
+        font-family: 'Sarabun';
+        font-style: normal;
+        font-weight: 700;
+        src: url('{{ asset('fonts/Sarabun-Bold.woff2') }}') format('woff2'),
+             url('{{ asset('fonts/Sarabun-Bold.woff') }}') format('woff');
     }
 
+    /* ===== โครงหลักทั้งหน้า ===== */
     html, body {
-      font-family: 'Sarabun', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-                   Roboto, "Helvetica Neue", Arial, sans-serif;
-      font-weight: 400;
-      letter-spacing: 0.2px;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: 'Sarabun', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                     Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-weight: 400;
+        letter-spacing: 0.2px;
+    }
+
+    /* body เป็น flex column => navbar + layout + footer */
+    body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding-top: 0 !important;
     }
 
     :root{
       color-scheme: light;
-      --nav-h: 86px;
+      --nav-h: 80px;           /* ความสูง navbar + logo sidebar */
+      --topbar-h: calc(var(--nav-h) + 8px);
     }
-
-    body{ padding-top: var(--nav-h); }
-
-    .sticky-under-topbar{ position: sticky; top: calc(var(--nav-h) + .5rem); z-index: 10; }
 
     @media (max-width: 992px){
       :root{ --nav-h: 72px; }
     }
 
-    .layout{
-      display:grid;
-      grid-template-columns: 260px 1fr;
-      min-height:100vh;
-      transition:grid-template-columns .2s ease;
-      background: hsl(var(--b2));
-      color: hsl(var(--bc));
-    }
-    .content{ padding:1rem; }
-    .sidebar{
-      background:#ffffff;
-      border-right:1px solid hsl(var(--b2));
-      width:260px;
-      transition:width .2s ease;
+    /* content ด้านใน (main) */
+    .content{
+      padding: 1rem 1rem 0.25rem;  /* ลด padding ล่างลงนิดนึง */
     }
 
-    @media (min-width:1024px){
-      .sidebar.compact{ width:180px !important; }
-      .layout.with-compact{ grid-template-columns:180px 1fr !important; }
+    /* header ที่ sticky ใต้ navbar (ใช้เฉพาะ page ที่อยาก sticky) */
+    .sticky-under-topbar{
+      position: sticky;
+      top: calc(var(--nav-h) - 12px);  /* ขยับขึ้นเล็กน้อยไม่ให้ดูห่างเกินไป */
+      z-index: 10;
     }
-    @media (min-width:1024px){
-      .sidebar.collapsed{ width:76px !important; }
-      .layout.with-collapsed{ grid-template-columns:76px 1fr !important; }
-      .layout.with-expanded{ grid-template-columns:260px 1fr !important; }
+    /* กัน margin-top ตัวแรกใน page-header มาดันลงอีก */
+    .sticky-under-topbar > *:first-child {
+      margin-top: 0 !important;
+    }
+
+    /* ===== Layout หลัก (sidebar + content) ===== */
+    .layout{
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        flex: 1 0 auto;
+        min-height: 0 !important;
+        transition: grid-template-columns .2s ease;
+        background: #ffffff;          /* หรือจะลบทั้งบรรทัดนี้ก็ได้ */
+        color: hsl(var(--bc));
+    }
+
+    .sidebar{
+        background:#ffffff;
+        border-right:1px solid hsl(var(--b2));
+        width:260px;
+        transition:width .2s ease;
+    }
+
+    /* box โลโก้บน sidebar ให้สูงเท่า navbar */
+    .sidebar-logo {
+            height: var(--nav-h);
+            display: flex;
+            align-items: center;
+        }
+
+        @media (min-width:1024px){
+        .sidebar{
+        /* ยกเลิก sticky + ความสูง fix */
+        position: static;      /* หรือจะลบทิ้งทั้งบรรทัดก็ได้ */
+        top: auto;
+        align-self: stretch;   /* ให้สูงเท่ากับแถวของ grid (main ยาวแค่ไหน sidebar ยาวเท่านั้น) */
+        height: auto;
+        overflow-y: visible;   /* ไม่มี scrollbar แยกใน sidebar */
+
+        /* ส่วน width / compact / collapsed จะใช้ class อื่นคุมอยู่แล้ว */
+        }
+
+        .sidebar.compact{ width:180px !important; }
+        .layout.with-compact{ grid-template-columns:180px 1fr !important; }
+
+        .sidebar.collapsed{ width:76px !important; }
+        .layout.with-collapsed{ grid-template-columns:76px 1fr !important; }
+        .layout.with-expanded{ grid-template-columns:260px 1fr !important; }
+
+        .sidebar.collapsed.hover-expand{ width:260px !important; }
+        .sidebar.collapsed.hover-expand .menu-text{ display:inline !important; }
+        .sidebar.collapsed.hover-expand .menu-item{ justify-content:flex-start; gap:.75rem; }
+        .sidebar.hover-expand{ box-shadow: 4px 0 12px rgba(0,0,0,.06); }
     }
 
     @media (max-width:1024px){
-      .layout{ grid-template-columns:1fr; }
-      .sidebar{
-        position:fixed; inset:var(--nav-h) auto 0 0; width:270px;
-        transform:translateX(-100%); transition:.2s; z-index:50;
-        box-shadow: 4px 0 24px rgba(0,0,0,.06);
-      }
-      .sidebar.open{ transform:translateX(0); }
-      .backdrop{ position:fixed; inset:var(--nav-h) 0 0 0; background:rgba(0,0,0,.45); display:none; z-index:40; }
-      .backdrop.show{ display:block; }
-    }
+        .layout{ grid-template-columns:1fr; }
 
-    @media (min-width:1024px){
-      .sidebar.collapsed.hover-expand{ width:260px !important; }
-      .sidebar.collapsed.hover-expand .menu-text{ display:inline !important; }
-      .sidebar.collapsed.hover-expand .menu-item{ justify-content:flex-start; gap:.75rem; }
-      .sidebar.hover-expand{ box-shadow: 4px 0 12px rgba(0,0,0,.06); }
+        .sidebar{
+          position:fixed;
+          inset:var(--nav-h) auto 0 0;
+          width:270px;
+          transform:translateX(-100%);
+          transition:.2s;
+          z-index:50;
+          box-shadow: 4px 0 24px rgba(0,0,0,.06);
+          max-height: calc(100vh - var(--nav-h));
+          overflow-y: auto;
+        }
+        .sidebar.open{ transform:translateX(0); }
+
+        .backdrop{
+          position:fixed;
+          inset:var(--nav-h) 0 0 0;
+          background:rgba(0,0,0,.45);
+          display:none;
+          z-index:40;
+        }
+        .backdrop.show{ display:block; }
     }
 
     .sidebar .menu{ padding:.5rem 0; }
+
     .sidebar .menu-item{
-      display:grid; grid-template-columns:48px 1fr; align-items:center;
-      gap:.75rem; height:44px; line-height:1; padding:0 .75rem;
-      white-space:nowrap; overflow:hidden;
-      transition: grid-template-columns .25s ease, padding .25s ease, background .15s ease;
-      color:hsl(var(--bc));
+        display:grid;
+        grid-template-columns:48px 1fr;
+        align-items:center;
+        gap:.75rem;
+        height:44px;
+        line-height:1;
+        padding:0 .75rem;
+        white-space:nowrap;
+        overflow:hidden;
+        transition:
+          grid-template-columns .25s ease,
+          padding .25s ease,
+          background .15s ease;
+        color:hsl(var(--bc));
     }
     .sidebar .menu-item:hover{ background:hsl(var(--b2)); }
+
     .sidebar .menu-item .icon-wrap{
-      width:48px; height:44px; display:inline-flex; align-items:center; justify-content:center;
-      color: color-mix(in srgb, hsl(var(--bc)) 60%, transparent);
-      position:relative;
+        width:48px;
+        height:44px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        color: color-mix(in srgb, hsl(var(--bc)) 60%, transparent);
+        position:relative;
     }
-    .sidebar .menu-item .menu-text{ overflow:hidden; text-overflow:ellipsis; opacity:1; transition:opacity .18s ease; }
+
+    .sidebar .menu-item .menu-text{
+        overflow:hidden;
+        text-overflow:ellipsis;
+        opacity:1;
+        transition:opacity .18s ease;
+    }
 
     @media (min-width:1024px){
-      .sidebar.collapsed .menu-item{ grid-template-columns:48px 0px; gap:0; padding-inline:.5rem; }
-      .sidebar.collapsed .menu-item .menu-text{ opacity:0; pointer-events:none; }
+        .sidebar.collapsed .menu-item{
+          grid-template-columns:48px 0px;
+          gap:0;
+          padding-inline:.5rem;
+        }
+        .sidebar.collapsed .menu-item .menu-text{
+          opacity:0;
+          pointer-events:none;
+        }
 
-      .sidebar.compact .menu-item{ grid-template-columns:48px 1fr; padding-inline:.5rem; }
-      .sidebar.compact .menu-item .menu-text{ font-size: .92rem; }
+        .sidebar.compact .menu-item{
+          grid-template-columns:48px 1fr;
+          padding-inline:.5rem;
+        }
+        .sidebar.compact .menu-item .menu-text{
+          font-size: .92rem;
+        }
     }
 
-    .footer{ background:#0E2B51; display:flex; align-items:center; justify-content:center; min-height:44px; padding:.75rem 1rem; font-weight:600; font-size:.875rem; color:#fff!important; }
+    .brand-en {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                    Roboto, "Helvetica Neue", Arial, sans-serif;
+        letter-spacing: 0.08em;
+    }
 
-    .loader-overlay{ position:fixed; inset:0; background:rgba(255,255,255,.6); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; z-index:99999; visibility:hidden; opacity:0; transition:opacity .2s ease, visibility .2s; }
-    .loader-overlay.show{ visibility:visible; opacity:1; }
-    .loader-spinner{ width:38px; height:38px; border:4px solid #0E2B51; border-top-color:transparent; border-radius:50%; animation:spin .7s linear infinite; }
+    .footer-hero {
+      background-color: #0F2D5C;
+      color: #EAF2FF;
+      font-family: 'Sarabun', system-ui, sans-serif;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+      border-top: 1px solid rgba(255,255,255,.12);
+      margin: 0;
+    }
+
+    .loader-overlay{
+        position:fixed;
+        inset:0;
+        background:rgba(255,255,255,.6);
+        backdrop-filter:blur(2px);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        z-index:99999;
+        visibility:hidden;
+        opacity:0;
+        transition:opacity .2s ease, visibility .2s;
+    }
+    .loader-overlay.show{
+        visibility:visible;
+        opacity:1;
+    }
+    .loader-spinner{
+        width:38px;
+        height:38px;
+        border:4px solid #0E2B51;
+        border-top-color:transparent;
+        border-radius:50%;
+        animation:spin .7s linear infinite;
+    }
     @keyframes spin{ to{ transform:rotate(360deg) } }
 
-    /* --- เสริมให้ navbar/dropdown ไม่ถูกคลิปซ้อน --- */
-    .app-navbar, .navbar-hero { z-index: 2000; } /* x-navbar fixed-top */
+    /* navbar / dropdown ซ้อนกันได้ */
+    .app-navbar,
+    .navbar-hero { z-index: 2000; }
     .dropdown-menu { z-index: 2100; }
 
     /* ===== Global team tab motion ===== */
-    @keyframes tabNudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-2px); } }
+    @keyframes tabNudge {
+        0%,100% { transform: translateX(0); }
+        50%     { transform: translateX(-2px); }
+    }
     #teamTab { cursor: pointer; right: .8rem; }
     #teamTab .tri { transition: transform .18s ease, border-color .18s ease; }
     #teamTab:hover .tri { transform: translateX(-1px); }
@@ -160,7 +288,7 @@
   </style>
 </head>
 
-<body class="bg-base-200 text-base-content">
+<body class="bg-white text-base-content">
   @if (View::hasSection('navbar'))
     @yield('navbar')
   @else
@@ -198,6 +326,7 @@
     </main>
   </div>
 
+  {{-- FOOTER อยู่ใน flex column เดียวกับ layout --}}
   <x-footer />
 
   {{-- ===== Core JS ===== --}}
@@ -209,23 +338,31 @@
     const side = document.getElementById('side');
     const bd   = document.getElementById('backdrop');
 
-    function closeSide(){ side.classList.remove('open'); bd.classList.remove('show'); btn?.setAttribute('aria-expanded','false'); }
-    function openSide(){ side.classList.add('open'); bd.classList.add('show'); btn?.setAttribute('aria-expanded','true'); }
+    function closeSide(){
+      side.classList.remove('open');
+      bd.classList.remove('show');
+      btn?.setAttribute('aria-expanded','false');
+    }
+    function openSide(){
+      side.classList.add('open');
+      bd.classList.add('show');
+      btn?.setAttribute('aria-expanded','true');
+    }
 
     btn && btn.addEventListener('click', ()=> side.classList.contains('open') ? closeSide() : openSide());
     bd && bd.addEventListener('click', closeSide);
 
     const KEY = 'app.sidebar.collapsed';
     const layout = document.getElementById('layout');
-    function applyCollapsedState(collapsed){
-      if (collapsed){
-        side.classList.add('collapsed');
-        layout.classList.add('with-collapsed');
-        layout.classList.remove('with-expanded');
-      } else {
-        side.classList.remove('collapsed','hover-expand');
-        layout.classList.remove('with-collapsed','with-expanded');
-      }
+
+    // บังคับให้ sidebar ขยายตลอด (desktop)
+    localStorage.setItem(KEY, '0');
+    side.classList.remove('collapsed', 'hover-expand');
+    layout.classList.remove('with-collapsed', 'with-expanded');
+
+    // ฟังก์ชันนี้จะไม่ทำอะไรแล้ว แต่คงไว้ให้โค้ดส่วนอื่นเรียกได้โดยไม่ error
+    function applyCollapsedState(collapsed) {
+      // no-op
     }
     const saved = localStorage.getItem(KEY);
     if (saved === null) {
@@ -302,7 +439,6 @@
     });
     document.addEventListener('submit', (e) => {
       const form = e.target;
-      // อย่าโชว์ Loader หากมีการ preventDefault ใน handler อื่น (เช่น client-side validate)
       if (e.defaultPrevented) return;
       if (form instanceof HTMLFormElement && !form.hasAttribute('data-no-loader')) Loader.show();
     });
@@ -322,7 +458,7 @@
   </script>
 
   {{-- ===== Global Team Drawer (accessible on all authenticated pages) ===== --}}
-    @if(Auth::check())
+  @if(Auth::check())
     @php
       // Query team (admins + technicians) with active workload counts
       $globalTeam = \App\Models\User::query()
@@ -341,8 +477,8 @@
         ->get(['id','name','role']);
     @endphp
 
-    {{-- Triangle Tab Trigger --}}
     @if($globalTeam->count())
+      {{-- Triangle Tab Trigger --}}
       <button id="teamTab"
         class="fixed top-1/2 right-2 -translate-y-1/2 z-[2202] group select-none
                 w-10 h-10 bg-indigo-600 text-white rounded-full shadow-lg
@@ -352,126 +488,139 @@
 
         <!-- ไอคอนปิด: ลูกศรชี้ซ้าย -->
         <svg id="teamTabIconClosed" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15 18l-6-6 6-6"/>
+          <path d="M15 18l-6-6 6-6"/>
         </svg>
 
         <!-- ไอคอนเปิด: ลูกศรชี้ขวา -->
         <svg id="teamTabIconOpen" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 6l6 6-6 6"/>
+          <path d="M9 6l6 6-6 6"/>
         </svg>
-    </button>
+      </button>
 
-    {{-- Overlay --}}
-    <div id="teamOverlay" class="fixed inset-0 bg-black/40 z-[2200] hidden" onclick="closeTeamDrawer()" aria-hidden="true"></div>
+      {{-- Overlay --}}
+      <div id="teamOverlay" class="fixed inset-0 bg-black/40 z-[2200] hidden" onclick="closeTeamDrawer()" aria-hidden="true"></div>
 
-        {{-- Drawer --}}
-        <aside id="teamDrawer" class="fixed top-0 right-0 h-full w-[360px] max-w-[90vw] bg-white shadow-xl z-[2201] transform translate-x-full transition-transform duration-300" aria-label="ภาระงานทีม">
-            <div class="h-full flex flex-col">
-            <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                <h3 class="text-sm font-semibold text-gray-900">Technician</h3>
-                </div>
-                <button type="button" onclick="closeTeamDrawer()" class="p-1.5 rounded-md hover:bg-gray-100" aria-label="ปิด">
-                <svg class="h-5 w-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+      {{-- Drawer --}}
+      <aside id="teamDrawer" class="fixed top-0 right-0 h-full w-[360px] max-w-[90vw] bg-white shadow-xl z-[2201] transform translate-x-full transition-transform duration-300" aria-label="ภาระงานทีม">
+        <div class="h-full flex flex-col">
+          <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-semibold text-gray-900">Technician</h3>
             </div>
-            <div class="p-3 overflow-y-auto flex-1" id="teamDrawerScroll">
-                <div class="space-y-2">
-                @foreach($globalTeam as $member)
-                    @php
-                    $initial = \Illuminate\Support\Str::of($member->name)->substr(0,1)->upper();
-                    $roleClasses = method_exists($member,'isSupervisor') && $member->isSupervisor()
-                        ? 'bg-indigo-100 text-indigo-700 ring-indigo-200'
-                        : 'bg-emerald-100 text-emerald-700 ring-emerald-200';
-                    @endphp
-                    <a href="{{ route('repairs.my_jobs', array_merge(request()->except('page'), ['filter'=>'all','tech'=>$member->id])) }}" class="group flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                    <div class="flex items-center gap-3">
-                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ring-1 {{ $roleClasses }}">{{ $initial }}</span>
-                        <div>
-                        <div class="text-sm font-medium text-gray-900 group-hover:text-indigo-700">{{ $member->name }}</div>
-                        <div class="text-xs text-gray-500">บทบาท: {{ $member->role_label ?? ucfirst($member->role) }}</div>
-                        </div>
+            <button type="button" onclick="closeTeamDrawer()" class="p-1.5 rounded-md hover:bg-gray-100" aria-label="ปิด">
+              <svg class="h-5 w-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="p-3 overflow-y-auto flex-1" id="teamDrawerScroll">
+            <div class="space-y-2">
+              @foreach($globalTeam as $member)
+                @php
+                  $initial = \Illuminate\Support\Str::of($member->name)->substr(0,1)->upper();
+                  $roleClasses = method_exists($member,'isSupervisor') && $member->isSupervisor()
+                      ? 'bg-indigo-100 text-indigo-700 ring-indigo-200'
+                      : 'bg-emerald-100 text-emerald-700 ring-emerald-200';
+                @endphp
+                <a href="{{ route('repairs.my_jobs', array_merge(request()->except('page'), ['filter'=>'all','tech'=>$member->id])) }}" class="group flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ring-1 {{ $roleClasses }}">{{ $initial }}</span>
+                    <div>
+                      <div class="text-sm font-medium text-gray-900 group-hover:text-indigo-700">{{ $member->name }}</div>
+                      <div class="text-xs text-gray-500">บทบาท: {{ $member->role_label ?? ucfirst($member->role) }}</div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="px-2 py-0.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded">{{ $member->active_count ?? 0 }}</span>
-                        <svg class="h-4 w-4 text-gray-500 group-hover:text-indigo-700" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
-                    </div>
-                    </a>
-                @endforeach
-                </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded">{{ $member->active_count ?? 0 }}</span>
+                    <svg class="h-4 w-4 text-gray-500 group-hover:text-indigo-700" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+                  </div>
+                </a>
+              @endforeach
             </div>
-            <!-- footer removed per request -->
-            </div>
-        </aside>
-        @endif
+          </div>
+        </div>
+      </aside>
     @endif
+  @endif
 
-    <script>
-        // Global Team Drawer logic (shared across pages)
-        let teamDrawerOpen = false;
+  <script>
+    // Global Team Drawer logic (shared across pages)
+    let teamDrawerOpen = false;
 
     function toggleTeamDrawer(){
-    if (teamDrawerOpen) {
+      if (teamDrawerOpen) {
         closeTeamDrawer();
-    } else {
+      } else {
         openTeamDrawer();
-    }
+      }
     }
 
     function openTeamDrawer(){
-    const d   = document.getElementById('teamDrawer');
-    const o   = document.getElementById('teamOverlay');
-    const tab = document.getElementById('teamTab');
-    const iconC = document.getElementById('teamTabIconClosed');
-    const iconO = document.getElementById('teamTabIconOpen');
+      const d   = document.getElementById('teamDrawer');
+      const o   = document.getElementById('teamOverlay');
+      const tab = document.getElementById('teamTab');
+      const iconC = document.getElementById('teamTabIconClosed');
+      const iconO = document.getElementById('teamTabIconOpen');
 
-    if (!d || !o) return;
+      if (!d || !o) return;
 
-    d.classList.remove('translate-x-full');
-    o.classList.remove('hidden');
+      d.classList.remove('translate-x-full');
+      o.classList.remove('hidden');
 
-    teamDrawerOpen = true;
+      teamDrawerOpen = true;
 
-    if (tab) {
+      if (tab) {
         tab.setAttribute('aria-expanded', 'true');
-    }
-    if (iconC && iconO) {
+      }
+      if (iconC && iconO) {
         iconC.classList.add('hidden');
         iconO.classList.remove('hidden');
-    }
+      }
     }
 
     function closeTeamDrawer(){
-    const d   = document.getElementById('teamDrawer');
-    const o   = document.getElementById('teamOverlay');
-    const tab = document.getElementById('teamTab');
-    const iconC = document.getElementById('teamTabIconClosed');
-    const iconO = document.getElementById('teamTabIconOpen');
+      const d   = document.getElementById('teamDrawer');
+      const o   = document.getElementById('teamOverlay');
+      const tab = document.getElementById('teamTab');
+      const iconC = document.getElementById('teamTabIconClosed');
+      const iconO = document.getElementById('teamTabIconOpen');
 
-    if (!d || !o) return;
+      if (!d || !o) return;
 
-    d.classList.add('translate-x-full');
-    o.classList.add('hidden');
+      d.classList.add('translate-x-full');
+      o.classList.add('hidden');
 
-    teamDrawerOpen = false;
+      teamDrawerOpen = false;
 
-    if (tab) {
+      if (tab) {
         tab.setAttribute('aria-expanded', 'false');
-    }
-    if (iconC && iconO) {
+      }
+      if (iconC && iconO) {
         iconO.classList.add('hidden');
         iconC.classList.remove('hidden');
+      }
     }
-    }
+
     // Swipe gestures (open from right edge, close by swiping right)
     let tdStartX=null, tdStartY=null;
-    document.addEventListener('touchstart', e=>{ const t=e.touches[0]; tdStartX=t.clientX; tdStartY=t.clientY; }, {passive:true});
-    document.addEventListener('touchmove', e=>{
-      if(tdStartX===null) return; const t=e.touches[0]; const dx=t.clientX-tdStartX; const dy=t.clientY-tdStartY; if(Math.abs(dx)<Math.abs(dy)) return;
-      if(!teamDrawerOpen && tdStartX > (window.innerWidth - 28) && dx < -40){ openTeamDrawer(); tdStartX=null; }
-      if(teamDrawerOpen && dx > 70){ closeTeamDrawer(); tdStartX=null; }
+    document.addEventListener('touchstart', e=>{
+      const t=e.touches[0]; tdStartX=t.clientX; tdStartY=t.clientY;
     }, {passive:true});
-    document.addEventListener('keydown', e=>{ if(e.key==='Escape' && teamDrawerOpen) closeTeamDrawer(); });
+    document.addEventListener('touchmove', e=>{
+      if(tdStartX===null) return;
+      const t=e.touches[0];
+      const dx=t.clientX-tdStartX;
+      const dy=t.clientY-tdStartY;
+      if(Math.abs(dx)<Math.abs(dy)) return;
+      if(!teamDrawerOpen && tdStartX > (window.innerWidth - 28) && dx < -40){
+        openTeamDrawer(); tdStartX=null;
+      }
+      if(teamDrawerOpen && dx > 70){
+        closeTeamDrawer(); tdStartX=null;
+      }
+    }, {passive:true});
+    document.addEventListener('keydown', e=>{
+      if(e.key==='Escape' && teamDrawerOpen) closeTeamDrawer();
+    });
+
     // Draggable tab (vertical only)
     (function(){
       const tab = document.getElementById('teamTab'); if(!tab) return;
@@ -483,24 +632,42 @@
       }
       let dragging=false, startY=0, startTop=0;
       function onDown(ev){
-        dragging=true; startY = (ev.touches?ev.touches[0].clientY:ev.clientY);
-        startTop = tab.getBoundingClientRect().top; // relative to viewport
-        // remove centering classes when user starts dragging
+        dragging=true;
+        startY = (ev.touches?ev.touches[0].clientY:ev.clientY);
+        startTop = tab.getBoundingClientRect().top;
         tab.classList.remove('top-1/2','-translate-y-1/2');
         ev.preventDefault?.();
       }
-      function onMove(ev){ if(!dragging) return; const y=(ev.touches?ev.touches[0].clientY:ev.clientY); let top = startTop + (y - startY);
+      function onMove(ev){
+        if(!dragging) return;
+        const y=(ev.touches?ev.touches[0].clientY:ev.clientY);
+        let top = startTop + (y - startY);
         const min = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'))||72) + 10;
-        const max = window.innerHeight - 48; if(top<min) top=min; if(top>max) top=max; tab.style.top = top+'px'; }
-      function onUp(){ if(!dragging) return; dragging=false; const top=parseFloat(tab.style.top||''); if(top) localStorage.setItem(KEY, String(top)); }
-      tab.addEventListener('mousedown', onDown); document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
-      tab.addEventListener('touchstart', onDown, {passive:false}); document.addEventListener('touchmove', onMove, {passive:false}); document.addEventListener('touchend', onUp);
+        const max = window.innerHeight - 48;
+        if(top<min) top=min;
+        if(top>max) top=max;
+        tab.style.top = top+'px';
+      }
+      function onUp(){
+        if(!dragging) return;
+        dragging=false;
+        const top=parseFloat(tab.style.top||'');
+        if(top) localStorage.setItem(KEY, String(top));
+      }
+      tab.addEventListener('mousedown', onDown);
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      tab.addEventListener('touchstart', onDown, {passive:false});
+      document.addEventListener('touchmove', onMove, {passive:false});
+      document.addEventListener('touchend', onUp);
     })();
+
     // Expose for other scripts
-    window.openTeamDrawer = openTeamDrawer; window.closeTeamDrawer = closeTeamDrawer;
+    window.openTeamDrawer = openTeamDrawer;
+    window.closeTeamDrawer = closeTeamDrawer;
   </script>
 
-    {{-- ===== Tom Select (Searchable <select> for elements with .ts-department) ===== --}}
+  {{-- ===== Tom Select (Searchable <select> for elements with .ts-department) ===== --}}
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -541,7 +708,6 @@
       return rows;
     };
     document.addEventListener('DOMContentLoaded', () => {
-      // Auto-run short summary
       const rows = window.ssDiag(false);
       console.info(`[ssDiag] components=${rows.length} bound=${rows.filter(r=>r.bound).length} failed=${rows.filter(r=>r.fail).length}`);
       if (rows.some(r=>!r.bound)) {

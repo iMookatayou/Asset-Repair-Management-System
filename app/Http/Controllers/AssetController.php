@@ -25,14 +25,15 @@ class AssetController extends Controller
     {
         $q          = trim($request->string('q')->toString());
         $status     = $request->string('status')->toString();
-    $type       = $request->string('type')->toString();
-    $categoryId = $request->integer('category_id');
+        $type       = $request->string('type')->toString();
+        $categoryId = $request->integer('category_id');
         $deptId     = $request->integer('department_id');
         $location   = $request->string('location')->toString();
 
         $perPageInput = (int) $request->integer('per_page', 20);
         $perPage      = max(1, min($perPageInput, 100));
 
+        // map คีย์ที่ frontend ใช้ -> คอลัมน์จริงใน DB
         $sortMap = [
             'id'              => 'id',
             'asset_code'      => 'asset_code',
@@ -42,9 +43,10 @@ class AssetController extends Controller
             'status'          => 'status',
             'created_at'      => 'created_at',
         ];
-        $sortByReq = $request->string('sort_by', 'id')->toString();
-        $sortBy    = $sortMap[$sortByReq] ?? 'id';
-        $sortDir   = strtolower($request->string('sort_dir', 'desc')->toString()) === 'asc' ? 'asc' : 'desc';
+
+        // ใช้ helper จำ sort ต่อ user (ใช้ key ฝั่ง UI เช่น id, asset_code, name)
+        [$sortKey, $sortDir] = $this->resolveAssetSort($request, array_keys($sortMap));
+        $sortBy = $sortMap[$sortKey] ?? 'id';
 
         $baseQuery = Asset::query()
             ->with(['categoryRef','department'])
@@ -61,6 +63,7 @@ class AssetController extends Controller
             ->orderBy($sortBy, $sortDir)
             ->paginate($perPage)
             ->withQueryString();
+
         $payload = [
             'data' => $assets->items(),
             'meta' => [
@@ -69,8 +72,13 @@ class AssetController extends Controller
                 'total'        => $assets->total() ?: $filteredTotal,
                 'last_page'    => $assets->lastPage(),
             ],
+            'sort' => [
+                'by'  => $sortKey,
+                'dir' => $sortDir,
+            ],
             'toast' => Toast::info('โหลดรายการทรัพย์สินแล้ว', 1200),
         ];
+
         return response()->json($payload, 200, [], $this->jsonOptions($request));
     }
 
@@ -194,16 +202,18 @@ class AssetController extends Controller
         $deptId     = $request->integer('department_id');
         $type       = $request->string('type')->toString();
         $location   = $request->string('location')->toString();
-        $sortBy     = $request->string('sort_by', 'id')->toString();
-        $sortDir    = strtolower($request->string('sort_dir', 'desc')->toString()) === 'asc' ? 'asc' : 'desc';
 
+        // map ชื่อ sort ที่ใช้ใน UI -> คอลัมน์จริง
         $sortMap = [
             'id'         => 'id',
             'asset_code' => 'asset_code',
             'name'       => 'name',
             'status'     => 'status',
-            'category'   => 'category',
+            'category'   => 'category', // พิเศษ ใช้ orderByRaw
         ];
+
+        // ใช้ helper จำ sort ต่อ user
+        [$sortBy, $sortDir] = $this->resolveAssetSort($request, array_keys($sortMap));
         $sortCol = $sortMap[$sortBy] ?? 'id';
 
         $assetsQ = \App\Models\Asset::query()
@@ -216,7 +226,9 @@ class AssetController extends Controller
             ->when($location !== '', fn($s) => $s->where('location', $location));
 
         if ($sortCol === 'category') {
-            $assetsQ->orderByRaw('(select name from asset_categories where asset_categories.id = assets.category_id) '.$sortDir);
+            $assetsQ->orderByRaw(
+                '(select name from asset_categories where asset_categories.id = assets.category_id) '.$sortDir
+            );
         } else {
             $assetsQ->orderBy($sortCol, $sortDir);
         }
@@ -229,11 +241,23 @@ class AssetController extends Controller
             ->orderByRaw('COALESCE(name_th, name_en, code) asc')
             ->get()
             ->map(fn($d) => [
-                'id' => $d->id,
+                'id'           => $d->id,
                 'display_name' => $d->display_name,
             ]);
 
-        return view('assets.index', compact('assets','categories','departments'));
+        return view('assets.index', compact(
+            'assets',
+            'categories',
+            'departments',
+            'sortBy',
+            'sortDir',
+            'q',
+            'status',
+            'categoryId',
+            'deptId',
+            'type',
+            'location',
+        ));
     }
 
     public function createPage()
@@ -420,21 +444,56 @@ class AssetController extends Controller
 
         // ถ้าอยากส่งโลโก้ รพ. ไปด้วย
         $hospital = [
-            'name_th' => 'โรงพยาบาลพระปกเกล้า',
-            'name_en' => 'PHRAPOKKLAO HOSPITAL',
+            'name_th'  => 'โรงพยาบาลพระปกเกล้า',
+            'name_en'  => 'PHRAPOKKLAO HOSPITAL',
             'subtitle' => 'Asset Repair Management',
-            'logo' => asset('images/logoppk1.png'),
+            'logo'     => asset('images/logoppk1.png'),
         ];
 
         $pdf = Pdf::loadView('assets.print', [
             'asset'    => $asset,
             'hospital' => $hospital,
-        ])->setPaper('A4', 'portrait'); // หรือ landscape ถ้าอยากแนวนอน
+        ])->setPaper('A4', 'portrait');
 
-        // ถ้าจะให้โหลดในแท็บใหม่
         return $pdf->stream('asset-'.$asset->asset_code.'.pdf');
+    }
 
-        // ถ้าจะให้ดาวน์โหลดเลย
-        // return $pdf->download('asset-'.$asset->asset_code.'.pdf');
+    /**
+     * จำค่า sort_by / sort_dir ของหน้า Asset ต่อ user ด้วย session
+     * - allowedKeys คือ key ที่ UI สามารถส่งมาได้ เช่น id, asset_code, name, status, category
+     * - default: id desc (รายการใหม่สุดก่อน)
+     */
+    protected function resolveAssetSort(Request $request, array $allowedKeys): array
+    {
+        $user   = $request->user();
+        $userId = $user?->id;
+
+        // แยก session key ต่อ user ไม่ปะปนกัน
+        $sessionSortByKey  = $userId ? "asset_sort_by_user_{$userId}"  : 'asset_sort_by_guest';
+        $sessionSortDirKey = $userId ? "asset_sort_dir_user_{$userId}" : 'asset_sort_dir_guest';
+
+        $sortByReq  = $request->query('sort_by');
+        $sortDirReq = $request->query('sort_dir');
+
+        // sort_by: รับค่าจาก query ถ้าอยู่ใน allowedKeys → เก็บลง session
+        if (in_array($sortByReq, $allowedKeys, true)) {
+            $sortBy = $sortByReq;
+            session([$sessionSortByKey => $sortBy]);
+        } else {
+            // ถ้ายังไม่มีใน session → default = id
+            $sortBy = session($sessionSortByKey, 'id');
+        }
+
+        // sort_dir: รับ asc / desc เท่านั้น
+        $sortDirReq = strtolower((string) $sortDirReq);
+        if (in_array($sortDirReq, ['asc', 'desc'], true)) {
+            $sortDir = $sortDirReq;
+            session([$sessionSortDirKey => $sortDir]);
+        } else {
+            // ถ้ายังไม่มีใน session → default = desc (ใหม่สุดก่อน)
+            $sortDir = session($sessionSortDirKey, 'desc');
+        }
+
+        return [$sortBy, $sortDir];
     }
 }

@@ -3,7 +3,143 @@
 @section('title', 'สรุปใบงานซ่อม #'.$req->id)
 
 @section('page-header')
+@php
+    $workers     = $req->workers ?? collect();
+    $workerCount = $workers->count();
+
+    $statusLabel = [
+      'pending'     => 'รอคิว',
+      'accepted'    => 'รับงานแล้ว',
+      'in_progress' => 'กำลังดำเนินงาน',
+      'on_hold'     => 'พักงาน',
+      'resolved'    => 'เสร็จสิ้น',
+      'closed'      => 'ปิดงาน',
+      'cancelled'   => 'ยกเลิก',
+    ][$req->status] ?? $req->status;
+
+    $prioLabel = [
+      'low'    => 'ต่ำ',
+      'medium' => 'ปานกลาง',
+      'high'   => 'สูง',
+      'urgent' => 'เร่งด่วน',
+    ][$req->priority] ?? $req->priority;
+@endphp
+
+{{-- แถบหัวข้อด้านบนมีพื้นหลังเทาอ่อน --}}
+<div class="bg-slate-50 border-b border-slate-200">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
+
+    {{-- TITLE --}}
+    <div class="flex flex-wrap justify-between items-start gap-6">
+
+        <div class="space-y-2">
+
+            {{-- MAIN TITLE --}}
+            <h1 class="text-[26px] font-semibold text-slate-900 flex items-center gap-3 leading-tight">
+
+                {{-- ICON --}}
+                <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 7h16M4 12h10M4 17h6"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+
+                <span class="flex flex-col">
+                    <span class="text-[22px] sm:text-[24px] font-semibold">
+                        แบบฟอร์มสรุปงานซ่อม
+                    </span>
+
+                    <span class="text-[14px] sm:text-[15px] text-slate-600 font-normal flex gap-2 flex-wrap">
+                        หมายเลขใบงาน
+                        <span id="rid" class="text-slate-900 font-semibold">#{{ $req->id }}</span>
+
+                        @if($req->request_no)
+                        <span class="text-slate-500">เลขอ้างอิง: {{ $req->request_no }}</span>
+                        @endif
+                    </span>
+                </span>
+            </h1>
+
+            {{-- META TEXT --}}
+            <div class="flex flex-wrap gap-x-6 gap-y-1 text-[15px] text-slate-700 mt-1">
+
+                <span class="font-semibold text-slate-800">
+                    {{ $req->asset->name ?? 'ไม่ระบุครุภัณฑ์' }}
+                </span>
+
+                <span class="text-slate-600">
+                    สถานะ:
+                    <span class="font-semibold text-slate-900">
+                        {{ $statusLabel }}
+                    </span>
+                </span>
+
+                <span class="text-slate-600">
+                    ความสำคัญ:
+                    <span class="font-semibold
+                        @if($req->priority=='urgent') text-rose-600
+                        @elseif($req->priority=='high') text-amber-600
+                        @elseif($req->priority=='medium') text-sky-600
+                        @else text-zinc-600 @endif">
+                        {{ $prioLabel }}
+                    </span>
+                </span>
+
+                {{-- ทีมช่าง: ICON --}}
+                <span class="inline-flex items-center gap-1 text-slate-600">
+                    <svg class="h-[15px] w-[15px] text-indigo-600" viewBox="0 0 24 24" fill="none">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                              stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2"/>
+                        <path d="M20 21v-2a3 3 0 0 0-2-2.82M15 3.5a3 3 0 0 1 0 5"
+                              stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    ทีมช่าง:
+                    <span class="font-semibold text-indigo-700">
+                        {{ $workerCount ? $workerCount.' คน' : 'ยังไม่มอบหมาย' }}
+                    </span>
+                </span>
+
+            </div>
+
+            {{-- DESCRIPTION --}}
+            <p class="mt-2 text-[14.5px] text-slate-600 leading-relaxed">
+                แบบฟอร์มนี้ใช้สำหรับบันทึกรายละเอียดงานซ่อม การมอบหมายทีมช่าง และข้อมูลประกอบงานทั้งหมด
+            </p>
+
+        </div>
+
+        {{-- BUTTONS --}}
+        <div class="flex flex-col sm:flex-row flex-wrap gap-2 items-start sm:items-center">
+
+            <button id="copyIdBtn"
+                class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-[14px] text-slate-800 hover:bg-slate-50">
+                คัดลอกหมายเลขงาน
+            </button>
+
+            <a href="{{ route('maintenance.requests.work-order', ['req' => $req->id]) }}"
+               target="_blank"
+               class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-[14px] text-slate-800 hover:bg-slate-50">
+               พิมพ์ Work Order
+            </a>
+
+            <a href="{{ route('maintenance.requests.index') }}"
+               class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-[14px] text-slate-700 hover:bg-slate-50">
+               กลับหน้ารายการ
+            </a>
+
+        </div>
+
+    </div>
+
+  </div>
+</div>
+@endsection
+
+@section('content')
   @php
+    // สถานะ + สี badge ที่ใช้ใน HEADER STRIP ด้านบนกล่องหลัก
     $status = strtolower((string) $req->status);
     $statusLabel = [
       'pending'     => 'รอคิว',
@@ -26,6 +162,7 @@
       default       => 'bg-slate-50 text-slate-700 border-slate-300',
     };
 
+    // ความสำคัญ + สี badge
     $prio = strtolower((string) $req->priority);
     $prioLabel = [
       'low'    => 'ต่ำ',
@@ -42,119 +179,7 @@
       default  => 'bg-white text-zinc-700 border-zinc-300',
     };
 
-    $workers     = $req->workers ?? collect();
-    $workerCount = $workers->count();
-  @endphp
-
-  <div class="bg-slate-50 border-b border-slate-200">
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
-    <div class="flex flex-wrap justify-between gap-4 items-start">
-
-      {{-- LEFT: Title + meta --}}
-      <div class="space-y-1">
-        <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-3">
-          <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none">
-              <path d="M4 7h16M4 12h10M4 17h6"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          <span class="flex flex-wrap items-baseline gap-2">
-            <span class="text-[18px] sm:text-[20px]">แบบฟอร์มสรุปงานซ่อม</span>
-            <span class="text-sm text-slate-500 flex items-center gap-1">
-              หมายเลขใบงาน
-              <span id="rid" class="font-medium text-slate-800">#{{ $req->id }}</span>
-            </span>
-            @if($req->request_no)
-              <span class="inline-flex items-center rounded-full border border-slate-300 bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-700">
-                เลขอ้างอิง: {{ $req->request_no }}
-              </span>
-            @endif
-          </span>
-        </h1>
-      </div>
-
-      {{-- RIGHT: actions --}}
-      <div class="ml-auto flex flex-wrap gap-2 items-center self-start">
-        <button id="copyIdBtn" type="button"
-                class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 hover:bg-slate-50">
-          <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
-            <path d="M9 9V5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2h-4M5 9h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2z"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          คัดลอกหมายเลขงาน
-        </button>
-
-        <a href="{{ route('maintenance.requests.work-order', ['req' => $req->id]) }}"
-           target="_blank"
-           class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 hover:bg-slate-50">
-          <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
-            <path d="M6 9V4h12v5M6 19h12v-6H6v6z"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 14h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          พิมพ์ Maintenance Work Order
-        </a>
-
-        <a href="{{ route('maintenance.requests.index') }}"
-           class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
-            <path d="M15 18l-6-6 6-6"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          กลับหน้ารายการ
-        </a>
-      </div>
-    </div>
-
-    {{-- แถวล่าง: แท็กสถานะ / ทรัพย์สิน / ทีมช่าง --}}
-    <div class="mt-3 flex flex-wrap items-center gap-2 text-xs sm:text-[13px]">
-      {{-- Asset --}}
-      <span class="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-slate-700">
-        <svg class="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none">
-          <path d="M4 7h16v10H4zM9 17V7"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        {{ $req->asset->name ?? $req->asset_id ?? 'ไม่ระบุครุภัณฑ์' }}
-      </span>
-
-      {{-- Status --}}
-      <span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 {{ $statusTone }}">
-        <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-        {{ $statusLabel }}
-      </span>
-
-      {{-- Priority --}}
-      <span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 {{ $prioTone }}">
-        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-          <path d="M12 3l3.5 7.5L23 11l-5.5 5.2L18.5 21 12 17.8 5.5 21l1-4.8L1 11l7.5-0.5L12 3z"
-                stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        </svg>
-        {{ $prioLabel }}
-      </span>
-
-      {{-- Workers --}}
-      <span class="inline-flex items-center gap-1 rounded-full border border-indigo-300 bg-indigo-50 px-2.5 py-1 text-indigo-800">
-        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2"/>
-          <path d="M20 21v-2a3 3 0 0 0-2-2.82M15 3.5a3 3 0 0 1 0 5"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        ทีมช่าง: {{ $workerCount ? $workerCount.' คน' : 'ยังไม่มอบหมาย' }}
-      </span>
-    </div>
-
-    <p class="mt-3 text-xs sm:text-sm text-slate-600">
-      แบบฟอร์มนี้ใช้สำหรับสรุปรายละเอียดงานซ่อม การมอบหมายทีมช่าง การเปลี่ยนสถานะ และไฟล์แนบที่เกี่ยวข้อง
-    </p>
-  </div>
-</div>
-@endsection
-
-@section('content')
-  @php
+    // ตัวแปรอื่น ๆ
     $requestedAt  = optional($req->request_date ?? $req->created_at);
     $assignedAt   = optional($req->assigned_date);
     $completedAt  = optional($req->completed_date);
@@ -168,24 +193,25 @@
     $opLog        = $req->operationLog;
   @endphp
 
+
   <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6">
-    {{-- กล่องหลักใบสรุปแบบเรียบ ๆ สไตล์ราชการ --}}
+    {{-- กล่องหลัก --}}
     <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
 
       {{-- HEADER STRIP --}}
       <div class="border-b border-slate-200 bg-slate-50 px-6 py-3.5">
-        <div class="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 text-[13px] sm:text-[14px]">
           <div class="flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] {{ $statusTone }}">
+            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs sm:text-[13px] font-medium {{ $statusTone }}">
               สถานะปัจจุบัน: {{ $statusLabel }}
             </span>
-            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] {{ $prioTone }}">
+            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs sm:text-[13px] font-medium {{ $prioTone }}">
               ความสำคัญ: {{ $prioLabel }}
             </span>
           </div>
-          <div class="flex flex-wrap items-center gap-4 text-[11px] text-slate-600">
-            <span>สร้างใบงาน: {{ $req->created_at?->format('Y-m-d H:i') ?? '—' }}</span>
-            <span>อัปเดตล่าสุด: {{ $req->updated_at?->format('Y-m-d H:i') ?? '—' }}</span>
+          <div class="flex flex-wrap items-center gap-4 text-[12px] sm:text-[13px] text-slate-600">
+            <span>สร้างใบงาน: <span class="font-medium text-slate-800">{{ $req->created_at?->format('Y-m-d H:i') ?? '—' }}</span></span>
+            <span>อัปเดตล่าสุด: <span class="font-medium text-slate-800">{{ $req->updated_at?->format('Y-m-d H:i') ?? '—' }}</span></span>
           </div>
         </div>
       </div>
@@ -193,10 +219,10 @@
       {{-- SECTION 1: ข้อมูลงานพื้นฐาน --}}
       <section class="px-6 py-5 border-b border-slate-200">
         <header class="mb-3 border-b border-slate-200 pb-2">
-          <h2 class="text-sm font-semibold text-slate-900">
+          <h2 class="text-[15px] font-semibold text-slate-900">
             ส่วนที่ 1 — ข้อมูลงานซ่อมและผู้แจ้ง
           </h2>
-          <p class="mt-0.5 text-xs text-slate-500">
+          <p class="mt-0.5 text-xs sm:text-[13px] text-slate-500">
             รายละเอียดภาพรวมของใบงาน ผู้แจ้ง หน่วยงาน และเวลาเหตุการณ์หลัก
           </p>
         </header>
@@ -205,11 +231,11 @@
           <dl class="grid gap-y-3 gap-x-8 md:grid-cols-2">
             {{-- หมายเลขงาน --}}
             <div class="flex flex-col sm:flex-row sm:items-center gap-1">
-              <dt class="w-40 text-xs font-medium text-slate-500">หมายเลขงาน</dt>
+              <dt class="w-40 text-xs sm:text-[13px] font-medium text-slate-500">หมายเลขงาน</dt>
               <dd class="flex-1">
-                <div class="text-sm font-semibold text-slate-900">#{{ $req->id }}</div>
+                <div class="text-[15px] font-semibold text-slate-900">#{{ $req->id }}</div>
                 @if($req->request_no)
-                  <div class="mt-0.5 text-xs text-slate-500">
+                  <div class="mt-0.5 text-xs sm:text-[13px] text-slate-500">
                     เลขอ้างอิงภายใน: {{ $req->request_no }}
                   </div>
                 @endif
@@ -218,13 +244,13 @@
 
             {{-- ผู้แจ้ง --}}
             <div class="flex flex-col sm:flex-row sm:items-center gap-1">
-              <dt class="w-40 text-xs font-medium text-slate-500">ผู้แจ้ง</dt>
+              <dt class="w-40 text-xs sm:text-[13px] font-medium text-slate-500">ผู้แจ้ง</dt>
               <dd class="flex-1">
-                <div class="text-sm font-semibold text-slate-900">
+                <div class="text-[15px] font-semibold text-slate-900">
                   {{ $req->reporter->name ?? $req->reporter_name ?? '-' }}
                 </div>
                 @if($contactEmail || $contactPhone)
-                  <div class="mt-0.5 space-y-0.5 text-xs text-slate-500">
+                  <div class="mt-0.5 space-y-0.5 text-xs sm:text-[13px] text-slate-500">
                     @if($contactEmail) <div>{{ $contactEmail }}</div> @endif
                     @if($contactPhone) <div>โทร. {{ $contactPhone }}</div> @endif
                   </div>
@@ -234,13 +260,13 @@
 
             {{-- ทรัพย์สิน --}}
             <div class="flex flex-col sm:flex-row sm:items-center gap-1">
-              <dt class="w-40 text-xs font-medium text-slate-500">ทรัพย์สิน</dt>
+              <dt class="w-40 text-xs sm:text-[13px] font-medium text-slate-500">ทรัพย์สิน</dt>
               <dd class="flex-1">
-                <div class="text-sm font-semibold text-slate-900">
+                <div class="text-[15px] font-semibold text-slate-900">
                   {{ $assetName }}
                 </div>
                 @if($req->asset?->code)
-                  <div class="mt-0.5 text-xs text-slate-500">
+                  <div class="mt-0.5 text-xs sm:text-[13px] text-slate-500">
                     รหัสครุภัณฑ์: {{ $req->asset->code }}
                   </div>
                 @endif
@@ -249,13 +275,13 @@
 
             {{-- หน่วยงาน / สถานที่ --}}
             <div class="flex flex-col sm:flex-row sm:items-center gap-1">
-              <dt class="w-40 text-xs font-medium text-slate-500">หน่วยงาน / สถานที่ติดตั้ง</dt>
+              <dt class="w-40 text-xs sm:text-[13px] font-medium text-slate-500">หน่วยงาน / สถานที่ติดตั้ง</dt>
               <dd class="flex-1">
-                <div class="text-sm font-semibold text-slate-900">
+                <div class="text-[15px] font-semibold text-slate-900">
                   {{ $location }}
                 </div>
                 @if($req->department?->code)
-                  <div class="mt-0.5 text-xs text-slate-500">
+                  <div class="mt-0.5 text-xs sm:text-[13px] text-slate-500">
                     รหัสหน่วยงาน: {{ $req->department->code }}
                   </div>
                 @endif
@@ -263,23 +289,23 @@
             </div>
           </dl>
 
-          <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 text-xs">
+          <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 text-xs sm:text-[13px]">
             <div class="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200">
               <div class="px-3 py-2.5">
-                <div class="text-[11px] font-medium text-slate-500">รับคำขอ</div>
-                <div class="mt-0.5 text-slate-900">
+                <div class="text-[12px] sm:text-[13px] font-medium text-slate-500">รับคำขอ</div>
+                <div class="mt-0.5 text-[14px] text-slate-900">
                   {{ $requestedAt ? $requestedAt->format('Y-m-d H:i') : '—' }}
                 </div>
               </div>
               <div class="px-3 py-2.5">
-                <div class="text-[11px] font-medium text-slate-500">มอบหมายทีมช่าง</div>
-                <div class="mt-0.5 text-slate-900">
+                <div class="text-[12px] sm:text-[13px] font-medium text-slate-500">มอบหมายทีมช่าง</div>
+                <div class="mt-0.5 text-[14px] text-slate-900">
                   {{ $assignedAt ? $assignedAt->format('Y-m-d H:i') : '—' }}
                 </div>
               </div>
               <div class="px-3 py-2.5">
-                <div class="text-[11px] font-medium text-slate-500">เสร็จสิ้น</div>
-                <div class="mt-0.5 text-slate-900">
+                <div class="text-[12px] sm:text-[13px] font-medium text-slate-500">เสร็จสิ้น</div>
+                <div class="mt-0.5 text-[14px] text-slate-900">
                   {{ $completedAt ? $completedAt->format('Y-m-d H:i') : '—' }}
                 </div>
               </div>
@@ -292,17 +318,17 @@
       <section class="px-6 py-5 border-b border-slate-200">
         <header class="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-2">
           <div>
-            <h2 class="text-sm font-semibold text-slate-900">
+            <h2 class="text-[15px] font-semibold text-slate-900">
               ส่วนที่ 2 — รายละเอียดปัญหาและทีมช่าง
             </h2>
-            <p class="mt-0.5 text-xs text-slate-500">
+            <p class="mt-0.5 text-xs sm:text-[13px] text-slate-500">
               หัวข้อ อาการเสีย และรายชื่อทีมช่างที่เกี่ยวข้องกับงานนี้
             </p>
           </div>
 
           <button type="button"
                   id="openAssignModalBtn"
-                  class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">
+                  class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs sm:text-[13px] font-semibold text-white hover:bg-indigo-700">
             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
               <path d="M12 5v14M5 12h14"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -314,26 +340,26 @@
         <div class="grid gap-5 lg:grid-cols-3">
           <div class="lg:col-span-2 space-y-3 text-sm">
             <div>
-              <div class="text-xs font-medium text-slate-500 mb-1">หัวข้อใบงาน</div>
-              <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-900 min-h-[40px]">
+              <div class="text-xs sm:text-[13px] font-medium text-slate-500 mb-1">หัวข้อใบงาน</div>
+              <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[14px] sm:text-[15px] font-semibold text-slate-900 min-h-[40px]">
                 {{ $req->title ?: '-' }}
               </div>
             </div>
 
             <div>
-              <div class="text-xs font-medium text-slate-500 mb-1">รายละเอียด / อาการเสีย</div>
-              <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-800 whitespace-pre-line min-h-[60px]">
+              <div class="text-xs sm:text-[13px] font-medium text-slate-500 mb-1">รายละเอียด / อาการเสีย</div>
+              <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[14px] sm:text-[15px] leading-relaxed text-slate-800 whitespace-pre-line min-h-[60px]">
                 {{ $req->description ?: '—' }}
               </div>
             </div>
           </div>
 
           <div class="space-y-2">
-            <div class="text-xs font-medium text-slate-500">
+            <div class="text-xs sm:text-[13px] font-medium text-slate-500">
               ทีมช่างที่รับผิดชอบ
             </div>
 
-            <div class="rounded-md border border-slate-200 bg-white text-xs max-h-60 overflow-y-auto divide-y divide-slate-200">
+            <div class="rounded-md border border-slate-200 bg-white text-xs sm:text-[13px] max-h-60 overflow-y-auto divide-y divide-slate-200">
               @if($workers->isEmpty())
                 <div class="px-3 py-2 text-slate-500">
                   ยังไม่ได้มอบหมายงานให้ทีมช่าง
@@ -367,12 +393,12 @@
                         <div class="truncate text-[13px] font-semibold text-slate-900">
                           {{ $worker->name }}
                         </div>
-                        <div class="truncate text-[11px] text-slate-500">
+                        <div class="truncate text-[11px] sm:text-[12px] text-slate-500">
                           {{ $worker->role_label }}
                         </div>
                       </div>
                     </div>
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium {{ $badgeTone }}">
+                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] sm:text-[12px] font-medium {{ $badgeTone }}">
                       {{ $badgeText }}
                     </span>
                   </div>
@@ -384,174 +410,174 @@
       </section>
 
       {{-- SECTION 3: รายงานการปฏิบัติงานและค่าใช้จ่าย --}}
-        <section class="px-6 py-5 border-b border-slate-200">
+      <section class="px-6 py-5 border-b border-slate-200">
         <header class="mb-3 border-b border-slate-200 pb-2">
-            <h2 class="text-sm font-semibold text-slate-900">
+          <h2 class="text-[15px] font-semibold text-slate-900">
             ส่วนที่ 3 — รายงานการปฏิบัติงานและค่าใช้จ่าย
-            </h2>
-            <p class="mt-0.5 text-xs text-slate-500">
+          </h2>
+          <p class="mt-0.5 text-xs sm:text-[13px] text-slate-500">
             สรุปการปฏิบัติงาน วิธีการคิดค่าใช้จ่าย และรายละเอียดประกอบ ตามแบบฟอร์มราชการเดิม
-            </p>
+          </p>
         </header>
 
         <form method="post"
-                action="{{ route('maintenance.requests.operation-log', $req) }}"
-                class="space-y-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-4"
-                novalidate>
-            @csrf
+              action="{{ route('maintenance.requests.operation-log', $req) }}"
+              class="space-y-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-4"
+              novalidate>
+          @csrf
 
-            {{-- วันที่รายการซ่อม --}}
-            <div>
-            <label for="operation_date" class="mb-1 block text-xs font-medium text-slate-700">
-                รายการซ่อมสำหรับวันที่
+          {{-- วันที่รายการซ่อม --}}
+          <div>
+            <label for="operation_date" class="mb-1 block text-xs sm:text-[13px] font-medium text-slate-700">
+              รายการซ่อมสำหรับวันที่
             </label>
             <input
-                id="operation_date"
-                type="date"
-                name="operation_date"
-                value="{{ old('operation_date', optional($opLog?->operation_date)->format('Y-m-d')) }}"
-                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
+              id="operation_date"
+              type="date"
+              name="operation_date"
+              value="{{ old('operation_date', optional($opLog?->operation_date)->format('Y-m-d')) }}"
+              class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] sm:text-[15px] text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
             >
             @if(!$opLog)
-                <p class="mt-1 text-[11px] text-slate-400">ยังไม่ได้บันทึก จะเริ่มบันทึกจากฟิลด์นี้</p>
+              <p class="mt-1 text-[11px] sm:text-[12px] text-slate-400">ยังไม่ได้บันทึก จะเริ่มบันทึกจากฟิลด์นี้</p>
             @endif
-            </div>
+          </div>
 
-            {{-- วิธีการปฏิบัติ / การคิดค่าใช้จ่าย --}}
-            <div>
-            <span class="mb-1 block text-xs font-medium text-slate-700">
-                วิธีการปฏิบัติ / การคิดค่าใช้จ่าย
+          {{-- วิธีการปฏิบัติ / การคิดค่าใช้จ่าย --}}
+          <div>
+            <span class="mb-1 block text-xs sm:text-[13px] font-medium text-slate-700">
+              วิธีการปฏิบัติ / การคิดค่าใช้จ่าย
             </span>
             @php
-                $method = old('operation_method', $opLog->operation_method ?? null);
+              $method = old('operation_method', $opLog->operation_method ?? null);
             @endphp
-            <div class="space-y-1.5 text-xs">
-                <label class="inline-flex items-center gap-2">
+            <div class="space-y-1.5 text-xs sm:text-[13px]">
+              <label class="inline-flex items-center gap-2">
                 <input type="radio" name="operation_method" value="requisition"
-                        @checked($method === 'requisition')
-                        class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                       @checked($method === 'requisition')
+                       class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                 <span>ตามใบเบิกครุภัณฑ์ / วัสดุ</span>
-                </label>
-                <label class="inline-flex items-center gap-2">
+              </label>
+              <label class="inline-flex items-center gap-2">
                 <input type="radio" name="operation_method" value="service_fee"
-                        @checked($method === 'service_fee')
-                        class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                       @checked($method === 'service_fee')
+                       class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                 <span>ค่าบริการ / ค่าแรงช่าง</span>
-                </label>
-                <label class="inline-flex items-center gap-2">
+              </label>
+              <label class="inline-flex items-center gap-2">
                 <input type="radio" name="operation_method" value="other"
-                        @checked($method === 'other')
-                        class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                       @checked($method === 'other')
+                       class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                 <span>อื่น ๆ</span>
-                </label>
+              </label>
             </div>
-            </div>
+          </div>
 
-            {{-- รพจ. (รหัสครุภัณฑ์) --}}
-            <div>
-            <label for="property_code" class="mb-1 block text-xs font-medium text-slate-700">
-                ระบุรพจ. (รหัสครุภัณฑ์)
+          {{-- รพจ. (รหัสครุภัณฑ์) --}}
+          <div>
+            <label for="property_code" class="mb-1 block text-xs sm:text-[13px] font-medium text-slate-700">
+              ระบุรพจ. (รหัสครุภัณฑ์)
             </label>
             <input
-                id="property_code"
-                type="text"
-                name="property_code"
-                value="{{ old('property_code', $opLog->property_code ?? ($req->asset->code ?? '')) }}"
-                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
-                placeholder="เช่น 68101068718"
+              id="property_code"
+              type="text"
+              name="property_code"
+              value="{{ old('property_code', $opLog->property_code ?? ($req->asset->code ?? '')) }}"
+              class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] sm:text-[15px] text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
+              placeholder="เช่น 68101068718"
             >
-            <p class="mt-0.5 text-[11px] text-slate-500">
-                ระบุเลขทะเบียนครุภัณฑ์ (รพจ.) ที่ใช้ในการเบิก/ซ่อม หากมี
+            <p class="mt-0.5 text-[11px] sm:text-[12px] text-slate-500">
+              ระบุเลขทะเบียนครุภัณฑ์ (รพจ.) ที่ใช้ในการเบิก/ซ่อม หากมี
             </p>
-            </div>
+          </div>
 
-            {{-- ยืนยันแจ้งผู้ใช้งาน / หน่วยงาน --}}
-            <div class="pt-1">
-            <label class="inline-flex items-center gap-2 text-xs text-slate-700">
-                <input
+          {{-- ยืนยันแจ้งผู้ใช้งาน / หน่วยงาน --}}
+          <div class="pt-1">
+            <label class="inline-flex items-center gap-2 text-xs sm:text-[13px] text-slate-700">
+              <input
                 type="checkbox"
                 name="require_precheck"
                 value="1"
                 @checked(old('require_precheck', $opLog->require_precheck ?? false))
                 class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                >
-                ยืนยันว่าได้แจ้งผู้ใช้งาน / หน่วยงาน และขออนุญาตก่อนปฏิบัติงาน/ปิดเครื่อง
+              >
+              ยืนยันว่าได้แจ้งผู้ใช้งาน / หน่วยงาน และขออนุญาตก่อนปฏิบัติงาน/ปิดเครื่อง
             </label>
-            <p class="mt-0.5 text-[11px] text-slate-500">
-                ใช้บันทึกว่าช่างได้แจ้งผลกระทบและขออนุญาตผู้เกี่ยวข้องแล้ว
+            <p class="mt-0.5 text-[11px] sm:text-[12px] text-slate-500">
+              ใช้บันทึกว่าช่างได้แจ้งผลกระทบและขออนุญาตผู้เกี่ยวข้องแล้ว
             </p>
-            </div>
+          </div>
 
-            {{-- ประเภทงานที่ปฏิบัติ --}}
-            <div>
-            <div class="mb-1 text-xs font-medium text-slate-700">
-                ประเภทงานที่ปฏิบัติ
+          {{-- ประเภทงานที่ปฏิบัติ --}}
+          <div>
+            <div class="mb-1 text-xs sm:text-[13px] font-medium text-slate-700">
+              ประเภทงานที่ปฏิบัติ
             </div>
-            <div class="space-y-1 text-xs">
-                <label class="inline-flex items-center gap-2">
+            <div class="space-y-1 text-xs sm:text-[13px]">
+              <label class="inline-flex items-center gap-2">
                 <input
-                    type="checkbox"
-                    name="issue_software"
-                    value="1"
-                    @checked(old('issue_software', $opLog->issue_software ?? false))
-                    class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  type="checkbox"
+                  name="issue_software"
+                  value="1"
+                  @checked(old('issue_software', $opLog->issue_software ?? false))
+                  class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 >
                 Software
-                </label>
-                <label class="inline-flex items-center gap-2">
+              </label>
+              <label class="inline-flex items-center gap-2">
                 <input
-                    type="checkbox"
-                    name="issue_hardware"
-                    value="1"
-                    @checked(old('issue_hardware', $opLog->issue_hardware ?? false))
-                    class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  type="checkbox"
+                  name="issue_hardware"
+                  value="1"
+                  @checked(old('issue_hardware', $opLog->issue_hardware ?? false))
+                  class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 >
                 Hardware
-                </label>
+              </label>
             </div>
-            </div>
+          </div>
 
-            {{-- หมายเหตุ --}}
-            <div>
-            <label for="remark" class="mb-1 block text-xs font-medium text-slate-700">
-                หมายเหตุ / รายละเอียดประกอบ
+          {{-- หมายเหตุ --}}
+          <div>
+            <label for="remark" class="mb-1 block text-xs sm:text-[13px] font-medium text-slate-700">
+              หมายเหตุ / รายละเอียดประกอบ
             </label>
             <textarea
-                id="remark"
-                name="remark"
-                rows="3"
-                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
-                placeholder="เช่น ตรวจเช็คเบื้องต้นแล้ว พบว่า..., ใช้อะไหล่จากใบเบิกเลขที่..., ผู้ใช้ทดสอบแล้วเรียบร้อย"
+              id="remark"
+              name="remark"
+              rows="3"
+              class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] sm:text-[15px] text-slate-900 focus:border-emerald-600 focus:ring-emerald-600"
+              placeholder="เช่น ตรวจเช็คเบื้องต้นแล้ว พบว่า..., ใช้อะไหล่จากใบเบิกเลขที่..., ผู้ใช้ทดสอบแล้วเรียบร้อย"
             >{{ old('remark', $opLog->remark ?? '') }}</textarea>
-            </div>
+          </div>
 
-            <div class="flex items-center justify-end pt-1">
+          <div class="flex items-center justify-end pt-1">
             <button type="submit"
-                    class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
-                <svg class="mr-1.5 h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-xs sm:text-[13px] font-semibold text-white hover:bg-emerald-700">
+              <svg class="mr-1.5 h-4 w-4" viewBox="0 0 24 24" fill="none">
                 <path d="M5 12h14M12 5l7 7-7 7"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                บันทึกรายงานการปฏิบัติงาน
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              บันทึกรายงานการปฏิบัติงาน
             </button>
-            </div>
+          </div>
         </form>
 
         @if($opLog)
-            <p class="mt-2 text-[11px] text-slate-500">
+          <p class="mt-2 text-[11px] sm:text-[12px] text-slate-500">
             บันทึกล่าสุดโดย {{ $opLog->user->name ?? 'ไม่ระบุผู้บันทึก' }}
             เมื่อ {{ $opLog->updated_at?->format('Y-m-d H:i') ?? '-' }}
-            </p>
+          </p>
         @endif
-        </section>
+      </section>
 
       {{-- SECTION 4: ไฟล์แนบ / รูปถ่าย --}}
       <section class="px-6 py-5">
         <header class="mb-3 border-b border-slate-200 pb-2">
-          <h2 class="text-sm font-semibold text-slate-900">
+          <h2 class="text-[15px] font-semibold text-slate-900">
             ส่วนที่ 4 — ไฟล์แนบ / รูปถ่ายประกอบ
           </h2>
-          <p class="mt-0.5 text-xs text-slate-500">
+          <p class="mt-0.5 text-xs sm:text-[13px] text-slate-500">
             เพิ่มรูปถ่ายหรือเอกสารที่เกี่ยวข้องกับการซ่อม เพื่อใช้เป็นหลักฐานก่อน–หลังซ่อมหรือเอกสารอ้างอิง
           </p>
         </header>
@@ -581,7 +607,7 @@
                 <input id="file" type="file" name="file" required
                        accept="image/*,application/pdf"
                        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
-                <p class="mt-1 text-[11px] text-slate-500">
+                <p class="mt-1 text-[11px] sm:text-[12px] text-slate-500">
                   รองรับรูปภาพ และ PDF • สูงสุดไฟล์ละ 10MB
                 </p>
               </div>
@@ -594,7 +620,7 @@
                        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
                        value="{{ old('alt_text') }}"
                        placeholder="ข้อความอธิบายรูปภาพ">
-                <label class="mt-2 inline-flex items-center gap-2 text-xs text-slate-700">
+                <label class="mt-2 inline-flex items-center gap-2 text-xs sm:text-[13px] text-slate-700">
                   <input type="checkbox" name="is_private" value="1" class="rounded border-slate-300">
                   เก็บเป็นไฟล์ส่วนตัว (ไม่แสดงในเว็บสาธารณะ)
                 </label>
@@ -611,7 +637,7 @@
 
           <div class="border-t border-slate-100 pt-4">
             @if($atts->count())
-              <div class="mb-2 text-xs font-medium text-slate-500">
+              <div class="mb-2 text-xs sm:text-[13px] font-medium text-slate-500">
                 ไฟล์ที่แนบไว้แล้ว ({{ $atts->count() }} ไฟล์)
               </div>
               <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
@@ -623,26 +649,26 @@
                     $openUrl   = $att->url ?? route('attachments.show', $att);
                     $isImg     = $att->is_image;
                   @endphp
-                  <figure class="overflow-hidden rounded-lg border border-slate-200 bg-white text-xs">
+                  <figure class="overflow-hidden rounded-lg border border-slate-200 bg-white text-xs sm:text-[13px]">
                     @if($isImg && !$isPrivate && $att->url)
                       <a href="{{ $openUrl }}" target="_blank" rel="noopener">
                         <img src="{{ $att->url }}" alt="{{ $att->alt_text ?? $name }}"
                              class="h-32 w-full object-cover">
                       </a>
                     @else
-                      <div class="grid h-32 w-full place-items-center text-slate-500">
+                      <div class="grid h-32 w-full place-items-center text-slate-500 text-[13px]">
                         {{ strtoupper(pathinfo($name, PATHINFO_EXTENSION) ?: 'FILE') }}
                       </div>
                     @endif
 
                     <figcaption class="flex items-center justify-between gap-2 px-3 py-2">
-                      <span class="inline-flex items-center rounded-full border px-2 py-0.5 font-medium
+                      <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] sm:text-[12px] font-medium
                                    {{ $isPrivate ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-slate-200 bg-slate-50 text-slate-700' }}">
                         {{ $isPrivate ? 'private' : 'public' }}
                       </span>
-                      <span class="truncate text-slate-600" title="{{ $name }}">{{ $name }}</span>
+                      <span class="truncate text-slate-600 text-[12px] sm:text-[13px]" title="{{ $name }}">{{ $name }}</span>
                       <a href="{{ $openUrl }}" {{ $isPrivate ? '' : 'target=_blank rel=noopener' }}
-                         class="inline-flex items-center rounded-md border border-sky-300 bg-sky-50 px-2 py-1 text-[11px] font-medium text-sky-800 hover:bg-sky-100">
+                         class="inline-flex items-center rounded-md border border-sky-300 bg-sky-50 px-2 py-1 text-[11px] sm:text-[12px] font-medium text-sky-800 hover:bg-sky-100">
                         เปิด
                       </a>
                     </figcaption>
@@ -650,7 +676,7 @@
                 @endforeach
               </div>
             @else
-              <p class="text-xs text-slate-500">
+              <p class="text-xs sm:text-[13px] text-slate-500">
                 ยังไม่มีไฟล์แนบในใบงานนี้
               </p>
             @endif
@@ -676,7 +702,7 @@
           </span>
           <div>
             <div class="text-sm font-semibold text-slate-900">มอบหมาย / แก้ไขทีมช่าง</div>
-            <p class="text-xs text-slate-500">เลือกผู้ปฏิบัติงานที่สามารถรับผิดชอบงานซ่อมนี้</p>
+            <p class="text-xs sm:text-[13px] text-slate-500">เลือกผู้ปฏิบัติงานที่สามารถรับผิดชอบงานซ่อมนี้</p>
           </div>
         </div>
         <button type="button" id="closeAssignModalBtn"
@@ -695,7 +721,7 @@
 
         <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
           <div class="mb-2 flex items-center justify-between gap-2">
-            <div class="text-xs font-medium text-slate-700">
+            <div class="text-xs sm:text-[13px] font-medium text-slate-700">
               รายชื่อทีมช่างทั้งหมด
             </div>
           </div>
@@ -704,7 +730,7 @@
               @php
                 $checked = $workers->contains('id', $worker->id);
               @endphp
-              <label class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-white">
+              <label class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs sm:text-[13px] hover:bg-white">
                 <div class="flex min-w-0 items-center gap-2">
                   <input type="checkbox"
                          name="user_ids[]"
@@ -713,12 +739,12 @@
                          class="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                   <div class="min-w-0">
                     <div class="truncate font-medium text-slate-900">{{ $worker->name }}</div>
-                    <div class="truncate text-[11px] text-slate-500">{{ $worker->role_label }}</div>
+                    <div class="truncate text-[11px] sm:text-[12px] text-slate-500">{{ $worker->role_label }}</div>
                   </div>
                 </div>
               </label>
             @empty
-              <p class="text-xs text-slate-500">ยังไม่มีผู้ใช้ที่เป็นทีมช่างในระบบ</p>
+              <p class="text-xs sm:text-[13px] text-slate-500">ยังไม่มีผู้ใช้ที่เป็นทีมช่างในระบบ</p>
             @endforelse
           </div>
         </div>
@@ -726,11 +752,11 @@
         <div class="flex items-center justify-end gap-2 pt-1 pb-3">
           <button type="button"
                   id="cancelAssignModalBtn"
-                  class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+                  class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs sm:text-[13px] font-medium text-slate-700 hover:bg-slate-50">
             ยกเลิก
           </button>
           <button type="submit"
-                  class="inline-flex items-center rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">
+                  class="inline-flex items-center rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs sm:text-[13px] font-semibold text-white hover:bg-indigo-700">
             บันทึกการมอบหมาย
           </button>
         </div>

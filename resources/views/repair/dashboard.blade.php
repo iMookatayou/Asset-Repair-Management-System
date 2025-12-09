@@ -67,11 +67,11 @@
   @endphp
 
   {{-- พื้นหลัง dashboard แบบราชการสะอาด ๆ --}}
-  <div class="bg-slate-50/90">
+  <div class="bg-white">
     <div class="px-4 sm:px-6 lg:px-10 2xl:px-20 pt-3 pb-8 space-y-5">
 
       {{-- HEADER รายงาน + FILTER PANEL (sticky เลื่อนตามลงมาเต็มดุ้นใต้ Navbar) --}}
-      <div class="sticky z-30" style="top: var(--topbar-h, 4rem);">
+      <div class="sticky z-30" style="top: calc(var(--topbar-h, 4rem) + 8px);">
         <div class="overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm">
           <div class="flex flex-wrap items-start gap-4 px-4 py-3 sm:px-5 sm:py-4">
 
@@ -197,8 +197,9 @@
       </div>
 
       {{-- CARD หลักของ Dashboard --}}
-      <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
-        <div class="px-4 py-4 sm:px-6 sm:py-5 space-y-6">
+      <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm mt-3">
+        <div class="px-4 pt-14 pb-4 sm:px-6 sm:pt-16 sm:pb-5 space-y-6">
+
 
           {{-- ส่วนที่ 1: ภาพรวมสถิติ + กราฟสถานะ --}}
           <div class="space-y-4">

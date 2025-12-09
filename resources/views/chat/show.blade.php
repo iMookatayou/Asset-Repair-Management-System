@@ -6,7 +6,8 @@
   $lastAt = $messages->last()?->created_at ?? $thread->created_at;
 
   $me = auth()->user();
-  $canManageLock = $me && ($me->id === $thread->author_id || ($me->is_admin ?? false));
+  // ✅ แก้ตรงนี้: ใครก็ตามที่ role ไม่ใช่ member ให้จัดการ lock/unlock ได้
+  $canManageLock = $me && ($me->role !== 'member');
 @endphp
 
 @section('page-header')
@@ -60,7 +61,7 @@
               Refresh
             </button>
 
-            {{-- Lock / Unlock button (เฉพาะเจ้าของหรือแอดมิน) --}}
+            {{-- Lock / Unlock button (ตาม role) --}}
             @if($canManageLock)
               <button
                 id="btnToggleLock"
@@ -277,6 +278,7 @@
           headers: {
             'Accept': 'application/json',
             'X-CSRF-TOKEN': csrf ?? '',
+            'X-Requested-With': 'XMLHttpRequest',
           },
         });
 

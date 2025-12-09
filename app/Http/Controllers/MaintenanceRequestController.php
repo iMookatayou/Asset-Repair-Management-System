@@ -23,18 +23,8 @@ class MaintenanceRequestController extends Controller
         $priority = $request->string('priority')->toString();
         $q        = $request->string('q')->toString();
 
-        // ---- อ่านค่าการเรียงจาก query string ----
-        $sortBy  = $request->query('sort_by');          // คาดว่า = 'id' จากหัวตารางเลขใบงาน
-        $sortDir = $request->query('sort_dir', 'desc'); // asc | desc
-
-        // อนุญาตให้เรียงแค่บางคอลัมน์
-        $allowedSorts = ['id', 'request_date'];
-        if (! in_array($sortBy, $allowedSorts, true)) {
-            $sortBy = null; // ถ้าไม่ตรง whitelist ให้ถือว่าไม่ส่ง sort มา
-        }
-
-        // กันค่าประหลาด
-        $sortDir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+        // ---- ใช้ helper ดึงค่าการเรียง + จัดการ session ต่อ user ----
+        [$sortBy, $sortDir] = $this->resolveSort($request);
 
         $query = MR::query()
             ->with([
@@ -69,20 +59,14 @@ class MaintenanceRequestController extends Controller
                 });
             });
 
-        // ---- เลือกเงื่อนไข orderBy ตาม sort_by / sort_dir ----
-        if ($sortBy) {
-            // กรณีกดหัว "เลขใบงาน" → sort_by = id
-            $query->orderBy($sortBy, $sortDir);
-        } else {
-            // กรณียังไม่กดอะไรเลย → ใช้ค่าเดิม
-            $query->orderByDesc('request_date');
-        }
+        // ---- เรียงตามค่าที่ได้จาก resolveSort() ----
+        $query->orderBy($sortBy, $sortDir);
 
         $list = $query
             ->paginate(20)
             ->withQueryString();
 
-        return view('maintenance.requests.index', compact('list','status','priority','q'));
+        return view('maintenance.requests.index', compact('list','status','priority','q','sortBy','sortDir'));
     }
 
     public function queuePage(Request $request)
@@ -212,12 +196,12 @@ class MaintenanceRequestController extends Controller
 
         $updated = $this->applyTransition($req, $payload, Auth::id());
 
-    return redirect()->back()->with('toast', \App\Support\Toast::success('รับงาน #'.$req->id.' เรียบร้อย', 1800));
+        return redirect()->back()->with('toast', \App\Support\Toast::success('รับงาน #'.$req->id.' เรียบร้อย', 1800));
     }
 
     public function showPage(MR $req)
     {
-    \Gate::authorize('view', $req);
+        \Gate::authorize('view', $req);
         $req->loadMissing([
             'asset',
             'reporter:id,name,email',
@@ -255,18 +239,8 @@ class MaintenanceRequestController extends Controller
 
         $user = $request->user();
 
-        // ---- อ่านค่าการเรียงจาก query string ----
-        $sortBy  = $request->query('sort_by');          // คาดว่า = 'id' หรือ 'request_date'
-        $sortDir = $request->query('sort_dir', 'desc'); // asc | desc
-
-        // whitelist คอลัมน์ที่อนุญาตให้ sort
-        $allowedSorts = ['id', 'request_date'];
-        if (! in_array($sortBy, $allowedSorts, true)) {
-            $sortBy = null; // ถ้าไม่ตรง whitelist ให้ถือว่าไม่ได้ส่ง sort มา
-        }
-
-        // กันค่าประหลาด
-        $sortDir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+        // ---- ใช้ helper ดึงค่าการเรียง + จัดการ session ต่อ user ----
+        [$sortBy, $sortDir] = $this->resolveSort($request);
 
         $query = MR::query()
             ->with(['asset','reporter:id,name,email','technician:id,name'])
@@ -293,14 +267,8 @@ class MaintenanceRequestController extends Controller
                 });
             });
 
-        // ---- เลือก orderBy ตาม sort_by / sort_dir ----
-        if ($sortBy) {
-            // ถ้ามีส่ง sort_by มา เช่น id → เรียงตามนั้น
-            $query->orderBy($sortBy, $sortDir);
-        } else {
-            // ถ้าไม่ส่ง sort_by → ใช้ค่า default เดิม
-            $query->orderByDesc('request_date');
-        }
+        // ---- เรียงตามค่าที่ได้จาก resolveSort() ----
+        $query->orderBy($sortBy, $sortDir);
 
         $list = $query
             ->paginate(20)
@@ -322,10 +290,15 @@ class MaintenanceRequestController extends Controller
                     'timeout' => 1200,
                     'size' => 'sm',
                 ],
+                // ถ้าอยากให้ front ทราบ sort ปัจจุบัน เพิ่มตรงนี้ได้
+                // 'sort' => [
+                //     'by'  => $sortBy,
+                //     'dir' => $sortDir,
+                // ],
             ]);
         }
 
-        return view('maintenance.requests.index', compact('list','status','priority','q'));
+        return view('maintenance.requests.index', compact('list','status','priority','q','sortBy','sortDir'));
     }
 
 
@@ -352,7 +325,7 @@ class MaintenanceRequestController extends Controller
             'files.*'       => $fileRules,
         ];
 
-    $validator = Validator::make($request->all(), $rules);
+        $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             $required = ['title','priority'];
             $missing = [];
@@ -993,4 +966,41 @@ class MaintenanceRequestController extends Controller
         // หรือถ้าอยากโหลดเลย: return $pdf->download($fileName);
     }
 
+    /**
+     * จัดการค่าการเรียงพร้อมจำไว้ใน session แยกตาม user
+     * - default: sort_by = id, sort_dir = desc (งานใหม่สุดก่อน)
+     */
+    protected function resolveSort(Request $request): array
+    {
+        $user   = $request->user();
+        $userId = $user?->id;
+
+        // key แยกคนชัดเจน ไม่ปนกัน
+        $sessionSortByKey  = $userId ? "maintenance_sort_by_user_{$userId}"  : 'maintenance_sort_by_guest';
+        $sessionSortDirKey = $userId ? "maintenance_sort_dir_user_{$userId}" : 'maintenance_sort_dir_guest';
+
+        $allowedSorts = ['id', 'request_date'];
+
+        $sortByReq  = $request->query('sort_by');
+        $sortDirReq = $request->query('sort_dir');
+
+        // sort_by
+        if (in_array($sortByReq, $allowedSorts, true)) {
+            $sortBy = $sortByReq;
+            session([$sessionSortByKey => $sortBy]);
+        } else {
+            $sortBy = session($sessionSortByKey, 'id'); // default field = id
+        }
+
+        // sort_dir
+        $sortDirReq = strtolower((string) $sortDirReq);
+        if (in_array($sortDirReq, ['asc','desc'], true)) {
+            $sortDir = $sortDirReq;
+            session([$sessionSortDirKey => $sortDir]);
+        } else {
+            $sortDir = session($sessionSortDirKey, 'desc'); // default = desc (ใหม่สุดก่อน)
+        }
+
+        return [$sortBy, $sortDir];
+    }
 }

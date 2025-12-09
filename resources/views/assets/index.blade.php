@@ -6,8 +6,9 @@
   use Illuminate\Support\Str;
 
   // ===== Sorting เฉพาะคอลัมน์เลขลำดับ =====
-  $sortBy  = request('sort_by', 'id');
-  $sortDir = request('sort_dir', 'desc');
+  // ใช้ค่าจาก Controller ถ้ามี ถ้าไม่มีค่อย fallback จาก request
+  $sortBy  = $sortBy  ?? request('sort_by', 'id');
+  $sortDir = $sortDir ?? request('sort_dir', 'desc');
 
   $sortableId = function() use ($sortBy, $sortDir) {
       $isActive = $sortBy === 'id';
@@ -18,7 +19,6 @@
           'sort_dir' => $nextDir,
       ]);
 
-      // class ของ label และไอคอน
       $labelClass = 'text-[13px] font-semibold whitespace-nowrap ';
       $iconClass  = 'h-3.5 w-3.5';
 
@@ -30,15 +30,9 @@
           $iconClass  .= ' text-zinc-300 group-hover:text-zinc-400';
       }
 
-      // path ของไอคอน: asc = ชี้ขึ้น, desc = ชี้ลง
       $iconPathAsc  = 'M12 7l-4 6h8l-4-6z';
       $iconPathDesc = 'M12 17l4-6H8l4 6z';
-
-      $iconPath = $iconPathAsc;
-
-      if ($isActive) {
-          $iconPath = $sortDir === 'asc' ? $iconPathAsc : $iconPathDesc;
-      }
+      $iconPath = $isActive && $sortDir === 'asc' ? $iconPathAsc : $iconPathDesc;
 
       return <<<HTML
 <a href="{$url}" class="inline-flex items-center justify-center gap-1.5 group select-none">
@@ -68,6 +62,14 @@ HTML;
     'disposed'  => 'จำหน่ายแล้ว',
     default     => 'ไม่ทราบสถานะ',
   };
+
+  // ค่าจาก Controller (เผื่อไว้ถ้าไม่ได้ส่งก็ fallback เป็น request)
+  $q          = $q          ?? request('q');
+  $status     = $status     ?? request('status');
+  $categoryId = $categoryId ?? request('category_id');
+  $deptId     = $deptId     ?? request('department_id');
+  $type       = $type       ?? request('type');
+  $location   = $location   ?? request('location');
 @endphp
 
 <div class="pt-3 md:pt-4"></div>
@@ -82,19 +84,22 @@ HTML;
 
           <div class="flex items-start gap-3">
             <div class="grid h-9 w-9 place-items-center rounded-md bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M6 11h8m-8 4h12M4 5v14a2 2 0 0 0 2 2h12l2-2V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2Z"/>
               </svg>
             </div>
+
             <div>
-              <h1 class="text-[17px] font-semibold text-zinc-900">ทรัพย์สิน</h1>
-              <p class="text-[13px] text-zinc-600">ข้อมูลทรัพย์สิน / ครุภัณฑ์ • ค้นหา กรอง และจัดการรายการ</p>
+              <h1 class="text-[17px] font-semibold text-zinc-900">Assets</h1>
+              <p class="text-[13px] text-zinc-600">
+                ข้อมูลทรัพย์สิน / ครุภัณฑ์ • ค้นหา กรอง และจัดการรายการ
+              </p>
             </div>
           </div>
 
           <a href="{{ route('assets.create') }}"
-             class="inline-flex items-center gap-2 rounded-md border border-emerald-700 bg-emerald-700 px-4 py-2 text-[13px] font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+             class="inline-flex items-center gap-2 rounded-md border border-emerald-700 bg-emerald-700 px-4 py-2 text-[13px] font-medium text-white hover:bg-emerald-800">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
             </svg>
             เพิ่มทรัพย์สิน
@@ -112,18 +117,21 @@ HTML;
           ];
         @endphp
 
-        {{-- ฟอร์มค้นหา / กรอง --}}
+        {{-- filters --}}
         <form method="GET"
-              class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end"
-              role="search" aria-label="Filter assets">
+              class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
 
-          {{-- คำค้นหา --}}
-          <div class="md:col-span-7 min-w-0">
-            <label for="q" class="mb-1 block text-[12px] text-zinc-600">คำค้นหา</label>
+          {{-- ค่าการ sort ปัจจุบัน (ให้ filter ใหม่ยังคง sort เดิม) --}}
+          <input type="hidden" name="sort_by"  value="{{ $sortBy }}">
+          <input type="hidden" name="sort_dir" value="{{ $sortDir }}">
+
+          {{-- คำค้น --}}
+          <div class="md:col-span-7">
+            <label class="text-[12px] text-zinc-600">คำค้นหา</label>
             <div class="relative">
-              <input id="q" type="text" name="q" value="{{ request('q') }}"
-                     placeholder="เช่น รหัสทรัพย์สิน / ชื่อทรัพย์สิน / Serial number"
-                     class="w-full rounded-md border border-zinc-300 pl-12 pr-3 py-2 text-[13px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+              <input name="q" value="{{ $q }}"
+                     class="w-full rounded-md border border-zinc-300 pl-12 pr-3 py-2 text-[13px] focus:ring-2 focus:ring-emerald-600"
+                     placeholder="เช่น รหัสทรัพย์สิน / ชื่อทรัพย์สิน / Serial number">
               <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-zinc-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -132,66 +140,68 @@ HTML;
             </div>
           </div>
 
-          {{-- สถานะการใช้งาน --}}
+          {{-- สถานะ --}}
           <div class="md:col-span-3">
-            <label for="status" class="mb-1 block text-[12px] text-zinc-600">สถานะการใช้งาน</label>
-            <select id="status" name="status"
-                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+            <label class="text-[12px] text-zinc-600">สถานะการใช้งาน</label>
+            <select name="status"
+                    class="w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] focus:ring-2 focus:ring-emerald-600">
               @foreach($statuses as $k => $v)
-                <option value="{{ $k }}" @selected(request('status') === $k)>{{ $v }}</option>
+                <option value="{{ $k }}" @selected(($status ?? '') === $k)>{{ $v }}</option>
               @endforeach
             </select>
           </div>
 
-          {{-- ปุ่มล้างตัวกรอง / ค้นหา --}}
+          {{-- ปุ่มค้นหา --}}
           <div class="md:col-span-2 flex items-end justify-end gap-2">
             @if(request()->hasAny(['q','status','category_id','department_id','type','location','sort_by','sort_dir']))
               <a href="{{ route('assets.index') }}"
-                 class="rounded-md border border-zinc-300 bg-white px-2.5 py-2 text-[13px] font-medium text-zinc-800 hover:bg-zinc-50 whitespace-nowrap">
+                 class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px]">
                 ล้างตัวกรอง
               </a>
             @endif
-            <button class="rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-[13px] font-medium text-white hover:bg-emerald-800">
+            <button class="rounded-md bg-emerald-700 text-white px-3 py-2 text-[13px] hover:bg-emerald-800">
               ค้นหา
             </button>
           </div>
 
-          {{-- ประเภททรัพย์สิน --}}
+          {{-- ประเภท --}}
           <div class="md:col-span-3">
-            <label for="type" class="mb-1 block text-[12px] text-zinc-600">ประเภททรัพย์สิน</label>
-            <input id="type" name="type" value="{{ request('type') }}"
-                   class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                   placeholder="เช่น คอมพิวเตอร์, เครื่องพิมพ์" />
+            <label class="text-[12px] text-zinc-600">ประเภททรัพย์สิน</label>
+            <input name="type" value="{{ $type }}"
+                   class="w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px]">
           </div>
 
-          {{-- ที่ตั้ง / ห้อง --}}
+          {{-- ที่ตั้ง --}}
           <div class="md:col-span-3">
-            <label for="location" class="mb-1 block text-[12px] text-zinc-600">ที่ตั้ง / ห้อง</label>
-            <input id="location" name="location" value="{{ request('location') }}"
-                   class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                   placeholder="เช่น ห้องฉุกเฉิน, ห้อง IT" />
+            <label class="text-[12px] text-zinc-600">ที่ตั้ง / ห้อง</label>
+            <input name="location" value="{{ $location }}"
+                   class="w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px]">
           </div>
 
-          {{-- หมวดหมู่ทรัพย์สิน --}}
+          {{-- หมวดหมู่ --}}
           <div class="md:col-span-3">
-            <label for="category_id" class="mb-1 block text-[12px] text-zinc-600">หมวดหมู่ทรัพย์สิน</label>
-            <select id="category_id" name="category_id"
-                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+            <label class="text-[12px] text-zinc-600">หมวดหมู่ทรัพย์สิน</label>
+            <select name="category_id"
+                    class="w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px]">
               <option value="">ทั้งหมด</option>
               @foreach($categories as $c)
-                <option value="{{ $c->id }}" @selected((string)request('category_id') === (string)$c->id)>{{ $c->name }}</option>
+                <option value="{{ $c->id }}" @selected(($categoryId ?? null) == $c->id)>
+                  {{ $c->name }}
+                </option>
               @endforeach
             </select>
           </div>
 
-          {{-- หน่วยงานเจ้าของทรัพย์สิน --}}
+          {{-- หน่วยงาน --}}
           <div class="md:col-span-3">
-            <label for="department_id" class="mb-1 block text-[12px] text-zinc-600">หน่วยงานเจ้าของทรัพย์สิน</label>
-            <select id="department_id" name="department_id"
-                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+            <label class="text-[12px] text-zinc-600">หน่วยงานเจ้าของทรัพย์สิน</label>
+            <select name="department_id"
+                    class="w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px]">
               <option value="">ทั้งหมด</option>
               @foreach($departments as $d)
-                <option value="{{ $d['id'] }}" @selected((string)request('department_id') === (string)$d['id'])>{{ $d['display_name'] }}</option>
+                <option value="{{ $d['id'] }}" @selected(($deptId ?? null) == $d['id'])>
+                  {{ $d['display_name'] }}
+                </option>
               @endforeach
             </select>
           </div>
@@ -201,89 +211,90 @@ HTML;
     </div>
   </div>
 
-  {{-- ตาราง desktop --}}
+  {{-- ⭐ Spacer ใต้ Sticky Header --}}
+  <div class="pt-2 md:pt-4 lg:pt-5"></div>
+
+  {{-- Table Desktop --}}
   <div class="hidden md:block rounded-lg border border-zinc-300 bg-white overflow-hidden">
     <div class="relative overflow-x-auto">
       <table class="min-w-full text-[13px]">
-        <thead class="bg-zinc-50">
-          <tr class="text-zinc-700 border-b border-zinc-200">
-            <th class="p-3 text-center font-semibold whitespace-nowrap">
-              {!! $sortableId() !!}
-            </th>
-            <th class="p-3 text-center font-semibold whitespace-nowrap">รหัสทรัพย์สิน</th>
-            <th class="p-3 text-center font-semibold whitespace-nowrap">ชื่อทรัพย์สิน</th>
-            <th class="p-3 text-center font-semibold whitespace-nowrap hidden xl:table-cell">หมวดหมู่</th>
-            <th class="p-3 text-center font-semibold whitespace-nowrap hidden lg:table-cell">ที่ตั้ง</th>
-            <th class="p-3 text-center font-semibold whitespace-nowrap">สถานะการใช้งาน</th>
-            <th class="p-3 text-center font-semibold whitespace-nowrap min-w-[200px]">การดำเนินการ</th>
+        <thead class="bg-zinc-50 border-b border-zinc-200">
+          <tr>
+            <th class="p-3 text-center">{!! $sortableId() !!}</th>
+            <th class="p-3 text-center">รหัสทรัพย์สิน</th>
+            <th class="p-3 text-center">ชื่อทรัพย์สิน</th>
+            <th class="p-3 text-center hidden xl:table-cell">หมวดหมู่</th>
+            <th class="p-3 text-center hidden lg:table-cell">ที่ตั้ง</th>
+            <th class="p-3 text-center">สถานะ</th>
+            <th class="p-3 text-center min-w-[200px]">การดำเนินการ</th>
           </tr>
         </thead>
+
         <tbody>
-          @forelse($assets as $a)
-            <tr class="align-top hover:bg-zinc-50 border-b last:border-0">
-              <td class="p-3 text-zinc-700 text-center whitespace-nowrap">{{ $a->id }}</td>
-              <td class="p-3 font-medium text-zinc-900 text-center whitespace-nowrap">{{ $a->asset_code }}</td>
-              <td class="p-3">
-                <a class="block max-w-full truncate font-medium text-emerald-700 hover:underline text-center md:text-left" href="{{ route('assets.show',$a) }}">
-                  {{ $a->name }}
+        @forelse($assets as $a)
+          <tr class="hover:bg-zinc-50 border-b last:border-0">
+            <td class="p-3 text-center">{{ $a->id }}</td>
+            <td class="p-3 text-center font-medium">{{ $a->asset_code }}</td>
+            <td class="p-3">
+              <a href="{{ route('assets.show',$a) }}"
+                 class="block text-center md:text-left font-medium text-emerald-700 hover:underline">
+                {{ $a->name }}
+              </a>
+              <div class="text-[11px] text-zinc-500 text-center md:text-left">
+                S/N: {{ $a->serial_number ?? '—' }}
+              </div>
+            </td>
+            <td class="p-3 text-center hidden xl:table-cell">{{ optional($a->categoryRef)->name ?? '—' }}</td>
+            <td class="p-3 text-center hidden lg:table-cell">{{ $a->location ?? '—' }}</td>
+            <td class="p-3 text-center">
+              <span class="text-[12px] font-medium {{ $statusTextClass($a->status) }}">
+                {{ $statusLabel($a->status) }}
+              </span>
+            </td>
+            <td class="p-3 text-center">
+              <div class="flex justify-center gap-2">
+                <a href="{{ route('assets.show',$a) }}"
+                   class="inline-flex items-center gap-1.5 rounded-md border border-indigo-300 px-3 py-1.5 text-[12px] text-indigo-700 hover:bg-indigo-50">
+                   <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                  </svg>
+                  ดูรายละเอียด
                 </a>
-                <div class="mt-0.5 text-[11px] text-zinc-500 text-center md:text-left">
-                  หมายเลขเครื่อง (S/N): {{ $a->serial_number ?? '—' }}
-                </div>
-              </td>
-              <td class="p-3 hidden xl:table-cell text-zinc-700 text-center whitespace-nowrap">
-                {{ optional($a->categoryRef)->name ?? '—' }}
-              </td>
-              <td class="p-3 hidden lg:table-cell text-zinc-700 text-center whitespace-nowrap">
-                {{ $a->location ?? '—' }}
-              </td>
-              <td class="p-3 text-center align-middle whitespace-nowrap">
-                <span class="text-[12px] font-medium {{ $statusTextClass($a->status) }}">
-                  {{ $statusLabel($a->status) }}
-                </span>
-              </td>
-              <td class="p-3 text-center whitespace-nowrap align-middle">
-                <div class="h-full flex items-center justify-center gap-2">
-                  <a href="{{ route('assets.show',$a) }}"
-                     class="inline-flex items-center gap-1.5 rounded-md border border-indigo-300 px-2.5 md:px-3 py-1.5 text-[12px] font-medium text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-600 whitespace-nowrap min-w-[84px] justify-center"
-                     aria-label="ดูรายละเอียดทรัพย์สิน">
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-                    </svg>
-                    <span class="hidden sm:inline">ดูรายละเอียด</span>
-                    <span class="sm:hidden">ดู</span>
-                  </a>
-                  <a href="{{ route('assets.edit',$a) }}"
-                     class="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 px-2.5 md:px-3 py-1.5 text-[12px] font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 whitespace-nowrap min-w-[74px] justify-center"
-                     aria-label="แก้ไขทรัพย์สิน">
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-                    </svg>
-                    <span class="hidden sm:inline">แก้ไข</span>
-                    <span class="sm:hidden">แก้</span>
-                  </a>
-                </div>
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="7" class="p-10 text-center text-zinc-600 text-[13px]">ไม่พบข้อมูลทรัพย์สิน</td>
-            </tr>
-          @endforelse
+                <a href="{{ route('assets.edit',$a) }}"
+                   class="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 px-3 py-1.5 text-[12px] text-emerald-700 hover:bg-emerald-50">
+                   <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                  แก้ไข
+                </a>
+              </div>
+            </td>
+          </tr>
+        @empty
+          <tr>
+            <td colspan="7" class="p-10 text-center text-[13px] text-zinc-600">
+              ไม่พบข้อมูลทรัพย์สิน
+            </td>
+          </tr>
+        @endforelse
         </tbody>
       </table>
     </div>
   </div>
 
-  {{-- mobile cards --}}
-  <div class="md:hidden grid grid-cols-1 gap-3">
+  {{-- Mobile Cards --}}
+  <div class="md:hidden grid gap-3">
     @forelse($assets as $a)
       <div class="rounded-lg border border-zinc-300 bg-white p-4">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-[11px] text-zinc-500">เลขที่ {{ $a->id }} — {{ $a->asset_code }}</div>
-            <a class="font-medium text-zinc-900 hover:underline" href="{{ route('assets.show',$a) }}">{{ $a->name }}</a>
-            <div class="text-[11px] text-zinc-500">หมายเลขเครื่อง (S/N): {{ $a->serial_number ?? '—' }}</div>
+        <div class="flex justify-between">
+          <div>
+            <div class="text-[11px] text-zinc-500">#{{ $a->id }} — {{ $a->asset_code }}</div>
+            <a class="font-medium text-zinc-900 hover:underline" href="{{ route('assets.show',$a) }}">
+              {{ $a->name }}
+            </a>
+            <div class="text-[11px] text-zinc-500">
+              S/N: {{ $a->serial_number ?? '—' }}
+            </div>
           </div>
           <span class="text-[11px] font-medium {{ $statusTextClass($a->status) }}">
             {{ $statusLabel($a->status) }}
@@ -299,19 +310,11 @@ HTML;
 
         <div class="mt-3 flex justify-end gap-2">
           <a href="{{ route('assets.show',$a) }}"
-             class="inline-flex items-center gap-1.5 rounded-md border border-indigo-300 px-3 py-2 text-[12px] font-medium text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-             aria-label="ดูรายละเอียดทรัพย์สิน">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-            </svg>
+             class="inline-flex items-center gap-1.5 rounded-md border border-indigo-300 px-3 py-2 text-[12px] text-indigo-700 hover:bg-indigo-50">
             ดู
           </a>
           <a href="{{ route('assets.edit',$a) }}"
-             class="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 px-3 py-2 text-[12px] font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600"
-             aria-label="แก้ไขทรัพย์สิน">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-            </svg>
+             class="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 px-3 py-2 text-[12px] text-emerald-700 hover:bg-emerald-50">
             แก้ไข
           </a>
         </div>
@@ -323,6 +326,8 @@ HTML;
     @endforelse
   </div>
 
-  <div class="-mt-3">{{ $assets->links() }}</div>
+  <div class="-mt-3">
+    {{ $assets->links() }}
+  </div>
 </div>
 @endsection

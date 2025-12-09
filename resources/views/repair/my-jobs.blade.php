@@ -17,7 +17,7 @@
     'all'       => 'ทั้งหมด',
   ];
 
-  // label สถานะ (เหมือนหน้าอื่น)
+  // label สถานะ
   $statusLabel = fn(?string $s) => [
     'pending'     => 'รอดำเนินการ',
     'accepted'    => 'รับงานแล้ว',
@@ -27,15 +27,7 @@
     'closed'      => 'ปิดงาน',
   ][strtolower((string)$s)] ?? Str::of((string)$s)->replace('_',' ')->title();
 
-  /*
-   * STATUS COLOR MAPPING (คำสี ๆ ไม่มีกรอบ – ใช้ให้เหมือนหน้าอื่น)
-   *   pending     => text-amber-700
-   *   accepted    => text-indigo-700
-   *   in_progress => text-sky-700
-   *   on_hold     => text-zinc-600
-   *   resolved    => text-emerald-700
-   *   closed      => text-zinc-500
-   */
+  // สีตัวอักษรสถานะ
   $statusTextClass = fn(?string $s) => match(strtolower((string)$s)) {
     'pending'     => 'text-amber-700',
     'accepted'    => 'text-indigo-700',
@@ -54,13 +46,7 @@
     'urgent' => 'เร่งด่วน',
   ][strtolower((string)$p)] ?? '-';
 
-  /*
-   * PRIORITY COLOR MAPPING (คำสี ๆ ไม่มีกรอบ – ให้ตรงกับหน้า Maintenance/Assets)
-   *   low    => text-zinc-500
-   *   medium => text-sky-700
-   *   high   => text-amber-700
-   *   urgent => text-rose-700
-   */
+  // สีตัวอักษรความสำคัญ
   $priorityTextClass = fn(?string $p) => match(strtolower((string)$p)) {
     'low'    => 'text-zinc-500',
     'medium' => 'text-sky-700',
@@ -70,7 +56,8 @@
   };
 @endphp
 
-<div class="pt-3 md:pt-4"></div>
+{{-- ระยะห่างใต้ Navbar (ให้ห่างกว่าปกติชัด ๆ) --}}
+<div class="pt-6 md:pt-8 lg:pt-10"></div>
 
 {{-- MAIN WRAPPER --}}
 <div
@@ -78,7 +65,7 @@
   class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-5 pb-8"
 >
   {{-- ===== Sticky Header + Filter Card ===== --}}
-  <div class="sticky top-[6rem] z-20 bg-slate-50/90 backdrop-blur">
+  <div class="sticky top-[7.25rem] z-20 bg-slate-50/90 backdrop-blur">
     <div class="rounded-lg border border-zinc-300 bg-white shadow-sm">
       <div class="px-5 py-4">
         <div class="flex flex-wrap items-start justify-between gap-4">
@@ -99,23 +86,64 @@
             </div>
           </div>
 
-          {{-- Right: Stats --}}
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 w-full md:w-auto text-[11px]">
-            <div class="min-w-[90px] px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-              <p class="text-[11px] text-zinc-600">รอดำเนินการ</p>
-              <p class="mt-0.5 text-lg font-semibold text-amber-700" id="stat-pending">{{ $stats['pending'] ?? 0 }}</p>
-            </div>
-            <div class="min-w-[90px] px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-              <p class="text-[11px] text-zinc-600">กำลังดำเนินการ</p>
-              <p class="mt-0.5 text-lg font-semibold text-sky-700" id="stat-in-progress">{{ $stats['in_progress'] ?? 0 }}</p>
-            </div>
-            <div class="min-w-[90px] px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-              <p class="text-[11px] text-zinc-600">เสร็จสิ้น</p>
-              <p class="mt-0.5 text-lg font-semibold text-emerald-700" id="stat-completed">{{ $stats['completed'] ?? 0 }}</p>
-            </div>
-            <div class="min-w-[90px] px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-              <p class="text-[11px] text-zinc-600">งานของฉัน (กำลังทำ)</p>
-              <p class="mt-0.5 text-lg font-semibold text-indigo-700" id="stat-my-active">{{ $stats['my_active'] ?? 0 }}</p>
+          {{-- Right: Summary Stats (กล่องแนวนอน + ไอคอน) --}}
+          <div class="w-full md:w-auto flex flex-col md:items-end gap-2">
+            <p class="text-[12px] text-zinc-500 font-medium">
+              สรุปภาพรวมสถานะงานซ่อม
+            </p>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-3 w-full md:w-auto text-[11px]">
+              {{-- Pending --}}
+              <article class="relative overflow-hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                <div class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-[11px] font-semibold text-amber-50">
+                  P
+                </div>
+                <p class="text-[11px] font-medium text-amber-800">
+                  รอดำเนินการ
+                </p>
+                <p id="stat-pending" class="mt-0.5 text-xl font-semibold leading-none text-amber-800">
+                  {{ $stats['pending'] ?? 0 }}
+                </p>
+              </article>
+
+              {{-- In progress --}}
+              <article class="relative overflow-hidden rounded-lg border border-sky-200 bg-sky-50 px-3 py-2.5">
+                <div class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-[11px] font-semibold text-sky-50">
+                  IP
+                </div>
+                <p class="text-[11px] font-medium text-sky-800">
+                  กำลังดำเนินการ
+                </p>
+                <p id="stat-in-progress" class="mt-0.5 text-xl font-semibold leading-none text-sky-700">
+                  {{ $stats['in_progress'] ?? 0 }}
+                </p>
+              </article>
+
+              {{-- Completed --}}
+              <article class="relative overflow-hidden rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                <div class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-[11px] font-semibold text-emerald-50">
+                  C
+                </div>
+                <p class="text-[11px] font-medium text-emerald-800">
+                  เสร็จสิ้น
+                </p>
+                <p id="stat-completed" class="mt-0.5 text-xl font-semibold leading-none text-emerald-700">
+                  {{ $stats['completed'] ?? 0 }}
+                </p>
+              </article>
+
+              {{-- My active --}}
+              <article class="relative overflow-hidden rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2.5">
+                <div class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-semibold text-indigo-50">
+                  MY
+                </div>
+                <p class="text-[11px] font-medium text-indigo-800">
+                  งานของฉัน
+                </p>
+                <p id="stat-my-active" class="mt-0.5 text-xl font-semibold leading-none text-indigo-700">
+                  {{ $stats['my_active'] ?? 0 }}
+                </p>
+              </article>
             </div>
           </div>
         </div>
@@ -188,7 +216,7 @@
   </div>
 
   {{-- ===== Main Table Card ===== --}}
-  <div class="rounded-lg border border-zinc-300 bg-white overflow-hidden">
+  <div class="mt-6 md:mt-8 lg:mt-10 rounded-lg border border-zinc-300 bg-white overflow-hidden">
     @php
       $activeTech = isset($tech) && isset($team) ? $team->firstWhere('id', (int)$tech) : null;
     @endphp
@@ -236,14 +264,14 @@
               {{ $r->asset->name ?? '-' }}
             </td>
 
-            {{-- ความสำคัญ: คำสี ๆ ไม่มีกรอบ --}}
+            {{-- ความสำคัญ --}}
             <td class="px-4 py-3 text-center whitespace-nowrap">
               <span class="text-[12px] font-medium {{ $priorityTextClass($r->priority ?? null) }}">
                 {{ $priorityLabel($r->priority ?? null) }}
               </span>
             </td>
 
-            {{-- สถานะ: คำสี ๆ ไม่มีกรอบ --}}
+            {{-- สถานะ --}}
             <td class="px-4 py-3 text-center whitespace-nowrap">
               <span class="text-[12px] font-medium {{ $statusTextClass($r->status ?? null) }}">
                 {{ $statusLabel($r->status ?? null) }}

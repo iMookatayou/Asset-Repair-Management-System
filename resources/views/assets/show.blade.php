@@ -118,16 +118,6 @@
             พิมพ์ PDF
           </a>
 
-          <a href="{{ url('/api/assets/'.$asset->id.'?pretty=1') }}"
-             target="_blank"
-             class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-            <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
-              <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            JSON
-          </a>
-
           <form method="POST"
                 action="{{ route('assets.destroy', $asset) }}"
                 class="inline-flex"
