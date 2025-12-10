@@ -3,7 +3,8 @@
 
 @section('content')
     <p class="text-sm text-slate-600">
-        Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.
+        ลืมรหัสผ่านใช่ไหม? ให้กรอกอีเมลที่ผูกกับบัญชีของคุณ ระบบจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปทางอีเมลนั้น
+        (แม้ว่าคุณจะใช้เลขบัตรประชาชนในการเข้าสู่ระบบก็ตาม)
     </p>
 
     @if (session('status'))
@@ -18,16 +19,23 @@
         {{-- Email --}}
         <div>
             <label for="email" class="block text-sm font-medium text-slate-700">Email</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
+            <input id="email"
+                   type="email"
+                   name="email"
+                   value="{{ old('email') }}"
+                   required
+                   autofocus
                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2
                           focus:border-[#0E2B51] focus:ring-[#0E2B51]">
             @error('email')
-            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
+                <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
             @enderror
         </div>
 
         <div class="mt-2 flex items-center justify-between">
-            <a href="{{ route('login') }}" class="text-sm text-[#0E2B51] hover:underline">Back to login</a>
+            <a href="{{ route('login') }}" class="text-sm text-[#0E2B51] hover:underline">
+                Back to login
+            </a>
 
             <button class="h-11 px-5 rounded-lg bg-[#0E2B51] text-white font-medium
                            hover:opacity-95 focus:ring-2 focus:ring-offset-2 focus:ring-[#0E2B51]">

@@ -138,7 +138,7 @@
               ข้อมูลนี้เป็นภาพรวมเชิงสถิติของระบบแจ้งซ่อมครุภัณฑ์ ณ ปัจจุบัน
             </div>
             <div class="text-[11px] text-emerald-900/80">
-              ระบบ: Asset Repair Management — Phrapokklao Hospital
+              Asset Repair Management System — Phrapokklao Hospital
             </div>
           </div>
 

@@ -24,8 +24,9 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            // ✅ ใช้ citizen_id แทน email
+            'citizen_id' => ['required', 'digits:13'],
+            'password'   => ['required', 'string'],
         ];
     }
 
@@ -38,11 +39,15 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! Auth::attempt(
+            $this->only('citizen_id', 'password'),
+            $this->boolean('remember')
+        )) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
+                // ✅ ผูก error กับช่อง citizen_id
+                'citizen_id' => __('auth.failed'),
             ]);
         }
 
@@ -65,7 +70,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
+            'citizen_id' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -74,6 +79,9 @@ class LoginRequest extends FormRequest
 
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->input('email')).'|'.$this->ip());
+        // ✅ ใช้ citizen_id + IP เป็น key
+        return Str::transliterate(
+            Str::lower((string) $this->input('citizen_id')) . '|' . $this->ip()
+        );
     }
 }

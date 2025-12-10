@@ -381,7 +381,7 @@ HTML;
 
   {{-- Pagination --}}
   @if($list->hasPages())
-    <div class="mt-3">
+    <div class="mt-3 mb-6 md:mb-10 lg:mb-12"> {{-- เพิ่ม margin-bottom ให้ห่างจาก footer --}}
       {{ $list->withQueryString()->links() }}
     </div>
   @endif

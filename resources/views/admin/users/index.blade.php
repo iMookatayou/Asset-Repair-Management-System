@@ -24,11 +24,12 @@
   {{-- ระยะใต้ navbar ให้เท่าหน้าอื่น ๆ --}}
   <div class="pt-6 md:pt-8 lg:pt-10"></div>
 
-  <div class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-5 user-filter">
+  {{-- ให้โครง wrapper / gap เท่ากับ Maintenance / My Jobs --}}
+  <div class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-4 user-filter">
 
     {{-- ===== Sticky Header + Filter Card ===== --}}
     <div class="sticky top-[6rem] z-20 bg-slate-50/90 backdrop-blur">
-      <div class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      <div class="rounded-lg border border-zinc-300 bg-white shadow-sm">
         <div class="px-5 py-4">
           <div class="flex flex-wrap items-start justify-between gap-4">
             {{-- Left: Icon + Title --}}
@@ -150,7 +151,7 @@
     </div>
 
     {{-- ===== Table ===== --}}
-    <div class="mt-4 md:mt-5 lg:mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+    <div class="mt-6 md:mt-8 lg:mt-10 overflow-x-auto rounded-lg border border-zinc-300 bg-white">
       <table class="min-w-full divide-y divide-zinc-200 text-[13px]">
         <thead class="bg-zinc-50 text-zinc-700">
           <tr>
@@ -193,7 +194,6 @@
                 @php
                   $isSup = method_exists($u,'isSupervisor') ? $u->isSupervisor() : false;
                 @endphp
-                {{-- บทบาท: คำสี ๆ ไม่มีกรอบ --}}
                 <span class="text-[12px] font-medium {{ $isSup ? 'text-emerald-700' : 'text-zinc-700' }}">
                   {{ $u->role_label ?? ($roleLabels[$u->role] ?? ucfirst($u->role)) }}
                 </span>
@@ -243,8 +243,8 @@
       </table>
     </div>
 
-    {{-- Pagination --}}
-    <div class="mt-3">
+    {{-- Pagination ให้ margin ล่างเท่า Maintenance --}}
+    <div class="mt-3 mb-6 md:mb-10 lg:mb-12">
       {{ $list->withQueryString()->links() }}
     </div>
   </div>

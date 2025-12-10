@@ -22,15 +22,31 @@ class RegisteredUserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'lowercase', 'email:rfc', 'max:255', 'unique:' . User::class],
-            'password' => ['required', 'confirmed', Password::defaults()],
+            'name'        => ['required', 'string', 'max:255'],
+
+            'citizen_id'  => [
+                'required',
+                'digits:13',
+                'unique:users,citizen_id',
+            ],
+
+            'email'       => [
+                'nullable',
+                'string',
+                'lowercase',
+                'email:rfc',
+                'max:255',
+                'unique:users,email',
+            ],
+
+            'password'    => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'name'        => $validated['name'],
+            'citizen_id'  => $validated['citizen_id'],
+            'email'       => $validated['email'] ?? null,
+            'password'    => Hash::make($validated['password']),
         ]);
 
         event(new Registered($user));
@@ -39,6 +55,7 @@ class RegisteredUserController extends Controller
         if ($request->expectsJson() || app()->environment('testing')) {
             return response()->noContent();
         }
-        return redirect()->intended(route('dashboard')); 
+
+        return redirect()->intended(route('dashboard'));
     }
 }

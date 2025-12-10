@@ -32,6 +32,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'citizen_id',          // ✅ เพิ่มฟิลด์เลขบัตรประชาชน
         'email',
         'password',
         'department',
@@ -43,6 +44,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        // ถ้าอยากไม่ให้ citizen_id โผล่ใน API response ก็เพิ่มตรงนี้ได้
+        // 'citizen_id',
     ];
 
     protected $appends = [

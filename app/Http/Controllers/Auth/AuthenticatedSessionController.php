@@ -49,7 +49,8 @@ class AuthenticatedSessionController extends Controller
             return back()
                 ->with('toast', [
                     'type'     => 'error',
-                    'message'  => 'Email or Password is incorrect',
+                    // ✅ เปลี่ยนข้อความให้ตรงกับ citizen_id
+                    'message'  => 'เลขบัตรประชาชนหรือรหัสผ่านไม่ถูกต้อง',
                     'position' => 'tr',
                     'timeout'  => 3200,
                 ])

@@ -20,6 +20,7 @@ class UserController extends Controller
             ->select([
                 'id',
                 'name',
+                'citizen_id',           // ✅ เพิ่มเลขบัตร
                 'email',
                 'department',
                 'role',
@@ -49,7 +50,8 @@ class UserController extends Controller
             ->withCount('technicianRatings as rating_count')
             ->when($q, fn ($qq) => $qq->where(function ($w) use ($q) {
                 $w->where('name', 'like', "%{$q}%")
-                ->orWhere('email', 'like', "%{$q}%");
+                  ->orWhere('email', 'like', "%{$q}%")
+                  ->orWhere('citizen_id', 'like', "%{$q}%");   // ✅ search ด้วย citizen_id ได้
             }))
             ->when($role, fn ($qq) => $qq->where('role', $role))
             ->when($dept, fn ($qq) => $qq->where('department', $dept))
@@ -89,16 +91,27 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $data = $request->validate([
-            'name'       => ['sometimes', 'string', 'max:255'],
-            'email'      => [
+            'name'        => ['sometimes', 'string', 'max:255'],
+
+            // ✅ citizen_id optional แต่ถ้ามีต้อง 13 หลัก และไม่ซ้ำคนอื่น
+            'citizen_id'  => [
                 'sometimes',
+                'digits:13',
+                Rule::unique('users', 'citizen_id')->ignore($user->id),
+            ],
+
+            // ✅ email ให้ nullable (เคลียร์เป็น null ได้)
+            'email'       => [
+                'sometimes',
+                'nullable',
                 'email',
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
-            'department' => ['nullable', 'string', 'max:100'],
-            'role'       => ['sometimes', Rule::in(User::availableRoles())],
-            'password'   => ['nullable', 'string', 'min:8'],
+
+            'department'  => ['nullable', 'string', 'max:100'],
+            'role'        => ['sometimes', Rule::in(User::availableRoles())],
+            'password'    => ['nullable', 'string', 'min:8'],
         ]);
 
         // ถ้าไม่มี password หรือว่าง string → ไม่อัปเดต

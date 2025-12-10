@@ -18,7 +18,6 @@ class UserController extends Controller
     public function __construct()
     {
         // ให้เข้าหน้านี้ได้เฉพาะคนที่ล็อกอินแล้ว
-        // ถ้าจะเข้มขึ้น ค่อยเพิ่ม middleware ตรวจ role ทีหลังได้
         $this->middleware('auth');
     }
 
@@ -51,14 +50,15 @@ class UserController extends Controller
                 },
             ]);
 
-        // ค้นหาจากชื่อ, email, department (ตัวพิมพ์เล็ก-ใหญ่ไม่สน)
+        // ค้นหาจากชื่อ, citizen_id, email, department (ตัวพิมพ์เล็ก-ใหญ่ไม่สน)
         $search = trim((string) $request->get('s', ''));
         if ($search !== '') {
             $needle = mb_strtolower($search);
             $q->where(function ($qq) use ($needle) {
                 $qq->whereRaw('LOWER(name) LIKE ?', ["%{$needle}%"])
-                ->orWhereRaw('LOWER(email) LIKE ?', ["%{$needle}%"])
-                ->orWhereRaw('LOWER(COALESCE(department, \'\')) LIKE ?', ["%{$needle}%"]);
+                   ->orWhereRaw('LOWER(email) LIKE ?', ["%{$needle}%"])
+                   ->orWhereRaw('LOWER(citizen_id) LIKE ?', ["%{$needle}%"])
+                   ->orWhereRaw('LOWER(COALESCE(department, \'\')) LIKE ?', ["%{$needle}%"]);
             });
         }
 
@@ -79,7 +79,7 @@ class UserController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        // ⬇️⬇️ เพิ่มตรงนี้ เพื่อให้ dropdown หน่วยงานมีข้อมูล
+        // dropdown หน่วยงาน
         $departments = Department::orderBy('code')->get([
             'id',
             'code',
@@ -108,8 +108,7 @@ class UserController extends Controller
         $roleCodes   = User::availableRoles();
         $roleLabels  = User::roleLabels();
 
-        // ✅ ดึง department ทั้งหมดมาให้เลือกตอน create เหมือนตอน edit
-        $departments = \App\Models\Department::orderBy('code')->get([
+        $departments = Department::orderBy('code')->get([
             'id',
             'code',
             'name_th',
@@ -119,7 +118,7 @@ class UserController extends Controller
         return view('admin.users.create', [
             'roles'       => $roleCodes,
             'roleLabels'  => $roleLabels,
-            'departments' => $departments,   // 👈 ส่งเข้า view แล้ว
+            'departments' => $departments,
         ]);
     }
 
@@ -133,41 +132,47 @@ class UserController extends Controller
         $validator = Validator::make(
             $request->all(),
             [
-                'name'       => ['required', 'string', 'max:255'],
-                'email'      => [
+                'name'        => ['required', 'string', 'max:255'],
+                'citizen_id'  => [
                     'required',
-                    'email', // ไม่เช็ค DNS เพื่อไม่ให้ error แปลก
+                    'digits:13',
+                    'unique:users,citizen_id',
+                ],
+                'email'       => [
+                    'nullable',
+                    'email',
                     'max:255',
                     'unique:users,email',
                 ],
-                'password'   => ['required', 'string', 'min:8', 'confirmed'],
-                'role'       => [
+                'password'    => ['required', 'string', 'min:8', 'confirmed'],
+                'role'        => [
                     'required',
                     'string',
                     Rule::in($availableRoles),
                 ],
-                'department' => [
+                'department'  => [
                     'nullable',
                     'string',
                     'max:255',
-                    // ถ้าต้องการให้ตรงกับ departments.code เสมอ
                     Rule::exists('departments', 'code'),
                 ],
             ],
             [
-                'name.required'      => 'กรุณากรอกชื่อผู้ใช้',
-                'name.max'           => 'ชื่อผู้ใช้ต้องไม่เกิน :max ตัวอักษร',
-                'email.required'     => 'กรุณากรอกอีเมล',
-                'email.email'        => 'รูปแบบอีเมลไม่ถูกต้อง',
-                'email.max'          => 'อีเมลต้องไม่เกิน :max ตัวอักษร',
-                'email.unique'       => 'อีเมลนี้ถูกใช้ไปแล้ว',
-                'password.required'  => 'กรุณากรอกรหัสผ่าน',
-                'password.min'       => 'รหัสผ่านต้องมีอย่างน้อย :min ตัวอักษร',
-                'password.confirmed' => 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน',
-                'role.required'      => 'กรุณาเลือกบทบาทผู้ใช้',
-                'role.in'            => 'บทบาทที่เลือกไม่ถูกต้อง',
-                'department.max'     => 'ชื่อหน่วยงานต้องไม่เกิน :max ตัวอักษร',
-                'department.exists'  => 'หน่วยงานที่เลือกไม่ถูกต้อง',
+                'name.required'         => 'กรุณากรอกชื่อผู้ใช้',
+                'name.max'              => 'ชื่อผู้ใช้ต้องไม่เกิน :max ตัวอักษร',
+                'citizen_id.required'   => 'กรุณากรอกเลขบัตรประชาชน',
+                'citizen_id.digits'     => 'เลขบัตรประชาชนต้องมี 13 หลัก',
+                'citizen_id.unique'     => 'เลขบัตรประชาชนนี้ถูกใช้ไปแล้ว',
+                'email.email'           => 'รูปแบบอีเมลไม่ถูกต้อง',
+                'email.max'             => 'อีเมลต้องไม่เกิน :max ตัวอักษร',
+                'email.unique'          => 'อีเมลนี้ถูกใช้ไปแล้ว',
+                'password.required'     => 'กรุณากรอกรหัสผ่าน',
+                'password.min'          => 'รหัสผ่านต้องมีอย่างน้อย :min ตัวอักษร',
+                'password.confirmed'    => 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน',
+                'role.required'         => 'กรุณาเลือกบทบาทผู้ใช้',
+                'role.in'               => 'บทบาทที่เลือกไม่ถูกต้อง',
+                'department.max'        => 'ชื่อหน่วยงานต้องไม่เกิน :max ตัวอักษร',
+                'department.exists'     => 'หน่วยงานที่เลือกไม่ถูกต้อง',
             ]
         );
 
@@ -189,12 +194,13 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
-            $user = new User();
-            $user->name       = $data['name'];
-            $user->email      = $data['email'];
-            $user->password   = Hash::make($data['password']);
-            $user->role       = $data['role'];
-            $user->department = $data['department'] ?? null;
+            $user              = new User();
+            $user->name        = $data['name'];
+            $user->citizen_id  = $data['citizen_id'];
+            $user->email       = $data['email'] ?? null;
+            $user->password    = Hash::make($data['password']);
+            $user->role        = $data['role'];
+            $user->department  = $data['department'] ?? null;
 
             if (Schema::hasColumn('users', 'created_by')) {
                 $user->created_by = Auth::id();
@@ -232,11 +238,10 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $roleCodes   = User::availableRoles();   // ['admin','supervisor',...]
-        $roleLabels  = User::roleLabels();       // ['admin' => 'ผู้ดูแลระบบ', ...]
+        $roleCodes   = User::availableRoles();
+        $roleLabels  = User::roleLabels();
 
-        // ดึง department ทั้งหมดมาเป็นรายการให้เลือก (ถ้ามี)
-        $departments = \App\Models\Department::orderBy('code')->get([
+        $departments = Department::orderBy('code')->get([
             'id',
             'code',
             'name_th',
@@ -261,20 +266,25 @@ class UserController extends Controller
         $validator = Validator::make(
             $request->all(),
             [
-                'name'       => ['required', 'string', 'max:255'],
-                'email'      => [
+                'name'        => ['required', 'string', 'max:255'],
+                'citizen_id'  => [
                     'required',
+                    'digits:13',
+                    Rule::unique('users', 'citizen_id')->ignore($user->id),
+                ],
+                'email'       => [
+                    'nullable',
                     'email',
                     'max:255',
                     Rule::unique('users', 'email')->ignore($user->id),
                 ],
-                'password'   => ['nullable', 'string', 'min:8', 'confirmed'],
-                'role'       => [
+                'password'    => ['nullable', 'string', 'min:8', 'confirmed'],
+                'role'        => [
                     'required',
                     'string',
                     Rule::in($availableRoles),
                 ],
-                'department' => [
+                'department'  => [
                     'nullable',
                     'string',
                     'max:255',
@@ -282,18 +292,20 @@ class UserController extends Controller
                 ],
             ],
             [
-                'name.required'      => 'กรุณากรอกชื่อผู้ใช้',
-                'name.max'           => 'ชื่อผู้ใช้ต้องไม่เกิน :max ตัวอักษร',
-                'email.required'     => 'กรุณากรอกอีเมล',
-                'email.email'        => 'รูปแบบอีเมลไม่ถูกต้อง',
-                'email.max'          => 'อีเมลต้องไม่เกิน :max ตัวอักษร',
-                'email.unique'       => 'อีเมลนี้ถูกใช้ไปแล้ว',
-                'password.min'       => 'รหัสผ่านต้องมีอย่างน้อย :min ตัวอักษร',
-                'password.confirmed' => 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน',
-                'role.required'      => 'กรุณาเลือกบทบาทผู้ใช้',
-                'role.in'            => 'บทบาทที่เลือกไม่ถูกต้อง',
-                'department.max'     => 'ชื่อหน่วยงานต้องไม่เกิน :max ตัวอักษร',
-                'department.exists'  => 'หน่วยงานที่เลือกไม่ถูกต้อง',
+                'name.required'         => 'กรุณากรอกชื่อผู้ใช้',
+                'name.max'              => 'ชื่อผู้ใช้ต้องไม่เกิน :max ตัวอักษร',
+                'citizen_id.required'   => 'กรุณากรอกเลขบัตรประชาชน',
+                'citizen_id.digits'     => 'เลขบัตรประชาชนต้องมี 13 หลัก',
+                'citizen_id.unique'     => 'เลขบัตรประชาชนนี้ถูกใช้ไปแล้ว',
+                'email.email'           => 'รูปแบบอีเมลไม่ถูกต้อง',
+                'email.max'             => 'อีเมลต้องไม่เกิน :max ตัวอักษร',
+                'email.unique'          => 'อีเมลนี้ถูกใช้ไปแล้ว',
+                'password.min'          => 'รหัสผ่านต้องมีอย่างน้อย :min ตัวอักษร',
+                'password.confirmed'    => 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน',
+                'role.required'         => 'กรุณาเลือกบทบาทผู้ใช้',
+                'role.in'               => 'บทบาทที่เลือกไม่ถูกต้อง',
+                'department.max'        => 'ชื่อหน่วยงานต้องไม่เกิน :max ตัวอักษร',
+                'department.exists'     => 'หน่วยงานที่เลือกไม่ถูกต้อง',
             ]
         );
 
@@ -315,10 +327,11 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
-            $user->name       = $data['name'];
-            $user->email      = $data['email'];
-            $user->role       = $data['role'];
-            $user->department = $data['department'] ?? null;
+            $user->name        = $data['name'];
+            $user->citizen_id  = $data['citizen_id'];
+            $user->email       = $data['email'] ?? null;
+            $user->role        = $data['role'];
+            $user->department  = $data['department'] ?? null;
 
             if (!empty($data['password'])) {
                 $user->password = Hash::make($data['password']);

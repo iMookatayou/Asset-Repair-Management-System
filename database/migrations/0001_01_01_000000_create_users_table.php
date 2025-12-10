@@ -11,9 +11,19 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
 
+            // เลขบัตรประชาชน 13 หลัก (ใช้เป็นหลักในการ Login)
+            $table->string('citizen_id', 13)
+                  ->unique()
+                  ->comment('เลขประจำตัวประชาชน 13 หลัก สำหรับใช้ล็อกอิน');
+
             $table->string('name');
-            $table->string('email')->unique();
+
+            // email ไม่บังคับแล้ว แต่ถ้ามีก็ยังต้องไม่ซ้ำกัน
+            $table->string('email')
+                  ->nullable()
+                  ->unique();
             $table->timestamp('email_verified_at')->nullable();
+
             $table->string('password');
 
             // เก็บรหัสหน่วยงาน (code จากตาราง departments) เผื่อ filter

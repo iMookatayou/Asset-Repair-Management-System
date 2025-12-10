@@ -97,10 +97,16 @@ class DemoDataSeeder extends Seeder
         }
 
         // ===== Admin (ถ้ายังไม่มี) =====
+        // ใช้ citizen_id เป็น key หลักตามระบบใหม่
+        $adminCitizenId = env('DEMO_ADMIN_CITIZEN_ID', '1000000000001');
+        $adminEmail     = 'admin@example.com';
+
         User::firstOrCreate(
-            ['email' => 'admin@example.com'],
+            ['citizen_id' => $adminCitizenId],
             [
                 'name'              => 'System Admin',
+                'citizen_id'        => $adminCitizenId,
+                'email'             => $adminEmail,
                 'password'          => bcrypt('Admin123!'),
                 'role'              => 'admin',
                 'department'        => in_array('IT', $deptCodes, true) ? 'IT' : ($deptCodes[0] ?? null),
@@ -273,7 +279,7 @@ class DemoDataSeeder extends Seeder
         $hasReporterName  = Schema::hasColumn('maintenance_requests', 'reporter_name');
         $hasReporterPhone = Schema::hasColumn('maintenance_requests', 'reporter_phone');
         $hasReporterEmail = Schema::hasColumn('maintenance_requests', 'reporter_email');
-       // (มีคอลัมน์ใหม่อย่าง reporter_position, reporter_ip ก็เติมได้ภายหลังถ้าจะ seed)
+        // (มีคอลัมน์ใหม่อย่าง reporter_position, reporter_ip ก็เติมได้ภายหลังถ้าจะ seed)
         $hasDeptMR        = Schema::hasColumn('maintenance_requests', 'department_id');
         $hasLocationText  = Schema::hasColumn('maintenance_requests', 'location_text');
         $hasPriority      = Schema::hasColumn('maintenance_requests', 'priority');
@@ -677,7 +683,7 @@ class DemoDataSeeder extends Seeder
                 $methods = ['requisition', 'service_fee', 'other'];
                 $method  = $methods[array_rand($methods)];
 
-                // ===== NEW: property_code = เลข รพจ. จาก asset ถ้ามี =====
+                // property_code = เลขครุภัณฑ์จาก asset ถ้ามี
                 $propertyCode = null;
                 if ($hasPropertyCode) {
                     $propertyCode = $req->asset->asset_code ?? null;

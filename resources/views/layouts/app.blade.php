@@ -88,12 +88,18 @@
     /* header ที่ sticky ใต้ navbar (ใช้เฉพาะ page ที่อยาก sticky) */
     .sticky-under-topbar{
       position: sticky;
-      top: calc(var(--nav-h) + 8px); /* ขยับขึ้นเล็กน้อยไม่ให้ดูห่างเกินไป */
+      top: var(--nav-h);   /* ให้เริ่มใต้ navbar พอดี */
       z-index: 10;
     }
     /* กัน margin-top ตัวแรกใน page-header มาดันลงอีก */
     .sticky-under-topbar > *:first-child {
       margin-top: 0 !important;
+    }
+
+    /* ช่องว่างระหว่าง header กับ block แรกของเนื้อหา
+       ใช้กับทุกหน้าที่มี page-header */
+    #main .sticky-under-topbar + * {
+      margin-top: 6rem   /* ถ้ายังรู้สึกชิดอยู่ ปรับเป็น 2.5rem / 3rem ได้เลย */
     }
 
     /* ===== Layout หลัก (sidebar + content) ===== */
@@ -103,7 +109,7 @@
         flex: 1 0 auto;
         min-height: 0 !important;
         transition: grid-template-columns .2s ease;
-        background: #ffffff;          /* หรือจะลบทั้งบรรทัดนี้ก็ได้ */
+        background: #ffffff;
         color: hsl(var(--bc));
     }
 
@@ -116,21 +122,18 @@
 
     /* box โลโก้บน sidebar ให้สูงเท่า navbar */
     .sidebar-logo {
-            height: var(--nav-h);
-            display: flex;
-            align-items: center;
-        }
+        height: var(--nav-h);
+        display: flex;
+        align-items: center;
+    }
 
-        @media (min-width:1024px){
+    @media (min-width:1024px){
         .sidebar{
-        /* ยกเลิก sticky + ความสูง fix */
-        position: static;      /* หรือจะลบทิ้งทั้งบรรทัดก็ได้ */
-        top: auto;
-        align-self: stretch;   /* ให้สูงเท่ากับแถวของ grid (main ยาวแค่ไหน sidebar ยาวเท่านั้น) */
-        height: auto;
-        overflow-y: visible;   /* ไม่มี scrollbar แยกใน sidebar */
-
-        /* ส่วน width / compact / collapsed จะใช้ class อื่นคุมอยู่แล้ว */
+          position: static;
+          top: auto;
+          align-self: stretch;
+          height: auto;
+          overflow-y: visible;
         }
 
         .sidebar.compact{ width:180px !important; }
@@ -313,7 +316,7 @@
 
     <main id="main" class="content" role="main" tabindex="-1">
       @hasSection('page-header')
-        <div class="mb-4 sticky-under-topbar">@yield('page-header')</div>
+        <div class="sticky-under-topbar">@yield('page-header')</div>
       @endif
 
       @if (session('ok'))

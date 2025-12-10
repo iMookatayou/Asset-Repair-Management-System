@@ -11,14 +11,23 @@
     <form method="POST" action="{{ route('login') }}" class="space-y-4">
         @csrf
 
-        {{-- Email --}}
+        {{-- Citizen ID --}}
         <div>
-            <label for="email" class="block text-sm font-medium text-slate-700">Email</label>
-            <input id="email" type="email" name="email" required autofocus autocomplete="username"
+            <label for="citizen_id" class="block text-sm font-medium text-slate-700">
+                CID
+            </label>
+            <input id="citizen_id"
+                   type="text"
+                   name="citizen_id"
+                   value="{{ old('citizen_id') }}"
+                   required
+                   autofocus
+                   maxlength="13"
+                   autocomplete="username"
                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2
                           focus:border-[#0E2B51] focus:ring-[#0E2B51]">
-            @error('email')
-            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
+            @error('citizen_id')
+                <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
             @enderror
         </div>
 
@@ -29,7 +38,7 @@
                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2
                           focus:border-[#0E2B51] focus:ring-[#0E2B51]">
             @error('password')
-            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
+                <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
             @enderror
         </div>
 

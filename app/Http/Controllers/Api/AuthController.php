@@ -34,12 +34,14 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'email'       => ['required','string','email'],
+            'citizen_id'  => ['required','digits:13'],
             'password'    => ['required','string','min:6'],
             'device_name' => ['nullable','string','max:120'],
         ]);
 
-        $key = sprintf('login:%s|%s', Str::lower($data['email']), $request->ip());
+        // ใช้ citizen_id + ip เป็น key ในการ limit
+        $key = sprintf('login:%s|%s', $data['citizen_id'], $request->ip());
+
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
             return response()->json([
@@ -48,11 +50,12 @@ class AuthController extends Controller
             ], Response::HTTP_TOO_MANY_REQUESTS);
         }
 
-        $user = User::where('email', $data['email'])->first();
+        $user = User::where('citizen_id', $data['citizen_id'])->first();
+
         if (! $user || ! Hash::check($data['password'], (string) $user->password)) {
             RateLimiter::hit($key, 60);
             return response()->json([
-                'message' => 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+                'message' => 'เลขบัตรประชาชนหรือรหัสผ่านไม่ถูกต้อง',
                 'code'    => 'invalid_credentials',
             ], Response::HTTP_UNAUTHORIZED);
         }
@@ -67,11 +70,12 @@ class AuthController extends Controller
             'token'      => $token->plainTextToken,
             'token_type' => 'Bearer',
             'user'       => [
-                'id'        => $user->id,
-                'name'      => $user->name,
-                'email'     => $user->email,
-                'role'      => $user->role ?? null,
-                'abilities' => $abilities,
+                'id'         => $user->id,
+                'name'       => $user->name,
+                'citizen_id' => $user->citizen_id,
+                'email'      => $user->email,
+                'role'       => $user->role ?? null,
+                'abilities'  => $abilities,
             ],
         ], Response::HTTP_CREATED);
     }
@@ -80,26 +84,30 @@ class AuthController extends Controller
     {
         $user = $request->user();
         $list = $user->tokens()->latest('id')->get()->map(fn($t) => [
-            'id'         => $t->id,
-            'name'       => $t->name,
-            'abilities'  => $t->abilities,
+            'id'           => $t->id,
+            'name'         => $t->name,
+            'abilities'    => $t->abilities,
             'last_used_at' => $t->last_used_at,
-            'created_at' => $t->created_at,
+            'created_at'   => $t->created_at,
         ]);
+
         return response()->json(['data' => $list]);
     }
 
     public function revokeToken(Request $request, string $tokenId)
     {
-        $user = $request->user();
+        $user  = $request->user();
         $token = $user->tokens()->where('id', $tokenId)->first();
+
         if (! $token) {
             return response()->json([
                 'message' => 'ไม่พบโทเค็น',
                 'code'    => 'token_not_found',
             ], Response::HTTP_NOT_FOUND);
         }
+
         $token->delete();
+
         return response()->json(['message' => 'ยกเลิกโทเค็นเรียบร้อยแล้ว']);
     }
 
@@ -109,6 +117,7 @@ class AuthController extends Controller
         if ($token) {
             $token->delete();
         }
+
         return response()->json(['message' => 'ออกจากระบบเรียบร้อยแล้ว']);
     }
 
@@ -118,18 +127,21 @@ class AuthController extends Controller
         if ($user) {
             $user->tokens()->delete();
         }
+
         return response()->json(['message' => 'ยกเลิกโทเค็นทั้งหมดเรียบร้อยแล้ว']);
     }
 
     public function me(Request $request)
     {
         $u = $request->user();
+
         return response()->json([
-            'id'        => $u->id,
-            'name'      => $u->name,
-            'email'     => $u->email,
-            'role'      => $u->role ?? null,
-            'abilities' => $this->abilitiesFor($u),
+            'id'         => $u->id,
+            'name'       => $u->name,
+            'citizen_id' => $u->citizen_id,
+            'email'      => $u->email,
+            'role'       => $u->role ?? null,
+            'abilities'  => $this->abilitiesFor($u),
         ]);
     }
 }

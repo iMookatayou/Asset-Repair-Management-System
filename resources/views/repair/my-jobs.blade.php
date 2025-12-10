@@ -56,16 +56,16 @@
   };
 @endphp
 
-{{-- ระยะห่างใต้ Navbar (ให้ห่างกว่าปกติชัด ๆ) --}}
+{{-- ระยะห่างใต้ Navbar ให้ตรงกับ Maintenance --}}
 <div class="pt-6 md:pt-8 lg:pt-10"></div>
 
-{{-- MAIN WRAPPER --}}
+{{-- MAIN WRAPPER เหมือน Maintenance: gap-4 ไม่มี pb-8 --}}
 <div
   id="myJobsContainer"
-  class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-5 pb-8"
+  class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-4"
 >
   {{-- ===== Sticky Header + Filter Card ===== --}}
-  <div class="sticky top-[7.25rem] z-20 bg-slate-50/90 backdrop-blur">
+  <div class="sticky top-[6rem] z-20 bg-slate-50/90 backdrop-blur">
     <div class="rounded-lg border border-zinc-300 bg-white shadow-sm">
       <div class="px-5 py-4">
         <div class="flex flex-wrap items-start justify-between gap-4">
@@ -86,63 +86,71 @@
             </div>
           </div>
 
-          {{-- Right: Summary Stats (กล่องแนวนอน + ไอคอน) --}}
+          {{-- Right: Summary Stats --}}
           <div class="w-full md:w-auto flex flex-col md:items-end gap-2">
-            <p class="text-[12px] text-zinc-500 font-medium">
+            <p class="text-[12px] text-zinc-500 font-medium text-right">
               สรุปภาพรวมสถานะงานซ่อม
             </p>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-3 w-full md:w-auto text-[11px]">
+            <div class="flex flex-wrap gap-3 justify-start md:justify-end text-[11px]">
               {{-- Pending --}}
-              <article class="relative overflow-hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-                <div class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-[11px] font-semibold text-amber-50">
-                  P
+              <article class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2.5">
+                <div class="flex flex-col">
+                  <p class="text-[11px] font-medium text-amber-800">
+                    รอดำเนินการ
+                  </p>
+                  <p id="stat-pending" class="mt-0.5 text-xl font-semibold leading-none text-amber-800">
+                    {{ $stats['pending'] ?? 0 }}
+                  </p>
                 </div>
-                <p class="text-[11px] font-medium text-amber-800">
-                  รอดำเนินการ
-                </p>
-                <p id="stat-pending" class="mt-0.5 text-xl font-semibold leading-none text-amber-800">
-                  {{ $stats['pending'] ?? 0 }}
-                </p>
+                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-[11px] font-semibold text-amber-50">
+                  P
+                </span>
               </article>
 
               {{-- In progress --}}
-              <article class="relative overflow-hidden rounded-lg border border-sky-200 bg-sky-50 px-3 py-2.5">
-                <div class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-[11px] font-semibold text-sky-50">
-                  IP
+              <article class="flex items-center gap-3 rounded-lg border border-sky-200 bg-sky-50/80 px-3 py-2.5">
+                <div class="flex flex-col">
+                  <p class="text-[11px] font-medium text-sky-800">
+                    กำลังดำเนินการ
+                  </p>
+                  <p id="stat-in-progress" class="mt-0.5 text-xl font-semibold leading-none text-sky-700">
+                    {{ $stats['in_progress'] ?? 0 }}
+                  </p>
                 </div>
-                <p class="text-[11px] font-medium text-sky-800">
-                  กำลังดำเนินการ
-                </p>
-                <p id="stat-in-progress" class="mt-0.5 text-xl font-semibold leading-none text-sky-700">
-                  {{ $stats['in_progress'] ?? 0 }}
-                </p>
+                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-[11px] font-semibold text-sky-50">
+                  IP
+                </span>
               </article>
 
               {{-- Completed --}}
-              <article class="relative overflow-hidden rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
-                <div class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-[11px] font-semibold text-emerald-50">
-                  C
+              <article class="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                <div class="flex flex-col">
+                  <p class="text-[11px] font-medium text-emerald-800">
+                    เสร็จสิ้น
+                  </p>
+                  <p id="stat-completed" class="mt-0.5 text-xl font-semibold leading-none text-emerald-700">
+                    {{ $stats['completed'] ?? 0 }}
+                  </p>
                 </div>
-                <p class="text-[11px] font-medium text-emerald-800">
-                  เสร็จสิ้น
-                </p>
-                <p id="stat-completed" class="mt-0.5 text-xl font-semibold leading-none text-emerald-700">
-                  {{ $stats['completed'] ?? 0 }}
-                </p>
+                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-[11px] font-semibold text-emerald-50">
+                  C
+                </span>
               </article>
 
               {{-- My active --}}
-              <article class="relative overflow-hidden rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2.5">
-                <div class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-semibold text-indigo-50">
-                  MY
+              <article class="flex items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2.5">
+                <div class="flex flex-col">
+                  <p class="text-[11px] font-medium text-indigo-800">
+                    งานของฉัน
+                  </p>
+                  <p id="stat-my-active" class="mt-0.5 text-xl font-semibold leading-none text-indigo-700">
+                    {{ $stats['my_active'] ?? 0 }}
+                  </p>
                 </div>
-                <p class="text-[11px] font-medium text-indigo-800">
-                  งานของฉัน
-                </p>
-                <p id="stat-my-active" class="mt-0.5 text-xl font-semibold leading-none text-indigo-700">
-                  {{ $stats['my_active'] ?? 0 }}
-                </p>
+                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-semibold text-indigo-50">
+                  MY
+                </span>
               </article>
             </div>
           </div>
@@ -323,9 +331,9 @@
     </div>
   </div>
 
-  {{-- Pagination --}}
+  {{-- Pagination (margin เหมือน Maintenance) --}}
   @if($list->hasPages())
-    <div class="mt-3">
+    <div class="mt-3 mb-6 md:mb-10 lg:mb-12">
       {{ $list->withQueryString()->links() }}
     </div>
   @endif

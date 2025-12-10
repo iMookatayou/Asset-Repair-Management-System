@@ -19,29 +19,35 @@ class MaintenanceRequestSeeder extends Seeder
         DB::transaction(function () {
 
             // ===== USERS =====
-            $reporter = User::firstWhere('email', 'nurse.ppk@example.com');
+            // Reporter (บุคลากร HIM)
+            $reporter = User::firstWhere('citizen_id', '9000000000001');
             if (!$reporter) {
                 $reporter = User::create([
-                    'name'     => 'นางสาวอัญชัน ศรีสมบัติ',
-                    'email'    => 'nurse.ppk@example.com',
-                    'password' => Hash::make('password1234'),
-                    'role'     => User::ROLE_COMPUTER_OFFICER,
-                    'department' => 'HIM',
+                    'name'        => 'นางสาวอัญชัน ศรีสมบัติ',
+                    'citizen_id'  => '9000000000001',                          // ✅ เพิ่ม citizen_id
+                    'email'       => 'nurse.ppk@example.com',
+                    'password'    => Hash::make('password1234'),
+                    'role'        => User::ROLE_COMPUTER_OFFICER,
+                    'department'  => 'HIM',
+                    'email_verified_at' => now(),
                 ]);
             }
 
-            $technician = User::firstWhere('email', 'technician.ppk@example.com');
+            // Technician (ฝ่ายซ่อมบำรุง)
+            $technician = User::firstWhere('citizen_id', '9000000000002');
             if (!$technician) {
                 $technician = User::create([
-                    'name'     => 'นายสมชาย ช่างอาคาร',
-                    'email'    => 'technician.ppk@example.com',
-                    'password' => Hash::make('password1234'),
-                    'role'     => User::ROLE_IT_SUPPORT,
-                    'department' => 'FAC',
+                    'name'        => 'นายสมชาย ช่างอาคาร',
+                    'citizen_id'  => '9000000000002',                          // ✅ เพิ่ม citizen_id
+                    'email'       => 'technician.ppk@example.com',
+                    'password'    => Hash::make('password1234'),
+                    'role'        => User::ROLE_IT_SUPPORT,
+                    'department'  => 'FAC',
+                    'email_verified_at' => now(),
                 ]);
             }
 
-            // ===== DEPARTMENT (ใช้แผนกจริง: Facilities & Maintenance) =====
+            // ===== DEPARTMENT =====
             $dept = $this->upsertDepartment('FAC', 'อาคารสถานที่/ซ่อมบำรุง', 'Facilities & Maintenance');
 
             // ===== ASSET =====
@@ -128,7 +134,7 @@ class MaintenanceRequestSeeder extends Seeder
     private function upsertDepartment(string $code, string $nameTh, ?string $nameEn = null): Department
     {
         $hasNameTh = Schema::hasColumn('departments', 'name_th');
-        $hasName   = Schema::hasColumn('departments', 'name'); // สคีม่าเก่า
+        $hasName   = Schema::hasColumn('departments', 'name'); // legacy
 
         if ($hasNameTh) {
             return Department::updateOrCreate(
@@ -142,7 +148,6 @@ class MaintenanceRequestSeeder extends Seeder
             );
         }
 
-        // กรณี schema ผิดปกติ
         return Department::firstOrCreate(['code' => $code]);
     }
 }
