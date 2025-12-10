@@ -14,7 +14,7 @@
             Create User
           </h1>
           <p class="mt-1 text-sm text-slate-600">
-            ระบุข้อมูลผู้ใช้และกำหนดบทบาทให้ถูกต้อง
+            ระบุข้อมูลผู้ใช้ เลขบัตรประชาชน และกำหนดบทบาทให้ถูกต้อง
           </p>
         </div>
 
@@ -55,6 +55,7 @@
       @include('admin.users._form', [
           'user'        => null,
           'roles'       => $roles,
+          'roleLabels'  => $roleLabels,
           'departments' => $departments,
       ])
 
@@ -263,7 +264,7 @@
       wrapper.insertBefore(icon, wrapper.firstChild);
     }
 
-    // ====== ใช้ id ที่ถูกต้องตาม _form.blade.php ======
+    // ใช้ id ที่ถูกต้องตาม _form.blade.php
     initTomSelectWithIcon('#department_id', '— เลือกหน่วยงาน —');
     initTomSelectWithIcon('#role', '— เลือกบทบาท —');
   });

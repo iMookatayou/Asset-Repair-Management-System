@@ -42,10 +42,30 @@
     @enderror
   </div>
 
-  {{-- อีเมล --}}
+  {{-- เลขบัตรประชาชน 13 หลัก --}}
+  <div class="space-y-1.5">
+    <label for="citizen_id" class="block text-sm font-medium text-slate-700">
+      เลขบัตรประชาชน <span class="text-rose-500">*</span>
+    </label>
+    <input
+      id="citizen_id"
+      name="citizen_id"
+      type="text"
+      inputmode="numeric"
+      maxlength="13"
+      class="{{ $CTL }}"
+      value="{{ old('citizen_id', $user->citizen_id) }}"
+      required
+    >
+    @error('citizen_id')
+      <p class="text-xs text-rose-600 mt-1">{{ $message }}</p>
+    @enderror
+  </div>
+
+  {{-- อีเมล (ไม่บังคับ) --}}
   <div class="space-y-1.5">
     <label for="email" class="block text-sm font-medium text-slate-700">
-      อีเมล <span class="text-rose-500">*</span>
+      อีเมล (ถ้ามี)
     </label>
     <input
       id="email"
@@ -53,82 +73,81 @@
       type="email"
       class="{{ $CTL }}"
       value="{{ old('email', $user->email) }}"
-      required
     >
     @error('email')
       <p class="text-xs text-rose-600 mt-1">{{ $message }}</p>
     @enderror
   </div>
 
-  {{-- หน่วยงาน (ถ้ามี) - TomSelect ใช้ฟังก์ชันเดียวกับ Maintenance --}}
-<div class="space-y-1.5">
-  <label for="department_id" class="block text-sm font-medium text-slate-700">
-    หน่วยงาน (ถ้ามี)
-  </label>
-
-  <div class="relative mt-1">
-    {{-- ไอคอนแว่นขยาย --}}
-    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10 text-slate-400">
-      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2"></circle>
-        <line x1="16" y1="16" x2="20" y2="20"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
-      </svg>
-    </span>
-
-    <select
-      id="department_id"
-      name="department_id"
-      placeholder="— เลือกหน่วยงาน —"
-      class="ts-basic ts-with-icon w-full @error('department_id') ts-error @enderror"
-    >
-      <option value="">— ไม่ระบุหน่วยงาน —</option>
-      @foreach($departments as $dept)
-        <option value="{{ $dept->id }}"
-          @selected(old('department_id', $user->department_id) == $dept->id)>
-          {{ $dept->code }} — {{ $dept->display_name ?? $dept->name }}
-        </option>
-      @endforeach
-    </select>
-  </div>
-
-  @error('department_id')
-    <p class="text-xs text-rose-600 mt-1">{{ $message }}</p>
-  @enderror
-    </div>
-
-    {{-- บทบาท - TomSelect ใช้ฟังก์ชันเดียวกัน --}}
-    <div class="space-y-1.5">
-    <label for="role" class="block text-sm font-medium text-slate-700">
-        บทบาท <span class="text-rose-500">*</span>
+  {{-- หน่วยงาน (เก็บเป็น code ใน users.department) --}}
+  <div class="space-y-1.5">
+    <label for="department_id" class="block text-sm font-medium text-slate-700">
+      หน่วยงาน (ถ้ามี)
     </label>
 
     <div class="relative mt-1">
-        {{-- ไอคอนแว่นขยาย --}}
-        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10 text-slate-400">
+      {{-- ไอคอนแว่นขยาย --}}
+      <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10 text-slate-400">
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2"></circle>
-            <line x1="16" y1="16" x2="20" y2="20"
+          <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2"></circle>
+          <line x1="16" y1="16" x2="20" y2="20"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
         </svg>
-        </span>
+      </span>
 
-        <select
+      <select
+        id="department_id"   {{-- ✅ ให้ JS/TomSelect ใช้ตัวนี้ --}}
+        name="department"    {{-- ✅ backend ใช้ field department (code) --}}
+        placeholder="— เลือกหน่วยงาน —"
+        class="ts-basic ts-with-icon w-full @error('department') ts-error @enderror"
+      >
+        <option value="">— ไม่ระบุหน่วยงาน —</option>
+        @foreach($departments as $dept)
+          <option value="{{ $dept->code }}"
+            @selected(old('department', $user->department) == $dept->code)>
+            {{ $dept->code }} — {{ $dept->display_name ?? $dept->name_th ?? $dept->name_en ?? $dept->name ?? '' }}
+          </option>
+        @endforeach
+      </select>
+    </div>
+
+    @error('department')
+      <p class="text-xs text-rose-600 mt-1">{{ $message }}</p>
+    @enderror
+  </div>
+
+  {{-- บทบาท --}}
+  <div class="space-y-1.5">
+    <label for="role" class="block text-sm font-medium text-slate-700">
+      บทบาท <span class="text-rose-500">*</span>
+    </label>
+
+    <div class="relative mt-1">
+      {{-- ไอคอนแว่นขยาย --}}
+      <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10 text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2"></circle>
+          <line x1="16" y1="16" x2="20" y2="20"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+        </svg>
+      </span>
+
+      <select
         id="role"
         name="role"
         class="ts-basic ts-with-icon w-full @error('role') ts-error @enderror"
         required
-        >
+      >
         @foreach($roles as $role)
-            <option value="{{ $role }}" @selected($currentRole === $role)>
+          <option value="{{ $role }}" @selected($currentRole === $role)>
             {{ $roleLabels[$role] ?? $role }}
-            </option>
+          </option>
         @endforeach
-        </select>
+      </select>
     </div>
 
     @error('role')
-        <p class="text-xs text-rose-600 mt-1">{{ $message }}</p>
+      <p class="text-xs text-rose-600 mt-1">{{ $message }}</p>
     @enderror
   </div>
 
