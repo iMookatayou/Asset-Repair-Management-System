@@ -72,7 +72,8 @@ HTML;
   $location   = $location   ?? request('location');
 @endphp
 
-<div class="pt-3 md:pt-4"></div>
+{{-- ระยะใต้ navbar ให้เท่าหน้า My Jobs / Maintenance --}}
+<div class="pt-6 md:pt-8 lg:pt-10"></div>
 
 <div class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-5">
 
@@ -211,11 +212,8 @@ HTML;
     </div>
   </div>
 
-  {{-- ⭐ Spacer ใต้ Sticky Header --}}
-  <div class="pt-2 md:pt-4 lg:pt-5"></div>
-
   {{-- Table Desktop --}}
-  <div class="hidden md:block rounded-lg border border-zinc-300 bg-white overflow-hidden">
+  <div class="mt-3 md:mt-4 lg:mt-5 hidden md:block rounded-lg border border-zinc-300 bg-white overflow-hidden">
     <div class="relative overflow-x-auto">
       <table class="min-w-full text-[13px]">
         <thead class="bg-zinc-50 border-b border-zinc-200">
@@ -283,7 +281,7 @@ HTML;
   </div>
 
   {{-- Mobile Cards --}}
-  <div class="md:hidden grid gap-3">
+  <div class="mt-3 md:hidden grid gap-3">
     @forelse($assets as $a)
       <div class="rounded-lg border border-zinc-300 bg-white p-4">
         <div class="flex justify-between">

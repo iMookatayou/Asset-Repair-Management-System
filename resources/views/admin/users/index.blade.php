@@ -21,7 +21,8 @@
 @endphp
 
 @section('content')
-  <div class="pt-3 md:pt-4"></div>
+  {{-- ระยะใต้ navbar ให้เท่าหน้าอื่น ๆ --}}
+  <div class="pt-6 md:pt-8 lg:pt-10"></div>
 
   <div class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-5 user-filter">
 
@@ -149,7 +150,7 @@
     </div>
 
     {{-- ===== Table ===== --}}
-    <div class="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+    <div class="mt-4 md:mt-5 lg:mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
       <table class="min-w-full divide-y divide-zinc-200 text-[13px]">
         <thead class="bg-zinc-50 text-zinc-700">
           <tr>

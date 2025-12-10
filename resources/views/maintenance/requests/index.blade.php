@@ -130,7 +130,7 @@ HTML;
 @endphp
 
 {{-- ระยะใต้ navbar --}}
-<div class="pt-3 md:pt-4"></div>
+<div class="pt-6 md:pt-8 lg:pt-10"></div>
 
 <div class="w-full px-4 md:px-6 lg:px-8 flex flex-col gap-4">
   {{-- ===== Sticky Header + Filter Card ===== --}}
@@ -236,11 +236,8 @@ HTML;
     </div>
   </div>
 
-  {{-- spacer ใต้ sticky header กันตารางโดนทับ / ระยะเท่า My Jobs ประมาณ ๆ --}}
-  <div class="h-3 md:h-4 lg:h-5"></div>
-
   {{-- ===== Table Card ===== --}}
-  <div class="rounded-lg border border-zinc-300 bg-white overflow-hidden">
+  <div class="mt-6 md:mt-8 lg:mt-10 rounded-lg border border-zinc-300 bg-white overflow-hidden">
     <div class="relative overflow-x-auto">
       <table class="min-w-full text-[13px]">
         <thead class="bg-zinc-50 border-b border-zinc-200">

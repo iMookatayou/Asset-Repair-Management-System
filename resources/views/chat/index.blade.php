@@ -24,7 +24,10 @@
     }
   </style>
 
-  <div class="max-w-5xl mx-auto py-6 space-y-6">
+  {{-- ระยะใต้ navbar ให้เท่าหน้าอื่น ๆ --}}
+  <div class="pt-6 md:pt-8 lg:pt-10"></div>
+
+  <div class="max-w-5xl mx-auto px-4 pb-8 space-y-4">
 
     {{-- Sticky header + search --}}
     <div class="sticky top-[6rem] z-20 bg-slate-50/90 backdrop-blur">
@@ -63,6 +66,7 @@
       </div>
     </div>
 
+    {{-- การ์ดสร้างกระทู้ใหม่ --}}
     <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div class="p-5 space-y-3">
         <div class="flex items-center justify-between">
@@ -105,6 +109,7 @@
       </div>
     </div>
 
+    {{-- รายการกระทู้ --}}
     <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       <div class="px-5 py-3 border-b border-slate-200 text-sm font-medium text-slate-800">
         กระทูล่าสุด
@@ -137,7 +142,7 @@
                       </svg>
                       Locked
                     @else
-                      {{-- ไอคอนใหม่: bubble แชต + เปิดรับข้อความ --}}
+                      {{-- bubble แชต + เปิดรับข้อความ --}}
                       <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                               d="M5 6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H11l-3.5 3.5a.7.7 0 0 1-1.2-.5V15A3 3 0 0 1 5 12V6z"/>

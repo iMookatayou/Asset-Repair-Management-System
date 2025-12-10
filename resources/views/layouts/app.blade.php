@@ -88,7 +88,7 @@
     /* header ที่ sticky ใต้ navbar (ใช้เฉพาะ page ที่อยาก sticky) */
     .sticky-under-topbar{
       position: sticky;
-      top: calc(var(--nav-h) - 12px);  /* ขยับขึ้นเล็กน้อยไม่ให้ดูห่างเกินไป */
+      top: calc(var(--nav-h) + 8px); /* ขยับขึ้นเล็กน้อยไม่ให้ดูห่างเกินไป */
       z-index: 10;
     }
     /* กัน margin-top ตัวแรกใน page-header มาดันลงอีก */
