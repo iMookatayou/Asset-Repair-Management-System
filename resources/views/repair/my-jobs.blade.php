@@ -54,6 +54,13 @@
     'urgent' => 'text-rose-700',
     default  => 'text-zinc-700',
   };
+
+  // มีการใช้ตัวกรองใด ๆ อยู่ไหม (เอาไว้ใช้ทั้งปุ่มล้างค่า + empty state)
+  $hasActiveFilter =
+    (($q ?? '') !== '') ||
+    (($status ?? '') !== '') ||
+    (($tech ?? '') !== '') ||
+    (($filter ?? 'all') !== 'all');
 @endphp
 
 {{-- ระยะห่างใต้ Navbar ให้ตรงกับ Maintenance --}}
@@ -160,6 +167,7 @@
 
         {{-- Search / Filter Form --}}
         <form method="GET"
+              action="{{ route('repairs.my_jobs') }}"
               class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12">
           {{-- Search --}}
           <div class="md:col-span-5 min-w-0">
@@ -180,8 +188,7 @@
           <div class="md:col-span-2">
             <label for="filter" class="mb-1 block text-[12px] text-zinc-600">ช่วงงาน</label>
             <select id="filter" name="filter"
-                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                    onchange="this.form.submit()">
+                    class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
               @foreach($filterLabels as $key => $label)
                 <option value="{{ $key }}" @selected($filter===$key)>{{ $label }}</option>
               @endforeach
@@ -205,18 +212,48 @@
             <input type="hidden" name="tech" value="{{ $tech }}" />
           @endif
 
-          {{-- Buttons --}}
-          <div class="md:col-span-2 flex items-end gap-2">
-            <button type="submit"
-                    class="inline-flex items-center justify-center rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-[13px] font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
-              ค้นหา
-            </button>
-            @if($q || $status)
-              <a href="{{ route('repairs.my_jobs', ['filter' => $filter] + ($tech ? ['tech'=>$tech] : [])) }}"
-                 class="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-800 hover:bg-zinc-50">
-                ล้างค่า
+          {{-- Buttons: icon-only circular --}}
+          <div class="md:col-span-2 flex items-end justify-end gap-2">
+            @if($hasActiveFilter)
+              {{-- ปุ่มล้างค่า: ล้างทุกอย่าง (q, status, filter, tech, ฯลฯ) --}}
+              <a href="{{ route('repairs.my_jobs') }}"
+                 class="inline-flex h-11 w-11 items-center justify-center rounded-full
+                        border border-emerald-300 bg-emerald-50
+                        text-emerald-700 shadow-sm
+                        hover:bg-emerald-100 hover:border-emerald-400 hover:text-emerald-800
+                        focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1
+                        transition-all duration-150"
+                 title="ล้างตัวกรองทั้งหมด">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-5 w-5"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="1.8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </a>
             @endif
+
+            {{-- ปุ่มค้นหา: ต้องกดปุ่มนี้ถึงจะใช้ตัวกรอง --}}
+            <button type="submit"
+                    class="inline-flex h-11 w-11 items-center justify-center rounded-full
+                           border border-emerald-700 bg-emerald-700
+                           text-white shadow-md
+                           hover:bg-emerald-800 hover:border-emerald-800
+                           focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-1
+                           transition-all duration-150"
+                    title="ค้นหา">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-5 w-5"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </button>
           </div>
         </form>
       </div>
@@ -321,7 +358,26 @@
                 <svg class="w-10 h-10 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <p class="text-[13px]">ไม่พบรายการงานตามเงื่อนไขที่เลือก</p>
+
+                @if($hasActiveFilter)
+                  @if(($filter ?? 'all') === 'my')
+                    <p class="text-[13px]">
+                      คุณยังไม่มีงานที่รับผิดชอบในขณะนี้
+                    </p>
+                  @elseif(($filter ?? 'all') === 'available')
+                    <p class="text-[13px]">
+                      ตอนนี้ยังไม่มีงานว่างให้รับเพิ่มตามเงื่อนไขที่เลือก
+                    </p>
+                  @else
+                    <p class="text-[13px]">
+                      ไม่พบรายการงานตามเงื่อนไขที่เลือก
+                    </p>
+                  @endif
+                @else
+                  <p class="text-[13px]">
+                    ตอนนี้ยังไม่มีงานซ่อมในระบบ
+                  </p>
+                @endif
               </div>
             </td>
           </tr>

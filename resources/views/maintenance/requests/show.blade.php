@@ -47,7 +47,7 @@
 
                 <span class="flex flex-col">
                     <span class="text-[22px] sm:text-[24px] font-semibold">
-                        แบบฟอร์มสรุปงานซ่อม
+                        Repair Summary Form
                     </span>
 
                     <span class="text-[14px] sm:text-[15px] text-slate-600 font-normal flex gap-2 flex-wrap">
@@ -60,48 +60,6 @@
                     </span>
                 </span>
             </h1>
-
-            {{-- META TEXT --}}
-            <div class="flex flex-wrap gap-x-6 gap-y-1 text-[15px] text-slate-700 mt-1">
-
-                <span class="font-semibold text-slate-800">
-                    {{ $req->asset->name ?? 'ไม่ระบุครุภัณฑ์' }}
-                </span>
-
-                <span class="text-slate-600">
-                    สถานะ:
-                    <span class="font-semibold text-slate-900">
-                        {{ $statusLabel }}
-                    </span>
-                </span>
-
-                <span class="text-slate-600">
-                    ความสำคัญ:
-                    <span class="font-semibold
-                        @if($req->priority=='urgent') text-rose-600
-                        @elseif($req->priority=='high') text-amber-600
-                        @elseif($req->priority=='medium') text-sky-600
-                        @else text-zinc-600 @endif">
-                        {{ $prioLabel }}
-                    </span>
-                </span>
-
-                {{-- ทีมช่าง: ICON --}}
-                <span class="inline-flex items-center gap-1 text-slate-600">
-                    <svg class="h-[15px] w-[15px] text-indigo-600" viewBox="0 0 24 24" fill="none">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-                              stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2"/>
-                        <path d="M20 21v-2a3 3 0 0 0-2-2.82M15 3.5a3 3 0 0 1 0 5"
-                              stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    ทีมช่าง:
-                    <span class="font-semibold text-indigo-700">
-                        {{ $workerCount ? $workerCount.' คน' : 'ยังไม่มอบหมาย' }}
-                    </span>
-                </span>
-
-            </div>
 
             {{-- DESCRIPTION --}}
             <p class="mt-2 text-[14.5px] text-slate-600 leading-relaxed">

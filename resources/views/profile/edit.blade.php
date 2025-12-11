@@ -13,7 +13,9 @@
             </svg>
             Edit Profile
           </h1>
-          <p class="mt-1 text-sm text-slate-600">ปรับข้อมูลส่วนตัวของคุณ เช่น ชื่อ อีเมล แผนก และรูปโปรไฟล์</p>
+          <p class="mt-1 text-sm text-slate-600">
+            ปรับข้อมูลส่วนตัวของคุณ เช่น เลขบัตรประชาชน ชื่อ อีเมล แผนก และรูปโปรไฟล์
+          </p>
         </div>
 
         <a href="{{ route('profile.show') }}"
@@ -38,6 +40,9 @@
     $name = trim((string) ($user->name ?? ''));
     $parts = preg_split('/\s+/u', $name) ?: [];
     $initials = strtoupper(mb_substr($parts[0] ?? 'U', 0, 1) . mb_substr($parts[1] ?? '', 0, 1));
+
+    // แผนกปัจจุบัน
+    $currentDeptId = old('department_id', $user->department_id);
   @endphp
 
   <div class="mx-auto max-w-3xl py-6 space-y-5">
@@ -52,6 +57,7 @@
         @csrf
         @method('PATCH')
 
+        {{-- รูปโปรไฟล์ --}}
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-2">รูปโปรไฟล์</label>
 
@@ -91,6 +97,22 @@
           </div>
         </div>
 
+        {{-- citizen_id (อ่านอย่างเดียว) --}}
+        <div>
+          <label for="citizen_id" class="block text-sm font-medium text-slate-700">
+            เลขประจำตัวประชาชน (ใช้เข้าสู่ระบบ)
+          </label>
+          <input id="citizen_id"
+                 type="text"
+                 value="{{ $user->citizen_id }}"
+                 class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 cursor-not-allowed"
+                 readonly>
+          <p class="mt-1 text-xs text-slate-500">
+            ไม่สามารถแก้ไขเลขบัตรจากหน้านี้ได้ หากต้องการเปลี่ยนให้ติดต่อผู้ดูแลระบบ
+          </p>
+        </div>
+
+        {{-- ชื่อ-นามสกุล --}}
         <div>
           <label for="name" class="block text-sm font-medium text-slate-700">ชื่อ-นามสกุล</label>
           <input id="name" name="name" type="text" value="{{ old('name', $user->name) }}" required
@@ -100,36 +122,51 @@
           @error('name') <p class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
         </div>
 
+        {{-- อีเมล (ถ้ามี) --}}
         <div>
-          <label for="email" class="block text-sm font-medium text-slate-700">อีเมล</label>
-          <input id="email" name="email" type="email" value="{{ old('email', $user->email) }}" required
+          <label for="email" class="block text-sm font-medium text-slate-700">อีเมล (ถ้ามี)</label>
+          <input id="email" name="email" type="email" value="{{ old('email', $user->email) }}"
                  class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2
                         focus:border-emerald-600 focus:ring-emerald-600
                         @error('email') border-rose-400 ring-rose-200 @enderror">
           @error('email') <p class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
-          <p class="mt-1 text-xs text-slate-500">เปลี่ยนอีเมลจะทำให้สถานะยืนยันอีเมลถูกรีเซ็ต</p>
+          <p class="mt-1 text-xs text-slate-500">
+            ถ้ามีอีเมล ระบบจะใช้สำหรับรีเซ็ตรหัสผ่านและการแจ้งเตือนต่าง ๆ
+            การเปลี่ยนอีเมลจะทำให้สถานะยืนยันอีเมลถูกรีเซ็ต
+          </p>
         </div>
 
+        {{-- แผนก (department_id) --}}
         <div>
-          <label for="department" class="block text-sm font-medium text-slate-700">แผนก</label>
-          <select id="department" name="department"
+          <label for="department_id" class="block text-sm font-medium text-slate-700">
+            หน่วยงาน (ถ้ามี)
+          </label>
+          <select id="department_id" name="department_id"
                   class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2
                          focus:border-emerald-600 focus:ring-emerald-600
-                         @error('department') border-rose-400 ring-rose-200 @enderror">
-            <option value="">— เลือกแผนก —</option>
+                         @error('department_id') border-rose-400 ring-rose-200 @enderror">
+            <option value="">— ไม่ระบุหน่วยงาน —</option>
             @foreach(\App\Models\Department::query()
-                ->orderByRaw('COALESCE(name_th, name_en, code) asc')
+                ->orderBy('code')
                 ->get() as $dept)
-              <option value="{{ $dept->code }}" @selected(old('department', $user->department) == $dept->code)>
-                {{ $dept->display_name ?? $dept->name ?? ($dept->name_th ?: ($dept->name_en ?: $dept->code)) }}
+              @php
+                $deptLabel = $dept->display_name
+                    ?? $dept->name_th
+                    ?? $dept->name_en
+                    ?? $dept->name
+                    ?? $dept->code;
+              @endphp
+              <option value="{{ $dept->id }}" @selected($currentDeptId == $dept->id)>
+                {{ $dept->code }} — {{ $deptLabel }}
               </option>
             @endforeach
           </select>
-          @error('department') <p class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
+          @error('department_id') <p class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
         </div>
 
         <div class="pt-2">
-          <button type="submit" class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700">
+          <button type="submit"
+                  class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700">
             บันทึกการเปลี่ยนแปลง
           </button>
         </div>
@@ -137,6 +174,7 @@
     </div>
   </div>
 
+  {{-- Modal ครอปรูป --}}
   <div id="cropper-modal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/50"></div>
     <div class="relative mx-auto mt-10 w-[92vw] max-w-2xl rounded-xl bg-white shadow-xl">
@@ -212,7 +250,6 @@
     reader.readAsDataURL(file);
   });
 
-  // ปิด/ยกเลิก
   btnClose.addEventListener('click', closeModal);
   btnCancel.addEventListener('click', () => {
     fileInput.value = '';
@@ -220,7 +257,6 @@
     closeModal();
   });
 
-  // ใช้รูปนี้ -> เซฟเป็น WebP แล้วอัปเดตพรีวิว + ซ่อน fallback
   btnApply.addEventListener('click', () => {
     if (!cropper) return;
 
@@ -248,7 +284,6 @@
     }, 'image/webp', 0.82);
   });
 
-  // ถ้าติ๊ก "ลบรูป" -> เคลียร์ไฟล์ + แสดง fallback
   if (removeBox) {
     removeBox.addEventListener('change', (e) => {
       if (e.target.checked) {

@@ -33,74 +33,52 @@
 @section('page-header')
   <div class="bg-slate-50 border-b border-slate-200">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
-      <div class="flex flex-wrap items-start justify-between gap-4">
 
-        {{-- LEFT: Title + meta --}}
+      <div class="flex flex-wrap justify-between items-start gap-6">
+
+        {{-- LEFT: Title + meta (ใช้โครงเดียวกับ Repair Summary Header) --}}
         <div class="space-y-2">
-          <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-3">
-            <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none">
+
+          <h1 class="text-[26px] font-semibold text-slate-900 flex items-center gap-3 leading-tight">
+
+            {{-- ICON --}}
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none">
                 <path d="M4 7h16v10H4zM9 17V7"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </span>
-            <span class="flex flex-wrap items-baseline gap-2">
-              <span class="text-[18px] sm:text-[20px]">สรุปข้อมูลครุภัณฑ์</span>
-              <span class="text-sm text-slate-500 flex items-center gap-1">
-                รหัส
-                <span class="font-medium text-slate-800">
+
+            <span class="flex flex-col">
+
+              {{-- MAIN TITLE --}}
+              <span class="text-[22px] sm:text-[24px] font-semibold">
+                Summary of Equipment Information
+              </span>
+
+              {{-- SUBTEXT --}}
+              <span class="text-[14px] sm:text-[15px] text-slate-600 font-normal flex gap-2 flex-wrap">
+                รหัสครุภัณฑ์
+                <span class="text-slate-900 font-semibold">
                   {{ $asset->asset_code ?? 'ไม่ระบุ' }}
                 </span>
               </span>
             </span>
           </h1>
 
-          <div class="flex flex-wrap items-center gap-2 text-xs sm:text-[13px]">
-            {{-- สถานะ --}}
-            <span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 {{ $statusTone }}">
-              <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-              {{ $statusLabel }}
-            </span>
-
-            {{-- หน่วยงาน --}}
-            <span class="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-slate-700">
-              <svg class="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none">
-                <path d="M4 12h16M4 7h16M4 17h10"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              {{ $deptName }}
-            </span>
-
-            {{-- หมวดหมู่ --}}
-            <span class="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-slate-700">
-              <svg class="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none">
-                <path d="M4 4h16v7H4zM4 15h10v5H4z"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              {{ $categoryName }}
-            </span>
-          </div>
-
-          <p class="text-xs sm:text-sm text-slate-600">
+          {{-- DESCRIPTION --}}
+          <p class="mt-2 text-[14.5px] text-slate-600 leading-relaxed">
             หน้านี้ใช้สำหรับสรุปข้อมูลครุภัณฑ์ ประวัติการซ่อม และไฟล์แนบที่เกี่ยวข้อง
           </p>
+
         </div>
 
-        {{-- RIGHT: actions --}}
-        <div class="ml-auto flex flex-wrap items-center gap-2">
-          <a href="{{ route('assets.index') }}"
-             class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-             aria-label="Back to list">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
-              <path d="M15 18l-6-6 6-6"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            กลับหน้ารายการ
-          </a>
+        {{-- RIGHT: ACTION BUTTONS ให้ layout/size เหมือน Header ใบงานซ่อม --}}
+        <div class="flex flex-col sm:flex-row flex-wrap gap-2 items-start sm:items-center">
 
           <a href="{{ route('assets.edit', $asset) }}"
-             class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-            <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
+             class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-[14px] text-slate-700 hover:bg-slate-50">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
               <path d="M4 21h4l10-10-4-4L4 17v4zM13 7l4 4"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -109,8 +87,8 @@
 
           <a href="{{ route('assets.print', $asset) }}"
              target="_blank"
-             class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-            <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
+             class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-[14px] text-slate-700 hover:bg-slate-50">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
               <path d="M6 9V4h12v5M6 19h12v-6H6v6z"
                     stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round"/>
@@ -123,7 +101,8 @@
                 class="inline-flex"
                 onsubmit="window.dispatchEvent(new CustomEvent('app:toast',{detail:{type:'info',message:'กำลังลบ...'}})); return confirm('ต้องการลบครุภัณฑ์นี้หรือไม่?')">
             @csrf @method('DELETE')
-            <button class="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm text-rose-700 hover:bg-rose-50">
+            <button
+              class="inline-flex items-center gap-2 rounded-lg border border-rose-300 bg-white px-4 py-2 text-[14px] text-rose-700 hover:bg-rose-50">
               <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
                 <path d="M3 6h18M8 6v12M16 6v12M5 6l1 14a2 2 0 002 2h8a2 2 0 002-2l1-14M10 6V4h4v2"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -131,7 +110,19 @@
               ลบ
             </button>
           </form>
+
+          <a href="{{ route('assets.index') }}"
+             class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-[14px] text-slate-700 hover:bg-slate-50"
+             aria-label="Back to list">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18l-6-6 6-6"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            กลับหน้ารายการ
+          </a>
+
         </div>
+
       </div>
     </div>
   </div>

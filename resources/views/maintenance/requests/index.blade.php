@@ -174,12 +174,12 @@ HTML;
               class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end"
               onsubmit="showLoader()">
 
-          {{-- ใช้ค่าที่ controller+session จัดการให้แล้ว --}}
+          {{-- hidden: sort --}}
           <input type="hidden" name="sort_by"  value="{{ $sortBy }}">
           <input type="hidden" name="sort_dir" value="{{ $sortDir }}">
 
           {{-- Search --}}
-          <div class="md:col-span-7 min-w-0">
+          <div class="md:col-span-5 min-w-0">
             <label for="q" class="mb-1 block text-[12px] text-zinc-600">คำค้นหา</label>
             <div class="relative">
               <input id="q" type="text" name="q" value="{{ $q }}"
@@ -194,7 +194,7 @@ HTML;
           </div>
 
           {{-- Status --}}
-          <div class="md:col-span-3">
+          <div class="md:col-span-2">
             <label for="status" class="mb-1 block text-[12px] text-zinc-600">สถานะ</label>
             <select id="status" name="status"
                     class="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
@@ -203,21 +203,6 @@ HTML;
                 <option value="{{ $k }}" @selected($status === $k)>{{ $v }}</option>
               @endforeach
             </select>
-          </div>
-
-          {{-- Buttons --}}
-          <div class="md:col-span-2 flex items-end justify-end gap-2">
-            @if(request()->hasAny(['q','status','priority','sort_by','sort_dir']))
-              <a href="{{ route('maintenance.requests.index') }}"
-                 class="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-800 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-                 onclick="showLoader()">
-                ล้างตัวกรอง
-              </a>
-            @endif
-            <button type="submit"
-                    class="inline-flex items-center justify-center rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-[13px] font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
-              ค้นหา
-            </button>
           </div>
 
           {{-- Priority --}}
@@ -230,6 +215,53 @@ HTML;
                 <option value="{{ $k }}" @selected($priority === $k)>{{ $v }}</option>
               @endforeach
             </select>
+          </div>
+
+          {{-- Buttons: icon-only circular (สีเดียวกับ My Jobs + ล้างโชว์ตลอด) --}}
+          <div class="md:col-span-2 flex items-end justify-end gap-2">
+            {{-- ปุ่มล้างตัวกรอง: ล้างทุกอย่างกลับ index โล่ง ๆ --}}
+            <a href="{{ route('maintenance.requests.index') }}"
+               onclick="showLoader()"
+               aria-label="ล้างตัวกรอง"
+               title="ล้างตัวกรอง"
+               class="inline-flex h-11 w-11 items-center justify-center rounded-full
+                      border border-emerald-300 bg-emerald-50
+                      text-emerald-700 shadow-sm
+                      hover:bg-emerald-100 hover:border-emerald-400 hover:text-emerald-800
+                      focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1
+                      transition-all duration-150">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-5 w-5"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span class="sr-only">ล้างตัวกรอง</span>
+            </a>
+
+            {{-- ปุ่มค้นหา: ต้องกดถึงจะ apply filter (สีเดียวกับปุ่ม Search ของ My Jobs) --}}
+            <button type="submit"
+                    aria-label="ค้นหา"
+                    title="ค้นหา"
+                    class="inline-flex h-11 w-11 items-center justify-center rounded-full
+                           border border-emerald-700 bg-emerald-700
+                           text-white shadow-md
+                           hover:bg-emerald-800 hover:border-emerald-800 hover:shadow-lg
+                           focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-1
+                           transition-all duration-150">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-5 w-5"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <span class="sr-only">ค้นหา</span>
+            </button>
           </div>
         </form>
       </div>
@@ -363,13 +395,42 @@ HTML;
             </td>
           </tr>
         @empty
+          @php
+            $hasFilter =
+              (($q ?? null) && $q !== '') ||
+              (($status ?? null) && $status !== '') ||
+              (($priority ?? null) && $priority !== '');
+          @endphp
           <tr>
             <td colspan="7" class="p-12 text-center text-zinc-600">
               <div class="flex flex-col items-center gap-2">
                 <svg class="w-10 h-10 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <p class="text-[13px]">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</p>
+
+                @if($hasFilter)
+                  @if($q && !$status && !$priority)
+                    <p class="text-[13px]">
+                      ไม่พบคำขอบำรุงรักษาตามคำค้นหาที่ระบุ
+                    </p>
+                  @elseif($status && !$priority)
+                    <p class="text-[13px]">
+                      ไม่พบคำขอบำรุงรักษาตามสถานะที่เลือก
+                    </p>
+                  @elseif($priority && !$status)
+                    <p class="text-[13px]">
+                      ไม่พบคำขอบำรุงรักษาตามระดับความสำคัญที่เลือก
+                    </p>
+                  @else
+                    <p class="text-[13px]">
+                      ไม่พบคำขอบำรุงรักษาตามเงื่อนไขที่เลือก
+                    </p>
+                  @endif
+                @else
+                  <p class="text-[13px]">
+                    ตอนนี้ยังไม่มีคำขอบำรุงรักษาในระบบ
+                  </p>
+                @endif
               </div>
             </td>
           </tr>
@@ -381,7 +442,7 @@ HTML;
 
   {{-- Pagination --}}
   @if($list->hasPages())
-    <div class="mt-3 mb-6 md:mb-10 lg:mb-12"> {{-- เพิ่ม margin-bottom ให้ห่างจาก footer --}}
+    <div class="mt-3 mb-6 md:mb-10 lg:mb-12">
       {{ $list->withQueryString()->links() }}
     </div>
   @endif

@@ -37,7 +37,10 @@
             href="{{ route('maintenance.requests.index') }}"
             class="maint-btn maint-btn-outline"
           >
-            ย้อนกลับ
+        <svg class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          กลับ
           </a>
         </div>
       </div>
@@ -47,7 +50,6 @@
 
 @section('content')
   <div class="pt-3 md:pt-4"></div>
-
   {{-- กล่อง error รวม --}}
   @if ($errors->any())
     <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 mb-4">

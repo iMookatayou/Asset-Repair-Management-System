@@ -76,6 +76,16 @@ HTML;
     'in_repair' => 'อยู่ระหว่างซ่อม',
     'disposed'  => 'จำหน่ายแล้ว',
   ];
+
+  // ใช้ flag สำหรับ empty state
+  $hasQ        = ($q ?? '') !== '';
+  $hasStatus   = ($status ?? '') !== '';
+  $hasCategory = ($categoryId ?? '') !== '';
+  $hasDept     = ($deptId ?? '') !== '';
+  $hasType     = ($type ?? '') !== '';
+  $hasLocation = ($location ?? '') !== '';
+
+  $hasFilter = $hasQ || $hasStatus || $hasCategory || $hasDept || $hasType || $hasLocation;
 @endphp
 
 {{-- ระยะใต้ navbar เหมือน Maintenance --}}
@@ -153,17 +163,50 @@ HTML;
             </select>
           </div>
 
-          {{-- ปุ่มค้นหา --}}
+          {{-- ปุ่มค้นหา (แบบกลม icon-only, สีเดียวกับ My Jobs / Maintenance) --}}
           <div class="md:col-span-2 flex items-end justify-end gap-2">
-            @if(request()->hasAny(['q','status','category_id','department_id','type','location','sort_by','sort_dir']))
-              <a href="{{ route('assets.index') }}"
-                 class="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-800 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-                 onclick="showLoader()">
-                ล้างตัวกรอง
-              </a>
-            @endif
-            <button class="inline-flex items-center justify-center rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-[13px] font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
-              ค้นหา
+            {{-- ล้างตัวกรอง: ล้างทุกค่ากลับ assets.index โล่ง ๆ --}}
+            <a href="{{ route('assets.index') }}"
+               onclick="showLoader()"
+               aria-label="ล้างตัวกรอง"
+               title="ล้างตัวกรอง"
+               class="inline-flex h-11 w-11 items-center justify-center rounded-full
+                      border border-emerald-300 bg-emerald-50
+                      text-emerald-700 shadow-sm
+                      hover:bg-emerald-100 hover:border-emerald-400 hover:text-emerald-800
+                      focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1
+                      transition-all duration-150">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-5 w-5"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span class="sr-only">ล้างตัวกรอง</span>
+            </a>
+
+            {{-- ค้นหา: ต้องกดปุ่มนี้ถึงจะ apply filters --}}
+            <button type="submit"
+                    aria-label="ค้นหา"
+                    title="ค้นหา"
+                    class="inline-flex h-11 w-11 items-center justify-center rounded-full
+                           border border-emerald-700 bg-emerald-700
+                           text-white shadow-md
+                           hover:bg-emerald-800 hover:border-emerald-800 hover:shadow-lg
+                           focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-1
+                           transition-all duration-150">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-5 w-5"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <span class="sr-only">ค้นหา</span>
             </button>
           </div>
 
@@ -288,7 +331,42 @@ HTML;
                 <svg class="w-10 h-10 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <p class="text-[13px]">ไม่พบข้อมูลทรัพย์สิน</p>
+
+                @if($hasFilter)
+                  @if($hasQ && !$hasStatus && !$hasCategory && !$hasDept && !$hasType && !$hasLocation)
+                    <p class="text-[13px]">
+                      ไม่พบทรัพย์สินตามคำค้นหาที่ระบุ
+                    </p>
+                  @elseif($hasStatus && !$hasQ && !$hasCategory && !$hasDept && !$hasType && !$hasLocation)
+                    <p class="text-[13px]">
+                      ไม่พบทรัพย์สินตามสถานะการใช้งานที่เลือก
+                    </p>
+                  @elseif($hasCategory && !$hasQ && !$hasStatus && !$hasDept && !$hasType && !$hasLocation)
+                    <p class="text-[13px]">
+                      ไม่พบทรัพย์สินตามหมวดหมู่ที่เลือก
+                    </p>
+                  @elseif($hasDept && !$hasQ && !$hasStatus && !$hasCategory && !$hasType && !$hasLocation)
+                    <p class="text-[13px]">
+                      ไม่พบทรัพย์สินตามหน่วยงานที่เลือก
+                    </p>
+                  @elseif($hasType && !$hasQ && !$hasStatus && !$hasCategory && !$hasDept && !$hasLocation)
+                    <p class="text-[13px]">
+                      ไม่พบทรัพย์สินตามประเภทที่เลือก
+                    </p>
+                  @elseif($hasLocation && !$hasQ && !$hasStatus && !$hasCategory && !$hasDept && !$hasType)
+                    <p class="text-[13px]">
+                      ไม่พบทรัพย์สินตามที่ตั้งที่ระบุ
+                    </p>
+                  @else
+                    <p class="text-[13px]">
+                      ไม่พบข้อมูลทรัพย์สินตามเงื่อนไขที่เลือก
+                    </p>
+                  @endif
+                @else
+                  <p class="text-[13px]">
+                    ตอนนี้ยังไม่มีข้อมูลทรัพย์สินในระบบ
+                  </p>
+                @endif
               </div>
             </td>
           </tr>
@@ -341,7 +419,11 @@ HTML;
       </div>
     @empty
       <div class="rounded-lg border border-zinc-300 bg-white p-8 text-center text-zinc-600 text-[13px]">
-        ไม่พบข้อมูลทรัพย์สิน
+        @if($hasFilter)
+          ไม่พบข้อมูลทรัพย์สินตามเงื่อนไขที่เลือก
+        @else
+          ตอนนี้ยังไม่มีข้อมูลทรัพย์สินในระบบ
+        @endif
       </div>
     @endforelse
   </div>

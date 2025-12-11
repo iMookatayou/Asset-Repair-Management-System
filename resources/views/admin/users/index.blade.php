@@ -18,6 +18,12 @@
 
   $BTN = 'h-10 text-xs md:text-sm inline-flex items-center gap-2 rounded-lg px-3 md:px-3.5 font-medium leading-5
           focus:outline-none focus:ring-2 whitespace-nowrap';
+
+  // flags สำหรับ empty state
+  $hasS      = ($filters['s'] ?? '') !== '';
+  $hasRole   = ($filters['role'] ?? '') !== '';
+  $hasDept   = ($filters['department'] ?? '') !== '';
+  $hasFilter = $hasS || $hasRole || $hasDept;
 @endphp
 
 @section('content')
@@ -51,101 +57,127 @@
             {{-- Right: ปุ่มสร้างผู้ใช้ --}}
             <div class="flex shrink-0 items-center">
               <a href="{{ route('admin.users.create') }}"
-                 class="{{ $BTN }} min-w-[120px] justify-center bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500">
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 5v14M5 12h14"/>
+                 onclick="showLoader()"
+                 class="{{ $BTN }} inline-flex items-center gap-1.5 rounded-md border border-emerald-700 bg-emerald-700 px-3.5 py-2 text-[13px] font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
                 </svg>
-                <span class="hidden sm:inline">สร้างผู้ใช้ใหม่</span>
-                <span class="sm:hidden">สร้าง</span>
+                สร้างผู้ใช้ใหม่
               </a>
             </div>
           </div>
 
           <div class="mt-4 h-px bg-zinc-200"></div>
 
-          {{-- Search / Filter Form --}}
-          <form method="GET" class="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-12">
-            {{-- Search (ชื่อ / อีเมล / หน่วยงาน) --}}
-            <div class="lg:col-span-5 min-w-0">
-              <label for="s" class="mb-1 block text-[12px] text-zinc-600">คำค้นหา</label>
-              <div class="relative">
-                <input
-                  id="s"
-                  type="text"
-                  name="s"
-                  value="{{ $filters['s'] }}"
-                  placeholder="เช่น ชื่อผู้ใช้, อีเมล, หน่วยงาน"
-                  class="w-full rounded-md border border-zinc-300 pl-10 pr-3 py-2 text-[13px] placeholder:text-zinc-400
-                         focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600"
-                >
-                <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-zinc-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"
+          {{-- Filter Form --}}
+          <form method="GET" class="mt-4 flex flex-col gap-3" onsubmit="showLoader()">
+
+            {{-- แถวบน: ค้นหา + ปุ่มอยู่ขวา --}}
+            <div class="flex flex-col lg:flex-row items-start lg:items-end gap-3">
+
+              {{-- Search --}}
+              <div class="flex-1 min-w-[260px]">
+                <label class="mb-1 block text-[12px] text-zinc-600">คำค้นหา</label>
+                <div class="relative">
+                  <input name="s" value="{{ $filters['s'] }}"
+                         placeholder="เช่น ชื่อผู้ใช้, อีเมล, หน่วยงาน"
+                         class="w-full rounded-md border border-zinc-300 pl-10 pr-3 py-2 text-[13px]
+                                focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600">
+                  <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-zinc-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"
+                            d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              {{-- ปุ่มค้นหา / ล้างค่า (ยึดขวาบนเสมอ, icon-only กลม) --}}
+              <div class="flex justify-end gap-2 w-full lg:w-auto lg:ml-auto shrink-0">
+
+                {{-- ล้างค่า: กลับ index โล่ง ๆ --}}
+                <a href="{{ route('admin.users.index') }}"
+                   onclick="showLoader()"
+                   aria-label="ล้างค่า"
+                   title="ล้างค่า"
+                   class="inline-flex h-11 w-11 items-center justify-center rounded-full
+                          border border-emerald-300 bg-emerald-50
+                          text-emerald-700 shadow-sm
+                          hover:bg-emerald-100 hover:border-emerald-400 hover:text-emerald-800
+                          focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1
+                          transition-all duration-150">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       class="h-5 w-5"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <span class="sr-only">ล้างค่า</span>
+                </a>
+
+                {{-- ค้นหา: ต้องกดถึงจะ apply filter --}}
+                <button type="submit"
+                        aria-label="ค้นหา"
+                        title="ค้นหา"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-full
+                               border border-emerald-700 bg-emerald-700
+                               text-white shadow-md
+                               hover:bg-emerald-800 hover:border-emerald-800 hover:shadow-lg
+                               focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-1
+                               transition-all duration-150">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       class="h-5 w-5"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round"
                           d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
                   </svg>
-                </span>
+                  <span class="sr-only">ค้นหา</span>
+                </button>
               </div>
             </div>
 
-            {{-- Role (TomSelect) --}}
-            <div class="lg:col-span-3">
-              <label for="filter_role" class="mb-1 block text-[12px] text-zinc-600">บทบาท</label>
-              <div class="relative">
-                <select
-                  id="filter_role"
-                  name="role"
-                  class="ts-basic w-full h-10 rounded-md border border-zinc-300 bg-white text-sm text-zinc-800"
-                  data-placeholder="บทบาททั้งหมด"
-                >
+            {{-- แถวล่าง: Role + Department --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+
+              {{-- Role --}}
+              <div>
+                <label class="mb-1 block text-[12px] text-zinc-600">บทบาท</label>
+                <select id="filter_role" name="role"
+                        class="ts-basic w-full h-10 rounded-md border border-zinc-300 bg-white text-sm text-zinc-800"
+                        data-placeholder="บทบาททั้งหมด">
                   <option value="">บทบาททั้งหมด</option>
                   @foreach ($roles as $r)
                     <option value="{{ $r }}" @selected($filters['role'] === $r)>
-                      {{ $roleLabels[$r] ?? ucfirst($r) }}
+                      {{ $roleLabels[$r] }}
                     </option>
                   @endforeach
                 </select>
               </div>
-            </div>
 
-            {{-- Department (TomSelect) --}}
-            <div class="lg:col-span-3">
-              <label for="filter_department" class="mb-1 block text-[12px] text-zinc-600">หน่วยงาน</label>
-              <div class="relative">
-                <select
-                  id="filter_department"
-                  name="department"
-                  class="ts-basic w-full h-10 rounded-md border border-zinc-300 bg-white text-sm text-zinc-800"
-                  data-placeholder="ทุกหน่วยงาน"
-                >
+              {{-- Department --}}
+              <div>
+                <label class="mb-1 block text-[12px] text-zinc-600">หน่วยงาน</label>
+                <select id="filter_department" name="department"
+                        class="ts-basic w-full h-10 rounded-md border border-zinc-300 bg-white text-sm text-zinc-800"
+                        data-placeholder="ทุกหน่วยงาน">
                   <option value="">ทุกหน่วยงาน</option>
                   @foreach ($departments as $dept)
-                    @php
-                      $code = $dept->code ?? $dept->id;
-                      $name = $dept->name ?? ($dept->name_th ?? $dept->name_en ?? $code);
-                    @endphp
-                    <option value="{{ $code }}" @selected(($filters['department'] ?? '') === (string) $code)>
-                      {{ $name }}
+                    <option value="{{ $dept->code ?? $dept->id }}" @selected($filters['department'] == ($dept->code ?? $dept->id))>
+                      {{ $dept->name }}
                     </option>
                   @endforeach
                 </select>
               </div>
+
             </div>
 
-            {{-- Buttons --}}
-            <div class="lg:col-span-1 flex items-end gap-2">
-              <button type="submit"
-                      class="inline-flex items-center justify-center rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-[13px] font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600">
-                ค้นหา
-              </button>
-
-              @if(request()->hasAny(['s','role','department']))
-                <a href="{{ route('admin.users.index') }}"
-                   class="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-800 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400">
-                  ล้างค่า
-                </a>
-              @endif
-            </div>
           </form>
+
         </div>
       </div>
     </div>
@@ -160,7 +192,7 @@
             <th class="px-3 py-2 text-center font-semibold whitespace-nowrap hidden lg:table-cell">หน่วยงาน</th>
             <th class="px-3 py-2 text-center font-semibold whitespace-nowrap hidden md:table-cell">บทบาท</th>
             <th class="px-3 py-2 text-center font-semibold whitespace-nowrap hidden xl:table-cell">สร้างเมื่อ</th>
-            <th class="px-3 py-2 text-center font-semibold whitespace-nowrap min-w-[180px]">การดำเนินการ</th>
+            <th class="px-3 py-2 text-center font-semibold whitespace-nowrap min-w-[160px]">การดำเนินการ</th>
           </tr>
         </thead>
 
@@ -206,18 +238,18 @@
               <td class="px-3 py-2 text-center align-middle whitespace-nowrap">
                 <div class="h-full flex items-center justify-center gap-1.5">
                   <a href="{{ route('admin.users.edit', $u) }}"
-                     class="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 px-2.5 md:px-3 py-1.5 text-[11px] md:text-xs font-medium text-emerald-700 hover:bg-emerald-50 whitespace-nowrap min-w-[74px] justify-center">
+                     class="inline-flex items-center gap-1 rounded-md border border-emerald-300 px-2.5 py-1.5 text-[11px] md:text-xs font-medium text-emerald-700 hover:bg-emerald-50 whitespace-nowrap min-w-[64px] justify-center">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M12 20h9"/>
                       <path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/>
                     </svg>
                     <span class="hidden sm:inline">แก้ไข</span>
-                    <span class="sm:hidden">แก้ไข</span>
+                    <span class="sm:hidden">แก้</span>
                   </a>
 
                   @if($u->id !== auth()->id())
                     <button type="button"
-                            class="inline-flex items-center gap-1.5 rounded-md border border-rose-300 px-2.5 md:px-3 py-1.5 text-[11px] md:text-xs font-medium text-rose-600 hover:bg-rose-50 whitespace-nowrap min-w-[74px] justify-center"
+                            class="inline-flex items-center gap-1 rounded-md border border-rose-300 px-2.5 py-1.5 text-[11px] md:text-xs font-medium text-rose-600 hover:bg-rose-50 whitespace-nowrap min-w-[60px] justify-center"
                             onclick="return window.confirmDeleteUser('{{ route('admin.users.destroy', $u) }}');">
                       <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 6h18"/>
@@ -234,8 +266,37 @@
             </tr>
           @empty
             <tr>
-              <td colspan="6" class="px-3 py-6 text-center text-zinc-500">
-                ไม่พบผู้ใช้
+              <td colspan="6" class="px-3 py-10 text-center text-zinc-500">
+                <div class="flex flex-col items-center gap-2">
+                  <svg class="w-10 h-10 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+
+                  @if($hasFilter)
+                    @if($hasS && !$hasRole && !$hasDept)
+                      <p class="text-[13px]">
+                        ไม่พบผู้ใช้ตามคำค้นหาที่ระบุ
+                      </p>
+                    @elseif($hasRole && !$hasS && !$hasDept)
+                      <p class="text-[13px]">
+                        ไม่พบผู้ใช้ตามบทบาทที่เลือก
+                      </p>
+                    @elseif($hasDept && !$hasS && !$hasRole)
+                      <p class="text-[13px]">
+                        ไม่พบผู้ใช้ตามหน่วยงานที่เลือก
+                      </p>
+                    @else
+                      <p class="text-[13px]">
+                        ไม่พบผู้ใช้ตามเงื่อนไขที่เลือก
+                      </p>
+                    @endif
+                  @else
+                    <p class="text-[13px]">
+                      ตอนนี้ยังไม่มีผู้ใช้ในระบบ
+                    </p>
+                  @endif
+                </div>
               </td>
             </tr>
           @endforelse
@@ -270,11 +331,11 @@
 
   .user-filter .ts-wrapper.ts-basic .ts-control {
     position: relative;
-    border-radius: 0.375rem;               /* rounded-md */
-    border: 1px solid rgb(212 212 216);    /* zinc-300 */
+    border-radius: 0.375rem;
+    border: 1px solid rgb(212 212 216);
     padding: 0 0.75rem;
     box-shadow: none;
-    min-height: 40px;                      /* h-10 */
+    min-height: 40px;
     background-color: #fff;
     display: flex;
     align-items: center;
