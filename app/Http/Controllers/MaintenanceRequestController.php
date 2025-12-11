@@ -211,6 +211,8 @@ class MaintenanceRequestController extends Controller
 
             'rating',
             'rating.rater:id,name',
+
+            'operationLog.user:id,name',
         ]);
 
         // รายชื่อทีมงาน (หัวหน้า + ช่าง) สำหรับ dropdown เลือกผู้รับผิดชอบ
@@ -323,6 +325,15 @@ class MaintenanceRequestController extends Controller
             'department_id' => ['nullable','integer','exists:departments,id'],
             'location_text' => ['nullable','string','max:255'],
             'files.*'       => $fileRules,
+
+            // 🔹 เพิ่มฟิลด์ของใบเบิก / operation log
+            'operation_date'   => ['nullable', 'date'],
+            'operation_method' => ['nullable', Rule::in(['requisition','service_fee','other'])],
+            'property_code'    => ['nullable', 'string', 'max:100'],
+            'require_precheck' => ['nullable', 'boolean'],
+            'remark'           => ['nullable', 'string'],
+            'issue_software'   => ['nullable', 'boolean'],
+            'issue_hardware'   => ['nullable', 'boolean'],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -392,6 +403,7 @@ class MaintenanceRequestController extends Controller
                 ]);
             }
 
+            // ไฟล์แนบ
             if ($request->hasFile('files')) {
                 foreach ($request->file('files') as $up) {
                     $disk = 'public';
@@ -438,7 +450,36 @@ class MaintenanceRequestController extends Controller
                 }
             }
 
-            return $req->fresh(['attachments.file']);
+            // 🔹 บันทึก Operation Log ตอนสร้างใบงาน (ถ้ามีการกรอกข้อมูลมา)
+            $hasOpFields =
+                !empty($data['operation_date'] ?? null) ||
+                !empty($data['operation_method'] ?? null) ||
+                !empty($data['property_code'] ?? null) ||
+                !empty($data['remark'] ?? null) ||
+                !empty($data['require_precheck'] ?? null) ||
+                !empty($data['issue_software'] ?? null) ||
+                !empty($data['issue_hardware'] ?? null);
+
+            if ($hasOpFields) {
+                $opData = [
+                    'operation_date'   => $data['operation_date'] ?? null,
+                    'operation_method' => $data['operation_method'] ?? null,
+                    'property_code'    => $data['property_code'] ?? null,
+                    'require_precheck' => !empty($data['require_precheck']),
+                    'remark'           => $data['remark'] ?? null,
+                    'issue_software'   => !empty($data['issue_software']),
+                    'issue_hardware'   => !empty($data['issue_hardware']),
+                    'user_id'          => $actorId,
+                ];
+
+                $req->operationLog()
+                    ->updateOrCreate(
+                        ['maintenance_request_id' => $req->id],
+                        $opData
+                    );
+            }
+
+            return $req->fresh(['attachments.file', 'operationLog']);
         });
 
         return $this->respondWithToast(
@@ -476,6 +517,15 @@ class MaintenanceRequestController extends Controller
             'cost'         => ['nullable','numeric','min:0','max:99999999.99'],
             'technician_id'=> ['nullable','integer','exists:users,id'],
             'files.*'      => $fileRules,
+
+            // 🔹 เพิ่มฟิลด์ของใบเบิก / operation log
+            'operation_date'   => ['nullable', 'date'],
+            'operation_method' => ['nullable', Rule::in(['requisition','service_fee','other'])],
+            'property_code'    => ['nullable', 'string', 'max:100'],
+            'require_precheck' => ['nullable', 'boolean'],
+            'remark'           => ['nullable', 'string'],
+            'issue_software'   => ['nullable', 'boolean'],
+            'issue_hardware'   => ['nullable', 'boolean'],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -483,7 +533,9 @@ class MaintenanceRequestController extends Controller
             $errors = $validator->errors();
             $fieldsHuman = [
                 'title' => 'หัวข้อ', 'priority' => 'ระดับความสำคัญ','status' => 'สถานะ',
-                'reporter_email' => 'อีเมลผู้แจ้ง','request_date' => 'วันที่แจ้ง','files.*' => 'ไฟล์แนบ'
+                'reporter_email' => 'อีเมลผู้แจ้ง','request_date' => 'วันที่แจ้ง','files.*' => 'ไฟล์แนบ',
+                'operation_date' => 'วันที่ปฏิบัติงาน','operation_method' => 'วิธีการปฏิบัติ',
+                'property_code'  => 'รหัสครุภัณฑ์ (รพจ.)'
             ];
             $bad = collect(array_keys($errors->toArray()))
                 ->map(fn($f) => $fieldsHuman[$f] ?? $f)
@@ -502,10 +554,11 @@ class MaintenanceRequestController extends Controller
 
         DB::transaction(function () use ($data, $request, $req) {
             $originalStatus = $req->status;
+            $actorId = optional($request->user())->id;
+
             $req->fill($data);
 
             // หากเปลี่ยนเป็น accepted และยังไม่มีช่าง -> ตั้งเป็นผู้ใช้งานปัจจุบัน
-            $actorId = optional($request->user())->id;
             if (($data['status'] ?? null) === 'accepted' && empty($req->technician_id) && $actorId) {
                 $req->technician_id = $actorId;
             }
@@ -537,7 +590,6 @@ class MaintenanceRequestController extends Controller
                 $req->save();
             }
 
-
             // ถ้าสถานะมีการเปลี่ยน ให้บันทึก transition log พร้อม from/to
             if (class_exists(\App\Models\MaintenanceLog::class)) {
                 if (array_key_exists('status', $data) && $originalStatus !== $req->status) {
@@ -560,6 +612,7 @@ class MaintenanceRequestController extends Controller
                 }
             }
 
+            // จัดการลบไฟล์แนบ
             $toRemove = array_filter((array) $request->input('remove_attachments', []), fn($v) => is_numeric($v));
             if (!empty($toRemove)) {
                 $attachments = $req->attachments()->whereIn('id', $toRemove)->get();
@@ -568,8 +621,8 @@ class MaintenanceRequestController extends Controller
                 }
             }
 
+            // อัปโหลดไฟล์แนบใหม่
             if ($request->hasFile('files')) {
-                $actorId = optional($request->user())->id;
                 foreach ($request->file('files') as $up) {
                     $disk = 'public';
                     $storedPath = $up->store("maintenance/{$req->id}", $disk);
@@ -614,9 +667,39 @@ class MaintenanceRequestController extends Controller
                     }
                 }
             }
+
+            // 🔹 อัปเดต Operation Log จากฟอร์มเดียวกัน (ใบเบิก/รพจ.)
+            $hasOpFields =
+                !empty($data['operation_date'] ?? null) ||
+                !empty($data['operation_method'] ?? null) ||
+                !empty($data['property_code'] ?? null) ||
+                !empty($data['remark'] ?? null) ||
+                !empty($data['require_precheck'] ?? null) ||
+                !empty($data['issue_software'] ?? null) ||
+                !empty($data['issue_hardware'] ?? null) ||
+                $req->operationLog()->exists(); // ถ้าเคยมีแล้ว ให้ update ต่อ
+
+            if ($hasOpFields) {
+                $opData = [
+                    'operation_date'   => $data['operation_date'] ?? null,
+                    'operation_method' => $data['operation_method'] ?? null,
+                    'property_code'    => $data['property_code'] ?? null,
+                    'require_precheck' => !empty($data['require_precheck']),
+                    'remark'           => $data['remark'] ?? null,
+                    'issue_software'   => !empty($data['issue_software']),
+                    'issue_hardware'   => !empty($data['issue_hardware']),
+                    'user_id'          => $actorId,
+                ];
+
+                $req->operationLog()
+                    ->updateOrCreate(
+                        ['maintenance_request_id' => $req->id],
+                        $opData
+                    );
+            }
         });
 
-        $req->load('attachments.file');
+        $req->load(['attachments.file','operationLog']);
 
         return $this->respondWithToast(
             $request,
@@ -892,7 +975,14 @@ class MaintenanceRequestController extends Controller
 
     public function edit($id)
     {
-        $mr = \App\Models\MaintenanceRequest::with(['asset','reporter','attachments.file'])->findOrFail($id);
+        $mr = \App\Models\MaintenanceRequest::with([
+                'asset',
+                'reporter',
+                'attachments.file',
+                'operationLog',
+            ])
+            ->findOrFail($id);
+
         \Gate::authorize('update', $mr);
 
         $assets = \App\Models\Asset::orderBy('asset_code')->get(['id','asset_code','name']);

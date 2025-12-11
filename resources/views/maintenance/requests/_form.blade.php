@@ -1,10 +1,11 @@
 {{-- resources/views/maintenance/requests/_form.blade.php --}}
 @php
   /** @var \App\Models\MaintenanceRequest|null $req */
-  $req        = $req ?? null;
-  $assets     = is_iterable($assets ?? null) ? collect($assets) : collect();
-  $depts      = is_iterable($depts ?? null) ? collect($depts) : collect();
+  $req         = $req ?? null;
+  $assets      = is_iterable($assets ?? null) ? collect($assets) : collect();
+  $depts       = is_iterable($depts ?? null) ? collect($depts) : collect();
   $attachments = is_iterable($attachments ?? null) ? $attachments : [];
+  $opLog       = $req?->operationLog ?? null;
 @endphp
 
 <div class="space-y-6">

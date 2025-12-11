@@ -64,25 +64,18 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('requests')->name('requests.')->group(function () {
             Route::get('/',       [MaintenanceRequestController::class, 'indexPage'])->name('index');
             Route::get('/create', [MaintenanceRequestController::class, 'createPage'])->name('create');
-            // แก้ไขคำขอซ่อม
             Route::get('/{req}/edit', [MaintenanceRequestController::class, 'edit'])->name('edit');
             Route::get('/{req}',  [MaintenanceRequestController::class, 'showPage'])->name('show');
             Route::post('/',      [MaintenanceRequestController::class, 'store'])->name('store');
             Route::put('/{req}',  [MaintenanceRequestController::class, 'update'])->name('update');
-
             Route::post('/{req}/transition',  [MaintenanceRequestController::class, 'transitionFromBlade'])->name('transition');
             Route::post('/{req}/attachments', [MaintenanceRequestController::class, 'uploadAttachmentFromBlade'])->name('attachments');
-
-            Route::get('/{req}/logs', [MaintenanceLogController::class, 'index'])->name('logs');
             Route::delete('/{req}/attachments/{attachment}', [MaintenanceRequestController::class, 'destroyAttachment'])->name('attachments.destroy');
+            Route::get('/{req}/logs', [MaintenanceLogController::class, 'index'])->name('logs');
+            Route::get('/{req}/work-order', [MaintenanceRequestController::class, 'printWorkOrder'])->name('work-order');
+            Route::post('/{maintenanceRequest}/operation-log', [MaintenanceOperationLogController::class, 'upsert'])->name('operation-log');
         });
     });
-
-    Route::post('/maintenance-requests/{maintenanceRequest}/operation-log',[MaintenanceOperationLogController::class, 'upsert'])->name('maintenance.requests.operation-log');
-
-    Route::post('/maintenance/requests/{maintenanceRequest}/assignments', [MaintenanceAssignmentController::class, 'store'])->name('maintenance-assignments.store');
-    Route::delete('/maintenance/assignments/{assignment}', [MaintenanceAssignmentController::class, 'destroy'])->name('maintenance-assignments.destroy');
-    Route::get( '/maintenance/requests/{req}/work-order', [MaintenanceRequestController::class, 'printWorkOrder'])->name('maintenance.requests.work-order');
 
     // ===== Attachments (serve private files after auth) =====
     Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');

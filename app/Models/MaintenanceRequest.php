@@ -95,7 +95,7 @@ class MaintenanceRequest extends Model
 
     public function operationLog()
     {
-        return $this->hasOne(MaintenanceOperationLog::class, 'maintenance_request_id');
+        return $this->hasOne(\App\Models\MaintenanceOperationLog::class, 'maintenance_request_id');
     }
 
     // งานนี้ถูก assign ให้ใครบ้าง (ทุกคน)
