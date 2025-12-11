@@ -1,3 +1,4 @@
+{{-- resources/views/maintenance/requests/show.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'สรุปใบงานซ่อม #'.$req->id)
@@ -673,7 +674,7 @@
       </div>
 
       <form method="POST"
-            action="{{ route('maintenance-assignments.store', $req) }}"
+            action="{{ route('maintenance.assignments.store', $req) }}"
             class="px-4 py-3 space-y-3">
         @csrf
 
