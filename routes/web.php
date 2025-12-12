@@ -112,6 +112,13 @@ Route::middleware(['auth'])->group(function () {
                 [MaintenanceAssignmentController::class, 'destroy']
             )->name('destroy');
         });
+
+        Route::get('/maintenance/{maintenanceRequest}/rating', [MaintenanceRatingController::class, 'create'])
+        ->name('maintenance.rating.create');
+
+        Route::post('/maintenance/{maintenanceRequest}/rating', [MaintenanceRatingController::class, 'store'])
+        ->name('maintenance.rating.store');
+
     });
 
     // ===== Attachments (serve private files after auth) =====

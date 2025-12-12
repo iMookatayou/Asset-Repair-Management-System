@@ -72,8 +72,8 @@
           {{-- Filter Form --}}
           <form method="GET" class="mt-4 flex flex-col gap-3" onsubmit="showLoader()">
 
-            {{-- แถวบน: ค้นหา + ปุ่มอยู่ขวา --}}
-            <div class="flex flex-col lg:flex-row items-start lg:items-end gap-3">
+            {{-- แถวเดียว: ค้นหา + บทบาท + หน่วยงาน + ปุ่มค้นหา/ล้าง --}}
+            <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-end gap-3">
 
               {{-- Search --}}
               <div class="flex-1 min-w-[260px]">
@@ -92,7 +92,37 @@
                 </div>
               </div>
 
-              {{-- ปุ่มค้นหา / ล้างค่า (ยึดขวาบนเสมอ, icon-only กลม) --}}
+              {{-- Role --}}
+              <div class="w-full sm:w-1/2 lg:w-48">
+                <label class="mb-1 block text-[12px] text-zinc-600">บทบาท</label>
+                <select id="filter_role" name="role"
+                        class="ts-basic w-full h-10 rounded-md border border-zinc-300 bg-white text-sm text-zinc-800"
+                        data-placeholder="บทบาททั้งหมด">
+                  <option value="">บทบาททั้งหมด</option>
+                  @foreach ($roles as $r)
+                    <option value="{{ $r }}" @selected($filters['role'] === $r)>
+                      {{ $roleLabels[$r] }}
+                    </option>
+                  @endforeach
+                </select>
+              </div>
+
+              {{-- Department --}}
+              <div class="w-full sm:w-1/2 lg:w-56">
+                <label class="mb-1 block text-[12px] text-zinc-600">หน่วยงาน</label>
+                <select id="filter_department" name="department"
+                        class="ts-basic w-full h-10 rounded-md border border-zinc-300 bg-white text-sm text-zinc-800"
+                        data-placeholder="ทุกหน่วยงาน">
+                  <option value="">ทุกหน่วยงาน</option>
+                  @foreach ($departments as $dept)
+                    <option value="{{ $dept->code ?? $dept->id }}" @selected($filters['department'] == ($dept->code ?? $dept->id))>
+                      {{ $dept->name }}
+                    </option>
+                  @endforeach
+                </select>
+              </div>
+
+              {{-- ปุ่มค้นหา / ล้างค่า --}}
               <div class="flex justify-end gap-2 w-full lg:w-auto lg:ml-auto shrink-0">
 
                 {{-- ล้างค่า: กลับ index โล่ง ๆ --}}
@@ -139,41 +169,6 @@
                   <span class="sr-only">ค้นหา</span>
                 </button>
               </div>
-            </div>
-
-            {{-- แถวล่าง: Role + Department --}}
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-
-              {{-- Role --}}
-              <div>
-                <label class="mb-1 block text-[12px] text-zinc-600">บทบาท</label>
-                <select id="filter_role" name="role"
-                        class="ts-basic w-full h-10 rounded-md border border-zinc-300 bg-white text-sm text-zinc-800"
-                        data-placeholder="บทบาททั้งหมด">
-                  <option value="">บทบาททั้งหมด</option>
-                  @foreach ($roles as $r)
-                    <option value="{{ $r }}" @selected($filters['role'] === $r)>
-                      {{ $roleLabels[$r] }}
-                    </option>
-                  @endforeach
-                </select>
-              </div>
-
-              {{-- Department --}}
-              <div>
-                <label class="mb-1 block text-[12px] text-zinc-600">หน่วยงาน</label>
-                <select id="filter_department" name="department"
-                        class="ts-basic w-full h-10 rounded-md border border-zinc-300 bg-white text-sm text-zinc-800"
-                        data-placeholder="ทุกหน่วยงาน">
-                  <option value="">ทุกหน่วยงาน</option>
-                  @foreach ($departments as $dept)
-                    <option value="{{ $dept->code ?? $dept->id }}" @selected($filters['department'] == ($dept->code ?? $dept->id))>
-                      {{ $dept->name }}
-                    </option>
-                  @endforeach
-                </select>
-              </div>
-
             </div>
 
           </form>
