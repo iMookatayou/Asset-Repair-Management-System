@@ -16,6 +16,7 @@ use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\MaintenanceOperationLogController;
 use App\Http\Controllers\MaintenanceAssignmentController;
+use App\Http\Controllers\MaintenanceRatingController;
 
 // Admin User Controller
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -64,7 +65,7 @@ Route::middleware(['auth'])->group(function () {
     // ==========================
     Route::prefix('maintenance')->name('maintenance.')->group(function () {
 
-        // ---------- กลุ่มคำขอซ่อม ----------
+                // ---------- กลุ่มคำขอซ่อม ----------
         Route::prefix('requests')->name('requests.')->group(function () {
             Route::get('/',              [MaintenanceRequestController::class, 'indexPage'])->name('index');
             Route::get('/create',        [MaintenanceRequestController::class, 'createPage'])->name('create');
@@ -96,29 +97,18 @@ Route::middleware(['auth'])->group(function () {
                 '/{req}/work-order',
                 [MaintenanceRequestController::class, 'printWorkOrder']
             )->name('work-order');
-        });
 
-        // ---------- กลุ่มมอบหมายทีมช่าง ----------
-        Route::prefix('assignments')->name('assignments.')->group(function () {
-            // POST /maintenance/assignments/{maintenanceRequest}
+            // ---------- ให้คะแนนงานซ่อม ----------
+            Route::get(
+                '/{maintenanceRequest}/rating',
+                [MaintenanceRatingController::class, 'create']
+            )->name('rating.create');
+
             Route::post(
-                '/{maintenanceRequest}',
-                [MaintenanceAssignmentController::class, 'store']
-            )->name('store');
-
-            // DELETE /maintenance/assignments/{assignment}
-            Route::delete(
-                '/{assignment}',
-                [MaintenanceAssignmentController::class, 'destroy']
-            )->name('destroy');
+                '/{maintenanceRequest}/rating',
+                [MaintenanceRatingController::class, 'store']
+            )->name('rating.store');
         });
-
-        Route::get('/maintenance/{maintenanceRequest}/rating', [MaintenanceRatingController::class, 'create'])
-        ->name('maintenance.rating.create');
-
-        Route::post('/maintenance/{maintenanceRequest}/rating', [MaintenanceRatingController::class, 'store'])
-        ->name('maintenance.rating.store');
-
     });
 
     // ===== Attachments (serve private files after auth) =====

@@ -73,10 +73,10 @@
           <form method="GET" class="mt-4 flex flex-col gap-3" onsubmit="showLoader()">
 
             {{-- แถวเดียว: ค้นหา + บทบาท + หน่วยงาน + ปุ่มค้นหา/ล้าง --}}
-            <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-end gap-3">
+            <div class="flex flex-col lg:flex-row lg:flex-nowrap items-start lg:items-end gap-3 w-full">
 
-              {{-- Search --}}
-              <div class="flex-1 min-w-[260px]">
+              {{-- Search (ย่อให้สั้นลงหน่อย) --}}
+              <div class="w-full lg:w-[32%] min-w-[220px]">
                 <label class="mb-1 block text-[12px] text-zinc-600">คำค้นหา</label>
                 <div class="relative">
                   <input name="s" value="{{ $filters['s'] }}"
@@ -93,7 +93,7 @@
               </div>
 
               {{-- Role --}}
-              <div class="w-full sm:w-1/2 lg:w-48">
+              <div class="w-full sm:flex-1 lg:w-[20%] min-w-[160px]">
                 <label class="mb-1 block text-[12px] text-zinc-600">บทบาท</label>
                 <select id="filter_role" name="role"
                         class="ts-basic w-full h-10 rounded-md border border-zinc-300 bg-white text-sm text-zinc-800"
@@ -107,8 +107,8 @@
                 </select>
               </div>
 
-              {{-- Department --}}
-              <div class="w-full sm:w-1/2 lg:w-56">
+              {{-- Department (ให้กว้างขึ้นหน่อย) --}}
+              <div class="w-full sm:flex-1 lg:w-[28%] min-w-[180px]">
                 <label class="mb-1 block text-[12px] text-zinc-600">หน่วยงาน</label>
                 <select id="filter_department" name="department"
                         class="ts-basic w-full h-10 rounded-md border border-zinc-300 bg-white text-sm text-zinc-800"
@@ -123,9 +123,8 @@
               </div>
 
               {{-- ปุ่มค้นหา / ล้างค่า --}}
-              <div class="flex justify-end gap-2 w-full lg:w-auto lg:ml-auto shrink-0">
-
-                {{-- ล้างค่า: กลับ index โล่ง ๆ --}}
+              <div class="flex justify-end gap-2 lg:ml-auto shrink-0">
+                {{-- ล้างค่า --}}
                 <a href="{{ route('admin.users.index') }}"
                    onclick="showLoader()"
                    aria-label="ล้างค่า"
@@ -147,7 +146,7 @@
                   <span class="sr-only">ล้างค่า</span>
                 </a>
 
-                {{-- ค้นหา: ต้องกดถึงจะ apply filter --}}
+                {{-- ค้นหา --}}
                 <button type="submit"
                         aria-label="ค้นหา"
                         title="ค้นหา"
