@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\MaintenanceRatingApiController;
 
 // Public health + auth endpoints
 Route::get('/health', [HealthController::class, 'index'])->name('health');
@@ -39,10 +40,12 @@ Route::prefix('auth')->name('auth.')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', fn (Request $r) => $r->user());
 
+    // Assets API
     Route::name('api.')->group(function () {
         Route::apiResource('assets', AssetController::class);
     });
 
+    // Repair requests (ใบงานซ่อม)
     Route::prefix('repair-requests')->name('repair-requests.')->group(function () {
         Route::get('/',                  [MaintenanceRequestController::class, 'index'])->name('index');
         Route::post('/',                 [MaintenanceRequestController::class, 'store'])->name('store');
@@ -50,6 +53,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{req}',             [MaintenanceRequestController::class, 'update'])->name('update');
         Route::post('/{req}/transition', [MaintenanceRequestController::class, 'transition'])->name('transition');
         Route::get('/{req}/logs',        [MaintenanceLogController::class, 'index'])->name('logs');
+
+        // GET /api/repair-requests/pending/evaluations
+        Route::get(
+            '/pending/evaluations',
+            [MaintenanceRatingApiController::class, 'pendingEvaluations']
+        )->name('pending-evaluations');
+
+        // POST /api/repair-requests/{maintenanceRequest}/rating
+        Route::post(
+            '/{maintenanceRequest}/rating',
+            [MaintenanceRatingApiController::class, 'store']
+        )->name('rating.store');
     });
 
     // Attachments

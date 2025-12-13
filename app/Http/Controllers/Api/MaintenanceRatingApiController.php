@@ -13,20 +13,58 @@ use Illuminate\Support\Facades\Validator;
 
 class MaintenanceRatingApiController extends Controller
 {
+    /**
+     * กำหนดช่วงเวลาที่อนุญาตให้ให้คะแนน (วัน)
+     */
     protected int $ratingDeadlineDays = 7;
 
+    /**
+     * ดึง “งานที่รอการให้คะแนน” ของ user ปัจจุบัน
+     *
+     * GET /api/repair-requests/pending-evaluations
+     */
+    public function pendingEvaluations(): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $requests = MaintenanceRequest::with(['technician', 'rating'])
+            ->where('reporter_id', $user->id)
+            ->whereIn('status', [
+                MaintenanceRequest::STATUS_RESOLVED,
+                MaintenanceRequest::STATUS_CLOSED,
+            ])
+            ->whereDoesntHave('rating')
+            ->get()
+            ->filter(function (MaintenanceRequest $req) {
+                return $this->withinRatingWindow($req);
+            })
+            ->values(); // reset index
+
+        return response()->json([
+            'data' => $requests,
+        ]);
+    }
+
+    /**
+     * บันทึกคะแนนให้ใบงาน
+     *
+     * POST /api/repair-requests/{maintenanceRequest}/rating
+     * body: { "score": 1-5, "comment": "..." }
+     */
     public function store(Request $request, MaintenanceRequest $maintenanceRequest): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
-        // ตรวจสิทธิ์คล้าย ๆ web controller
+        // 1) ต้องเป็นคนแจ้งซ่อมเท่านั้น
         if ($maintenanceRequest->reporter_id !== $user->id) {
             return response()->json([
                 'message' => 'คุณไม่มีสิทธิ์ให้คะแนนงานนี้',
             ], 403);
         }
 
+        // 2) งานต้องปิดแล้ว (RESOLVED / CLOSED)
         if (! in_array($maintenanceRequest->status, [
             MaintenanceRequest::STATUS_RESOLVED,
             MaintenanceRequest::STATUS_CLOSED,
@@ -36,19 +74,21 @@ class MaintenanceRatingApiController extends Controller
             ], 422);
         }
 
+        // 3) ห้ามให้คะแนนซ้ำ
         if ($maintenanceRequest->rating) {
             return response()->json([
                 'message' => 'งานนี้มีการให้คะแนนไปแล้ว',
-            ], 409); // conflict
+            ], 409);
         }
 
+        // 4) เช็ค window เวลา
         if (! $this->withinRatingWindow($maintenanceRequest)) {
             return response()->json([
                 'message' => 'เลยระยะเวลาที่สามารถให้คะแนนงานนี้ได้แล้ว',
             ], 422);
         }
 
-        // validate
+        // 5) validate + rule: ถ้าให้ 1–2 ดาว ต้องกรอก comment
         $validator = Validator::make($request->all(), [
             'score'   => ['required', 'integer', 'between:1,5'],
             'comment' => ['nullable', 'string', 'max:1000'],
@@ -73,6 +113,7 @@ class MaintenanceRatingApiController extends Controller
 
         $data = $validator->validated();
 
+        // 6) สร้าง rating
         $rating = MaintenanceRating::create([
             'maintenance_request_id' => $maintenanceRequest->id,
             'rater_id'               => $user->id,
@@ -87,6 +128,9 @@ class MaintenanceRatingApiController extends Controller
         ], 201);
     }
 
+    /**
+     * ใช้ logic เดียวกับฝั่ง web: closed_at > resolved_at > completed_date
+     */
     protected function withinRatingWindow(MaintenanceRequest $maintenanceRequest): bool
     {
         $base = $maintenanceRequest->closed_at

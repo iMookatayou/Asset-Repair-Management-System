@@ -72,4 +72,26 @@ class MaintenanceRating extends Model
             ->where('rater_id', $raterId)
             ->exists();
     }
+
+    public function technicianDashboard()
+    {
+        // ดึงช่างทุกคนพร้อม avg + count
+        $technicians = User::where('role', 'technician')
+            ->withAvg('technicianRatings', 'score')
+            ->withCount('technicianRatings')
+            ->get();
+
+        // เตรียม data สำหรับกราฟ
+        $chartLabels = $technicians->pluck('name');
+        $chartAvg    = $technicians->pluck('technician_ratings_avg_score');
+        $chartCount  = $technicians->pluck('technician_ratings_count');
+
+        return view('maintenance.rating.technicians-dashboard', [
+            'technicians' => $technicians,
+            'chartLabels' => $chartLabels,
+            'chartAvg'    => $chartAvg,
+            'chartCount'  => $chartCount,
+        ]);
+    }
+
 }

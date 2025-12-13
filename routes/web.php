@@ -60,15 +60,42 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/repair/dashboard', [RepairDashboardController::class, 'index'])->name('repair.dashboard');
     Route::get('/dashboard', fn () => redirect()->route('repair.dashboard'))->name('dashboard');
 
-    // ==========================
-    // Maintenance (ใบงานซ่อม)
-    // ==========================
+    // Maintenance
     Route::prefix('maintenance')->name('maintenance.')->group(function () {
 
-                // ---------- กลุ่มคำขอซ่อม ----------
+        // ---------- กลุ่มคำขอซ่อม ----------
         Route::prefix('requests')->name('requests.')->group(function () {
+
             Route::get('/',              [MaintenanceRequestController::class, 'indexPage'])->name('index');
             Route::get('/create',        [MaintenanceRequestController::class, 'createPage'])->name('create');
+
+            // ---------- กลุ่ม Rating (ไม่มี id ใบงาน) ----------
+            Route::prefix('rating')->name('rating.')->group(function () {
+                // หน้า Evaluate: งานที่เสร็จแล้ว รอรีวิว
+                // GET /maintenance/requests/rating/evaluate
+                Route::get('/evaluate', [MaintenanceRatingController::class, 'evaluateList'])
+                    ->name('evaluate');
+
+                // Technician Dashboard: สรุปคะแนนช่าง + กราฟ (ถ้าใช้)
+                // GET /maintenance/requests/rating/technicians
+                Route::get('/technicians', [MaintenanceRatingController::class, 'technicianDashboard'])
+                    ->name('technicians');
+            });
+
+            // ---------- ให้คะแนนใบงานทีละใบ ----------
+            // GET /maintenance/requests/{maintenanceRequest}/rating
+            Route::get(
+                '/{maintenanceRequest}/rating',
+                [MaintenanceRatingController::class, 'create']
+            )->name('rating.create');
+
+            // POST /maintenance/requests/{maintenanceRequest}/rating
+            Route::post(
+                '/{maintenanceRequest}/rating',
+                [MaintenanceRatingController::class, 'store']
+            )->name('rating.store');
+
+            // ---------- เส้นอื่น ๆ ของใบงาน ----------
             Route::get('/{req}/edit',    [MaintenanceRequestController::class, 'edit'])->name('edit');
             Route::get('/{req}',         [MaintenanceRequestController::class, 'showPage'])->name('show');
             Route::post('/',             [MaintenanceRequestController::class, 'store'])->name('store');
@@ -97,24 +124,13 @@ Route::middleware(['auth'])->group(function () {
                 '/{req}/work-order',
                 [MaintenanceRequestController::class, 'printWorkOrder']
             )->name('work-order');
-
-            // ---------- ให้คะแนนงานซ่อม ----------
-            Route::get(
-                '/{maintenanceRequest}/rating',
-                [MaintenanceRatingController::class, 'create']
-            )->name('rating.create');
-
-            Route::post(
-                '/{maintenanceRequest}/rating',
-                [MaintenanceRatingController::class, 'store']
-            )->name('rating.store');
         });
     });
 
     // ===== Attachments (serve private files after auth) =====
     Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');
 
-    // Chat
+    // Chatฟ
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::post('/chat/threads', [ChatController::class, 'storeThread'])->name('chat.store');
     Route::get('/chat/threads/{thread}', [ChatController::class, 'show'])->name('chat.show');

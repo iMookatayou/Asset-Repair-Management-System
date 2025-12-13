@@ -7,10 +7,11 @@
   // Base fields
   $type     = $toast['type']     ?? null;      // success|info|warning|error
   $message  = $toast['message']  ?? null;
-  $position = $toast['position'] ?? 'tc';      // tr|tl|br|bl|center|tc|bc|uc (บังคับใช้ tc เป็นค่าเริ่มต้น)
+  $position = $toast['position'] ?? 'tc';      // tr|tl|br|bl|center|tc|bc|uc
   $timeout  = (int)($toast['timeout'] ?? 3200);
   $size     = $toast['size']     ?? 'lg';      // sm|md|lg
 
+  // fallback จาก errors / session อื่น ๆ
   $firstError = (isset($errors) && method_exists($errors,'first') && $errors->any()) ? $errors->first() : null;
   if (!$message && $firstError) {
     $message = $firstError;
@@ -25,16 +26,21 @@
       $type    = $type ?: 'success';
   }
 
+  // helper asset รองรับ https
   $isHttps = request()->isSecure();
   $link = function(string $path) use ($isHttps) {
       return $isHttps ? secure_asset($path) : asset($path);
   };
-  $lottieMap = [
-    'success' => $link('lottie/lock_with_green_tick.json'),
-    'info'    => $link('lottie/lock_with_blue_info.json'),
-    'warning' => $link('lottie/lock_with_yello_alert.json'),
-    'error'   => $link('lottie/lock_with_red_tick.json'),
-  ];
+
+  // ใช้ lottieMap จาก Controller ถ้ามี ถ้าไม่มีก็ default
+  if (!isset($lottieMap) || !is_array($lottieMap)) {
+      $lottieMap = [
+        'success' => $link('lottie/lock_with_green_tick.json'),
+        'info'    => $link('lottie/lock_with_blue_info.json'),
+        'warning' => $link('lottie/lock_with_yellow_alert.json'),
+        'error'   => $link('lottie/lock_with_red_tick.json'),
+      ];
+  }
 @endphp
 
 <style>
@@ -156,7 +162,7 @@
 
   function showToast({type='info', message='', position='tc', timeout=3200, size='lg'} = {}){
     position = FORCE_POSITION || position || 'tc';
-  const allowed = ['tr','tl','br','bl','center','tc','bc','uc'];
+    const allowed = ['tr','tl','br','bl','center','tc','bc','uc'];
     if (!allowed.includes(position)) position = 'tc';
     timeout = Number(timeout) || 3200;
 
@@ -164,19 +170,24 @@
 
     const card = document.createElement('section');
     const sizeClass = (['sm','md','lg'].includes(size) ? `toast--${size}` : 'toast--lg');
-    card.className = `toast-card ${sizeClass} toast-${type}`;
+
+    // ❗ เปลี่ยนจาก toast-${type} → toast--${type} เพื่อไม่ให้ไปชน CSS เดิม (.toast-warning)
+    card.className = `toast-card ${sizeClass} toast--${type}`;
     card.setAttribute('role','status');
 
     const icon = document.createElement('div');
     icon.className = 'toast-icon';
     const src = LOTTIE[type] || LOTTIE.success;
+
     function renderPlaceholder(){
-      icon.innerHTML = `<span style=\"display:inline-block;width:var(--toast-icon);height:var(--toast-icon);border-radius:50%;background:#e2e8f0\"></span>`;
+      icon.innerHTML = `<span style="display:inline-block;width:var(--toast-icon);height:var(--toast-icon);border-radius:50%;background:#e2e8f0"></span>`;
     }
+
     function renderLottie(){
       if (!src) return renderPlaceholder();
       icon.innerHTML = `<lottie-player src="${src}" renderer="svg" style="width:var(--toast-icon);height:var(--toast-icon)" background="transparent" speed="1" autoplay></lottie-player>`;
     }
+
     try{
       if (window.customElements && (customElements.get('lottie-player') || customElements.whenDefined)){
         if (customElements.get('lottie-player')) {
@@ -188,7 +199,9 @@
       } else {
         renderLottie();
       }
-    } catch (e){ renderPlaceholder(); }
+    } catch (e){
+      renderPlaceholder();
+    }
 
     const msg = document.createElement('div');
     msg.className = 'toast-msg';
@@ -242,10 +255,12 @@
       timer = setTimeout(close, remainMs + 50);
     });
 
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); }, { once:true });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') close();
+    }, { once:true });
   }
 
-  // Expose
+  // expose
   window.showToast = showToast;
   window.addEventListener('app:toast', e => showToast(e.detail || {}));
 

@@ -20,7 +20,8 @@
     @php
         use Illuminate\Support\Facades\Route;
 
-        $is = fn($p) => request()->routeIs($p);
+        // ให้รองรับ pattern ได้หลายอัน
+        $is = fn(...$p) => request()->routeIs($p);
 
         // base style ของเมนู + spacing ซ้าย + ความสูงแต่ละแถว
         $base = 'group relative flex items-center h-11 px-6 gap-3 text-sm font-medium rounded-md transition';
@@ -32,7 +33,7 @@
             'w-5 h-5 flex-shrink-0 transition '.
             ($active ? 'text-emerald-600' : 'text-zinc-500 group-hover:text-emerald-600');
 
-        // จุด active → ย้ายมาไว้ด้านขวา
+        // จุด active → ด้านขวา
         $dot = fn($active) =>
             'absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-7 rounded-full bg-emerald-500 transition '.
             ($active ? 'opacity-100' : 'opacity-0 group-hover:opacity-60');
@@ -67,8 +68,15 @@
             Operations
         </div>
 
-        {{-- Requests --}}
-        @php $active = $is('maintenance.requests*'); @endphp
+        {{-- Requests (ไม่ใช้ * แล้ว เลือกเฉพาะ route ของ request จริง ๆ) --}}
+        @php
+            $active = $is(
+                'maintenance.requests.index',
+                'maintenance.requests.show',
+                'maintenance.requests.create',
+                'maintenance.requests.edit'
+            );
+        @endphp
         <a href="{{ $rl('maintenance.requests.index') }}" class="{{ $base }} {{ $active ? $on : $off }}">
             <svg class="{{ $ico($active) }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14.7 6.3a4.5 4.5 0 1 0-6.36 6.36l8.49 8.49a2 2 0 0 0 2.83-2.83l-8.49-8.49z"/>
@@ -119,17 +127,30 @@
             Feedback
         </div>
 
-        @php $active = $is('technicians.ratings*'); @endphp
-        <a href="{{ $rl('technicians.ratings.index') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+        {{-- Evaluate --}}
+        @php $active = $is('maintenance.requests.rating.evaluate'); @endphp
+        <a href="{{ $rl('maintenance.requests.rating.evaluate') }}" class="{{ $base }} {{ $active ? $on : $off }}">
             <svg class="{{ $ico($active) }}" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <rect x="4" y="3" width="16" height="18" rx="2"/>
-                <path d="M9 8h6"/>
-                <path d="M9 11.5h4"/>
-                <path d="M9 15h3"/>
-                <circle cx="16.5" cy="15.5" r="2"/>
-                <path d="m15.6 15.5.6.7 1.6-1.7"/>
+                <rect x="6" y="4" width="12" height="16" rx="2"/>
+                <path d="M9 4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V6H9V4.5z"/>
+                <path d="M9 11h6"/>
+                <path d="M9 14h3"/>
+                <path d="m11 18 1-2 1 2"/>
             </svg>
             <span class="truncate">Evaluate</span>
+            <span class="{{ $dot($active) }}"></span>
+        </a>
+
+        {{-- Technician Ratings --}}
+        @php $active = $is('maintenance.requests.rating.technicians'); @endphp
+        <a href="{{ $rl('maintenance.requests.rating.technicians') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+            <svg class="{{ $ico($active) }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 21h18"/>
+                <rect x="5" y="10" width="3" height="7" rx="1"/>
+                <rect x="10.5" y="7" width="3" height="10" rx="1"/>
+                <rect x="16" y="4" width="3" height="13" rx="1"/>
+            </svg>
+            <span class="truncate">Technician Ratings</span>
             <span class="{{ $dot($active) }}"></span>
         </a>
 

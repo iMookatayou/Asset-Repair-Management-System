@@ -243,11 +243,6 @@ class User extends Authenticatable
         return $this->hasMany(MaintenanceRating::class, 'rater_id');
     }
 
-    public function technicianRatings()
-    {
-        return $this->hasMany(MaintenanceRating::class, 'technician_id');
-    }
-
     public function getRatingAverageAttribute(): ?float
     {
         if (!$this->technicianRatings()->exists()) {
@@ -297,5 +292,10 @@ class User extends Authenticatable
         $bg  = $palette[$idx];
 
         return "https://ui-avatars.com/api/?name={$name}&background={$bg}&color=fff&size={$size}&bold=true";
+    }
+
+    public function technicianRatings()
+    {
+        return $this->hasMany(\App\Models\MaintenanceRating::class, 'technician_id');
     }
 }

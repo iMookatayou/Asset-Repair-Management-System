@@ -1093,4 +1093,39 @@ class MaintenanceRequestController extends Controller
 
         return [$sortBy, $sortDir];
     }
+
+    public function evaluateList()
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // งานที่ปิดแล้ว แต่ยังไม่ถูกให้คะแนน และยังอยู่ในช่วงเวลาให้คะแนน
+        $pendingRequests = MaintenanceRequest::with(['technician', 'rating'])
+            ->where('reporter_id', $user->id)
+            ->whereIn('status', [
+                MaintenanceRequest::STATUS_RESOLVED,
+                MaintenanceRequest::STATUS_CLOSED,
+            ])
+            ->whereDoesntHave('rating')
+            ->get()
+            ->filter(function (MaintenanceRequest $req) {
+                return $this->withinRatingWindow($req);
+            });
+
+        // งานที่ถูกให้คะแนนแล้ว (ไว้โชว์ด้านล่าง เผื่ออยากย้อนดู)
+        $ratedRequests = MaintenanceRequest::with(['technician', 'rating'])
+            ->where('reporter_id', $user->id)
+            ->whereIn('status', [
+                MaintenanceRequest::STATUS_RESOLVED,
+                MaintenanceRequest::STATUS_CLOSED,
+            ])
+            ->whereHas('rating')
+            ->latest('closed_at')
+            ->get();
+
+        return view('maintenance.rating.evaluate', [
+            'pendingRequests' => $pendingRequests,
+            'ratedRequests'   => $ratedRequests,
+        ]);
+    }
 }
