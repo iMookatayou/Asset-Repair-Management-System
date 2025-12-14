@@ -196,8 +196,8 @@
     </div>
 
     {{-- เนื้อหา Dashboard ใช้พื้นหลังเดียวกับระบบ ไม่ครอบด้วยกล่องใหญ่ --}}
-    <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm mt-3">
-        <div class="px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5 space-y-6">
+    <section class="mt-3">
+      <div class="px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5 space-y-6">
 
         {{-- ส่วนที่ 1: ภาพรวมสถิติ + กราฟสถานะ --}}
         <div class="space-y-4 pt-2">

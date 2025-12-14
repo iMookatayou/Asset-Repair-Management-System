@@ -29,8 +29,8 @@ class UserFactory extends Factory
 
         return [
             'name'              => fake()->name(),
-            'citizen_id'        => (string) $citizenRunning,                  // ✅ ใส่เลขบัตรประชาชน
-            'email'             => fake()->unique()->safeEmail(),            // ยังมี email ไว้ reset / notify ได้
+            'citizen_id'        => (string) $citizenRunning,
+            'email'             => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password'          => static::$password ??= Hash::make('password'),
             'remember_token'    => Str::random(10),
