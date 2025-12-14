@@ -129,7 +129,9 @@
 
       function engage() {
         if (form.hasAttribute('data-no-loader')) return; // ฟอร์มไหนไม่อยากโชว์ ใส่แอตทริบิวต์นี้
-        if (btn) { btn.setAttribute('aria-busy','true'); btn.disabled = true; }
+
+        sessionStorage.setItem('ui.sidebarIntro.next', '1');
+        if (btn) { btn.setAttribute('aria-busy','true'); btn.disabled = true; }ฟ
         requestAnimationFrame(() => overlay.classList.add('show'));
       }
 

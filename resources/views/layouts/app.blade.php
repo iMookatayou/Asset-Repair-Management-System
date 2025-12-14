@@ -23,6 +23,10 @@
 
   @yield('head')
 
+  <script>
+  window.__playSidebarIntro = @json(session('play_sidebar_intro', false));
+  </script>
+
   @vite(['resources/css/app.css','resources/js/app.js'])
   @stack('styles')
   @stack('head')

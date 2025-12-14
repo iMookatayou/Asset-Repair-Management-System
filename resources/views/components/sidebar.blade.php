@@ -3,9 +3,12 @@
 
     {{-- LOGO BLOCK --}}
     <div class="sidebar-logo px-6 py-5 flex items-center gap-3 border-b border-gray-200 bg-white">
-        <img src="{{ asset('images/logoppk.png') }}"
-             alt="Phrapokklao Logo"
-             class="h-14 w-auto flex-shrink-0"> {{-- โลโก้ใหญ่ขึ้น h-14 --}}
+        <img
+            id="sidebarLogo"
+            src="{{ asset('images/logoppk.png') }}"
+            alt="Phrapokklao Logo"
+            class="sidebar-logo-img h-14 w-auto flex-shrink-0"
+            />
 
         <div class="flex flex-col min-w-0 leading-tight">
             <div class="brand-en text-[17px] font-semibold tracking-[0.14em] text-zinc-900">

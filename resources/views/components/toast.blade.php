@@ -1,224 +1,343 @@
 @php
   $toast = session('toast');
-  if ($toast) {
-      session()->forget('toast');
-  }
+  if ($toast) { session()->forget('toast'); }
 
-  // Base fields
   $type     = $toast['type']     ?? null;      // success|info|warning|error
   $message  = $toast['message']  ?? null;
-  $position = $toast['position'] ?? 'tc';      // tr|tl|br|bl|center|tc|bc|uc
-  $timeout  = (int)($toast['timeout'] ?? 3200);
-  $size     = $toast['size']     ?? 'lg';      // sm|md|lg
+  $position = $toast['position'] ?? 'tr';      // tr|tl|br|bl
+  $timeout  = (int)($toast['timeout'] ?? 3800);
+  $size     = $toast['size']     ?? 'lg';      // sm|md|lg|xl
 
-  // fallback จาก errors / session อื่น ๆ
   $firstError = (isset($errors) && method_exists($errors,'first') && $errors->any()) ? $errors->first() : null;
-  if (!$message && $firstError) {
-    $message = $firstError;
-    $type    = $type ?: 'warning';
-  }
-  if (!$message && session('error')) {
-      $message = session('error');
-      $type    = $type ?: 'error';
-  }
-  if (!$message && session('status')) {
-      $message = session('status');
-      $type    = $type ?: 'success';
-  }
-
-  // helper asset รองรับ https
-  $isHttps = request()->isSecure();
-  $link = function(string $path) use ($isHttps) {
-      return $isHttps ? secure_asset($path) : asset($path);
-  };
-
-  // ใช้ lottieMap จาก Controller ถ้ามี ถ้าไม่มีก็ default
-  if (!isset($lottieMap) || !is_array($lottieMap)) {
-      $lottieMap = [
-        'success' => $link('lottie/lock_with_green_tick.json'),
-        'info'    => $link('lottie/lock_with_blue_info.json'),
-        'warning' => $link('lottie/lock_with_yellow_alert.json'),
-        'error'   => $link('lottie/lock_with_red_tick.json'),
-      ];
-  }
+  if (!$message && $firstError) { $message = $firstError; $type = $type ?: 'warning'; }
+  if (!$message && session('error'))  { $message = session('error');  $type = $type ?: 'error'; }
+  if (!$message && session('status')) { $message = session('status'); $type = $type ?: 'success'; }
 @endphp
 
 <style>
-  .toast-overlay{position:fixed;inset:0;z-index:100001;pointer-events:none}
-  .toast-pos{display:flex;width:100%;height:100%;padding:1rem}
-  .toast-pos.tr{align-items:flex-start;justify-content:flex-end}
-  .toast-pos.tl{align-items:flex-start;justify-content:flex-start}
-  .toast-pos.br{align-items:flex-end;justify-content:flex-end}
-  .toast-pos.bl{align-items:flex-end;justify-content:flex-start}
-  .toast-pos.center{align-items:center;justify-content:center}
-  .toast-pos.tc{align-items:flex-start;justify-content:center;padding-top:calc(var(--topbar-h,0px) + .75rem)}
-  .toast-pos.uc{align-items:flex-start;justify-content:center;padding-top:15vh}
-  .toast-pos.bc{align-items:flex-end;justify-content:center;padding-bottom:.75rem}
+  :root{
+    --toast-z: 100001;
+    --toast-gap: 12px;
+
+    /* ✅ ใหญ่ขึ้นชัด ๆ */
+    --toast-max-w: min(92vw, 460px);
+    --toast-min-w: 340px;
+
+    --toast-radius: 8px;
+    --toast-shadow: 0 12px 30px rgba(15,23,42,.24);
+    --toast-border: rgba(255,255,255,.20);
+
+    --toast-pad-x: 16px;
+    --toast-pad-y: 14px;
+
+    --toast-title-fs: 15px;
+    --toast-msg-fs: 15px;
+
+    --toast-icon: 34px;
+    --toast-icon-box: 42px;
+
+    --toast-bar-h: 4px;
+  }
+
+  .toast-overlay{
+    position:fixed; inset:0;
+    z-index:var(--toast-z);
+    pointer-events:none;
+  }
+
+  .toast-pos{
+    width:100%; height:100%;
+    display:flex;
+    flex-direction:column;
+    gap: var(--toast-gap);
+    padding: 14px;
+  }
+
+  /* ✅ ขวาบน */
+  .toast-pos.tr{
+    align-items:flex-end;
+    justify-content:flex-start;
+    padding-top: calc(var(--topbar-h, 0px) + 14px);
+  }
+  .toast-pos.tl{
+    align-items:flex-start;
+    justify-content:flex-start;
+    padding-top: calc(var(--topbar-h, 0px) + 14px);
+  }
+  .toast-pos.br{ align-items:flex-end; justify-content:flex-end; }
+  .toast-pos.bl{ align-items:flex-start; justify-content:flex-end; }
 
   .toast-card{
-    --toast-max-w: min(92vw, 640px);
-    --toast-min-w: 420px;
-    --toast-pad-x: 22px;
-    --toast-pad-y: 16px;
-    --toast-fs: 16px;
-    --toast-icon: 36px;
-    --toast-radius: 14px;
-    --toast-bar-h: 4px;
-
     pointer-events:auto;
-    width: max-content;
-    max-width: var(--toast-max-w);
+    width: min(100%, var(--toast-max-w));
     min-width: var(--toast-min-w);
 
-    background:#fff;
     border-radius: var(--toast-radius);
-    border:1px solid #e5eef7;
-    box-shadow:0 14px 48px rgba(15,23,42,.14);
+    box-shadow: var(--toast-shadow);
+    border: 1px solid var(--toast-border);
 
-    opacity:0;
-    transform:translateY(-6px);
-    transition:opacity .22s ease, transform .22s ease;
-
-    display:flex;
-    align-items:center;
-    gap:.9rem;
-    padding: var(--toast-pad-y) var(--toast-pad-x);
     position:relative;
     overflow:hidden;
-  }
-  .toast-card.show{ opacity:1; transform:translateY(0); }
 
-  /* ขนาด */
+    opacity:0;
+    transform: translateY(-10px);
+    transition: opacity .18s ease, transform .18s ease;
+
+    outline:none !important;
+  }
+  .toast-card.show{ opacity:1; transform: translateY(0); }
+
+  .toast-inner{
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    padding: var(--toast-pad-y) var(--toast-pad-x);
+    color:#fff;
+  }
+
+  /* ✅ icon box */
+  .toast-ico{
+    flex:0 0 var(--toast-icon-box);
+    width:var(--toast-icon-box);
+    height:var(--toast-icon-box);
+    display:grid;
+    place-items:center;
+    border-radius: 6px;
+    background: rgba(255,255,255,.18);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+  }
+  .toast-ico svg{
+    width: var(--toast-icon);
+    height: var(--toast-icon);
+    display:block;
+    fill: currentColor;
+    color:#fff;
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,.18));
+  }
+
+  .toast-text{ flex:1; min-width:0; }
+
+  .toast-title{
+    font-size: var(--toast-title-fs);
+    font-weight: 900;
+    letter-spacing:.01em;
+    margin: 0 0 4px 0;
+    text-shadow: 0 1px 0 rgba(0,0,0,.18);
+  }
+
+  /* ✅ 2 บรรทัด */
+  .toast-msg{
+    font-size: var(--toast-msg-fs);
+    line-height: 1.45;
+    margin:0;
+    opacity:.96;
+
+    display:-webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+  }
+
+  .toast-close{
+    border:0;
+    background: rgba(255,255,255,.18);
+    color:#fff;
+    width: 34px; height: 34px;
+    border-radius: 6px;
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    font-size: 20px;
+    line-height:0;
+    transition: background .12s ease;
+    outline:none !important;
+  }
+  .toast-close:hover{ background: rgba(255,255,255,.30); }
+  .toast-close:focus,
+  .toast-close:focus-visible{ outline:none !important; box-shadow:none; }
+
+  .toast-bar{
+    height: var(--toast-bar-h);
+    background: rgba(0,0,0,.18);
+  }
+  .toast-fill{
+    height: var(--toast-bar-h);
+    width:0;
+    transition: width linear;
+    background: rgba(255,255,255,.58);
+  }
+
+  /* ✅ สีแบบในรูป */
+  .toast--success{ background:#6ea35e; }
+  .toast--error  { background:#b5564c; }
+  .toast--warning{ background:#e3a23a; }
+  .toast--info   { background:#5a9db5; }
+
+  /* sizes */
   .toast--sm{
     --toast-max-w: min(92vw, 420px);
     --toast-min-w: 320px;
-    --toast-pad-x: 16px;
-    --toast-pad-y: 10px;
-    --toast-fs: 14px;
-    --toast-icon: 28px;
-    --toast-radius: 12px;
+    --toast-pad-x: 14px;
+    --toast-pad-y: 12px;
+    --toast-title-fs: 14px;
+    --toast-msg-fs: 14px;
+    --toast-icon: 30px;
+    --toast-icon-box: 38px;
     --toast-bar-h: 3px;
   }
   .toast--md{
-    --toast-max-w: min(92vw, 520px);
-    --toast-min-w: 380px;
-    --toast-pad-x: 18px;
-    --toast-pad-y: 14px;
-    --toast-fs: 15px;
+    --toast-max-w: min(92vw, 440px);
+    --toast-min-w: 330px;
+    --toast-pad-x: 15px;
+    --toast-pad-y: 13px;
+    --toast-title-fs: 14px;
+    --toast-msg-fs: 14px;
     --toast-icon: 32px;
-    --toast-radius: 12px;
+    --toast-icon-box: 40px;
     --toast-bar-h: 4px;
   }
   .toast--lg{
-    --toast-max-w: min(92vw, 680px);
-    --toast-min-w: 440px;
-    --toast-pad-x: 24px;
-    --toast-pad-y: 18px;
-    --toast-fs: 16px;
-    --toast-icon: 36px;
-    --toast-radius: 16px;
+    --toast-max-w: min(92vw, 460px);
+    --toast-min-w: 340px;
+    --toast-pad-x: 16px;
+    --toast-pad-y: 14px;
+    --toast-title-fs: 15px;
+    --toast-msg-fs: 15px;
+    --toast-icon: 34px;
+    --toast-icon-box: 42px;
     --toast-bar-h: 4px;
   }
+  .toast--xl{
+    --toast-max-w: min(92vw, 520px);
+    --toast-min-w: 360px;
+    --toast-pad-x: 18px;
+    --toast-pad-y: 16px;
+    --toast-title-fs: 16px;
+    --toast-msg-fs: 16px;
+    --toast-icon: 38px;
+    --toast-icon-box: 48px;
+    --toast-bar-h: 5px;
+  }
 
-  .toast-icon{flex:0 0 var(--toast-icon);display:flex;align-items:center;justify-content:center}
-  .toast-msg{font-size:var(--toast-fs);color:#0f172a;line-height:1.5;white-space:normal;word-break:break-word;flex:1}
-  .toast-close{border:0;background:transparent;font-size:calc(var(--toast-fs) + 1px);color:#64748b;cursor:pointer;line-height:1}
-  .toast-close:hover{ color:#0f172a; }
+  @media (max-width: 420px){
+    .toast-card{ min-width: calc(100vw - 28px); }
+  }
 
-  /* Progress bar */
-  .toast-bar{position:absolute;bottom:0;left:0;height:var(--toast-bar-h);width:100%;background:#f1f5f9}
-  .toast-fill{height:var(--toast-bar-h);width:0;transition:width linear}
-  .fill-success{background:#10b981}
-  .fill-info{background:#3b82f6}
-  .fill-warning{background:#f59e0b}
-  .fill-error{background:#ef4444}
-
-  @media (max-width:480px){ .toast-card{ min-width: calc(100vw - 2rem); } }
+  @media (prefers-reduced-motion: reduce){
+    .toast-card{ transition:none; transform:none; }
+    .toast-fill{ transition:none !important; }
+  }
 </style>
 
 <div class="toast-overlay" aria-live="polite" aria-atomic="true"></div>
 
-<script id="lottie-player-loader" src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" async></script>
-
 <script>
 (function(){
-  const LOTTIE = {
-    success: @json($lottieMap['success'] ?? null),
-    info:    @json($lottieMap['info'] ?? null),
-    warning: @json($lottieMap['warning'] ?? null),
-    error:   @json($lottieMap['error'] ?? null),
-  };
-
-  const FORCE_POSITION = 'tc';
+  const DEFAULT_POSITION = 'tr';
+  const FORCE_POSITION   = 'tr';     // ✅ ล็อกขวาบน
+  const DEFAULT_SIZE     = 'xl';     // ✅ ให้ใหญ่ขึ้นเป็นค่าเริ่มต้น
 
   function ensurePos(position){
     const overlay = document.querySelector('.toast-overlay');
-    overlay.innerHTML = '';
-    const posEl = document.createElement('div');
-    posEl.className = 'toast-pos ' + position;
-    overlay.appendChild(posEl);
-    return { overlay, posEl };
+    if (!overlay) return null;
+
+    let posEl = overlay.querySelector('.toast-pos');
+    if (!posEl || !posEl.classList.contains(position)) {
+      overlay.innerHTML = '';
+      posEl = document.createElement('div');
+      posEl.className = 'toast-pos ' + position;
+      overlay.appendChild(posEl);
+    }
+    return { posEl };
   }
 
-  function showToast({type='info', message='', position='tc', timeout=3200, size='lg'} = {}){
-    position = FORCE_POSITION || position || 'tc';
-    const allowed = ['tr','tl','br','bl','center','tc','bc','uc'];
-    if (!allowed.includes(position)) position = 'tc';
-    timeout = Number(timeout) || 3200;
+  function titleByType(type){
+    switch(type){
+      case 'success': return 'สำเร็จ';
+      case 'error':   return 'เกิดข้อผิดพลาด';
+      case 'warning': return 'โปรดตรวจสอบ';
+      case 'info':    return 'แจ้งเตือน';
+      default:        return 'แจ้งเตือน';
+    }
+  }
 
-    const { posEl } = ensurePos(position);
+  // ✅ SVG icons (ไม่ต้องโหลดไลบรารี)
+  function iconSvg(type){
+    if (type === 'success') return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"></path>
+      </svg>`;
+    if (type === 'error') return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59Z"></path>
+      </svg>`;
+    if (type === 'warning') return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"></path>
+      </svg>`;
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2zm1-7C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+      </svg>`;
+  }
+
+  function showToast({type='info', message='', position=DEFAULT_POSITION, timeout=3800, size=DEFAULT_SIZE, title=null} = {}){
+    type = (['success','info','warning','error'].includes(type) ? type : 'info');
+
+    position = FORCE_POSITION || position || DEFAULT_POSITION;
+    const allowedPos = ['tr','tl','br','bl'];
+    if (!allowedPos.includes(position)) position = DEFAULT_POSITION;
+
+    timeout = Number(timeout);
+    if (!Number.isFinite(timeout) || timeout < 800) timeout = 3800;
+
+    const s = (['sm','md','lg','xl'].includes(size) ? size : DEFAULT_SIZE);
+
+    const ctx = ensurePos(position);
+    if (!ctx) return;
+    const { posEl } = ctx;
 
     const card = document.createElement('section');
-    const sizeClass = (['sm','md','lg'].includes(size) ? `toast--${size}` : 'toast--lg');
-
-    // ❗ เปลี่ยนจาก toast-${type} → toast--${type} เพื่อไม่ให้ไปชน CSS เดิม (.toast-warning)
-    card.className = `toast-card ${sizeClass} toast--${type}`;
+    card.className = `toast-card toast--${s} toast--${type}`;
     card.setAttribute('role','status');
 
-    const icon = document.createElement('div');
-    icon.className = 'toast-icon';
-    const src = LOTTIE[type] || LOTTIE.success;
+    const inner = document.createElement('div');
+    inner.className = 'toast-inner';
 
-    function renderPlaceholder(){
-      icon.innerHTML = `<span style="display:inline-block;width:var(--toast-icon);height:var(--toast-icon);border-radius:50%;background:#e2e8f0"></span>`;
-    }
+    const ico = document.createElement('div');
+    ico.className = 'toast-ico';
+    ico.innerHTML = iconSvg(type);
 
-    function renderLottie(){
-      if (!src) return renderPlaceholder();
-      icon.innerHTML = `<lottie-player src="${src}" renderer="svg" style="width:var(--toast-icon);height:var(--toast-icon)" background="transparent" speed="1" autoplay></lottie-player>`;
-    }
+    const text = document.createElement('div');
+    text.className = 'toast-text';
 
-    try{
-      if (window.customElements && (customElements.get('lottie-player') || customElements.whenDefined)){
-        if (customElements.get('lottie-player')) {
-          renderLottie();
-        } else {
-          renderPlaceholder();
-          customElements.whenDefined('lottie-player').then(renderLottie).catch(()=>{});
-        }
-      } else {
-        renderLottie();
-      }
-    } catch (e){
-      renderPlaceholder();
-    }
+    const h = document.createElement('div');
+    h.className = 'toast-title';
+    h.textContent = (title ?? titleByType(type));
 
-    const msg = document.createElement('div');
-    msg.className = 'toast-msg';
-    msg.textContent = message ?? '';
+    const p = document.createElement('p');
+    p.className = 'toast-msg';
+    p.textContent = message ?? '';
+
+    text.append(h, p);
 
     const btn = document.createElement('button');
     btn.className = 'toast-close';
     btn.setAttribute('aria-label','Close');
     btn.innerHTML = '&times;';
 
+    inner.append(ico, text, btn);
+
     const bar = document.createElement('div');
     bar.className = 'toast-bar';
+
     const fill = document.createElement('div');
-    fill.className = `toast-fill fill-${type}`;
+    fill.className = 'toast-fill';
     bar.appendChild(fill);
 
-    card.append(icon, msg, btn, bar);
+    card.append(inner, bar);
     posEl.appendChild(card);
 
     requestAnimationFrame(() => {
@@ -229,52 +348,49 @@
       });
     });
 
-    let timer = setTimeout(close, timeout + 60);
+    let startAt = Date.now();
+    let remain = timeout;
 
     function close(){
       card.classList.remove('show');
-      setTimeout(()=> card.remove(), 200);
+      setTimeout(()=> card.remove(), 180);
     }
 
+    let timer = setTimeout(close, timeout + 60);
     btn.addEventListener('click', close);
 
-    // Pause on hover
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); }, { once:true });
+
     card.addEventListener('mouseenter', () => {
-      fill.style.transition = 'none';
-      const w = getComputedStyle(fill).width;
-      fill.style.width = w;
       clearTimeout(timer);
-    });
-    card.addEventListener('mouseleave', () => {
-      const done = parseFloat(getComputedStyle(fill).width) / card.clientWidth;
-      const remainMs = Math.max(0, 1 - done) * timeout;
-      requestAnimationFrame(() => {
-        fill.style.transition = `width ${remainMs}ms linear`;
-        fill.style.width = '100%';
-      });
-      timer = setTimeout(close, remainMs + 50);
+      remain = Math.max(0, remain - (Date.now() - startAt));
+      fill.style.transition = 'none';
+      const doneRatio = 1 - (remain / timeout);
+      fill.style.width = (doneRatio * 100) + '%';
     });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') close();
-    }, { once:true });
+    card.addEventListener('mouseleave', () => {
+      startAt = Date.now();
+      fill.style.transition = `width ${remain}ms linear`;
+      fill.style.width = '100%';
+      timer = setTimeout(close, remain + 50);
+    });
   }
 
-  // expose
   window.showToast = showToast;
   window.addEventListener('app:toast', e => showToast(e.detail || {}));
 
   @if ($type && $message)
-  (function fireToastNowOrReady(){
+  (function fireToast(){
     const payload = {
       type: @json($type),
       message: @json($message),
-      position: @json($position),
+      position: @json($position ?? 'tr'),
       timeout: @json($timeout),
-      size: @json($size ?? 'lg')
+      size: @json($size ?? 'xl'),
     };
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => window.showToast(payload), { once: true });
+      document.addEventListener('DOMContentLoaded', () => window.showToast(payload), { once:true });
     } else {
       window.showToast(payload);
     }

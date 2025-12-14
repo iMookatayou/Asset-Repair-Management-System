@@ -14,3 +14,42 @@
   text-align: center;
   color: #0E2B51;
 }
+
+/* ===== Sidebar Logo Intro Animation ===== */
+
+/* Respect reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-logo-img {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+}
+
+.sidebar-logo-img {
+  transform-origin: 50% 12%;
+  will-change: transform, opacity, filter;
+}
+
+/* เล่น intro เมื่อมีคลาสนี้ */
+html.sidebar-intro .sidebar-logo-img,
+body.sidebar-intro .sidebar-logo-img {
+  animation:
+    logo-pop 420ms cubic-bezier(.2,.9,.2,1) both,
+    logo-swing 1100ms cubic-bezier(.2,.8,.2,1) 260ms both;
+}
+
+@keyframes logo-pop {
+  0%   { opacity: 0; transform: translateY(-6px) scale(.92); filter: blur(2px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes logo-swing {
+  0%   { transform: rotate(0deg); }
+  18%  { transform: rotate(16deg); }
+  40%  { transform: rotate(-12deg); }
+  62%  { transform: rotate(8deg); }
+  82%  { transform: rotate(-5deg); }
+  100% { transform: rotate(0deg); }
+}

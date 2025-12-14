@@ -10,19 +10,49 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Illuminate\Support\Str;
+
+use App\Http\Middleware\PlaySidebarIntroOnce;
 use App\Providers\AuthServiceProvider;
 use App\Providers\RouteServiceProvider;
 use App\Providers\AppServiceProvider;
 
 return Application::configure(basePath: dirname(__DIR__))
+
+    /*
+    |--------------------------------------------------------------------------
+    | Routing
+    |--------------------------------------------------------------------------
+    */
     ->withRouting(
         web: __DIR__ . '/../routes/web.php',
         api: __DIR__ . '/../routes/api.php',
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
+
+    /*
+    |--------------------------------------------------------------------------
+    | Middleware (Laravel 11)
+    |--------------------------------------------------------------------------
+    */
     ->withMiddleware(function (Middleware $middleware) {
-        // API group middleware: stateful + correlation id header
+
+        /*
+        |-----------------------------
+        | WEB Middleware Group
+        |-----------------------------
+        | ใช้กับ Blade, Session, Auth
+        | Sidebar intro ต้องอยู่ตรงนี้เท่านั้น
+        */
+        $middleware->web(append: [
+            PlaySidebarIntroOnce::class,
+        ]);
+
+        /*
+        |-----------------------------
+        | API Middleware Group
+        |-----------------------------
+        */
         $middleware->api(
             prepend: [
                 \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
@@ -30,18 +60,37 @@ return Application::configure(basePath: dirname(__DIR__))
             ],
         );
 
+        /*
+        |-----------------------------
+        | Middleware Aliases
+        |-----------------------------
+        */
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
         ]);
     })
-    ->withExceptions(function (Exceptions $exceptions) {
-        // Handle authorization failures for web requests with toast
-        $exceptions->render(function ($e, Request $request) {
-            // Authorization/Access Denied: show toast and redirect back (web only)
-            if (!$request->is('api/*') &&
-                ($e instanceof \Illuminate\Auth\Access\AuthorizationException ||
-                 $e instanceof \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException)) {
 
+    /*
+    |--------------------------------------------------------------------------
+    | Exception Handling
+    |--------------------------------------------------------------------------
+    */
+    ->withExceptions(function (Exceptions $exceptions) {
+
+        $exceptions->render(function ($e, Request $request) {
+
+            /*
+            |-----------------------------
+            | WEB: Authorization errors
+            |-----------------------------
+            */
+            if (
+                !$request->is('api/*') &&
+                (
+                    $e instanceof \Illuminate\Auth\Access\AuthorizationException ||
+                    $e instanceof \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException
+                )
+            ) {
                 $message = $e->getMessage() ?: 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้';
 
                 $redirectTo = $request->headers->get('referer')
@@ -49,53 +98,59 @@ return Application::configure(basePath: dirname(__DIR__))
                     : redirect()->route('dashboard');
 
                 return $redirectTo->with('toast', [
-                    'type' => 'error',
-                    'message' => $message,
-                    'timeout' => 3500,
+                    'type'     => 'error',
+                    'message'  => $message,
+                    'timeout'  => 3500,
                     'position' => 'tc',
-                    'size' => 'md',
+                    'size'     => 'md',
                 ]);
             }
 
+            /*
+            |-----------------------------
+            | WEB: default handling
+            |-----------------------------
+            */
             if (! $request->is('api/*')) {
-                return null; // use default rendering for other non-api exceptions
+                return null;
             }
 
-            $cid = $request->attributes->get('correlation_id') ?? Str::uuid()->toString();
+            /*
+            |-----------------------------
+            | API: JSON error handling
+            |-----------------------------
+            */
+            $cid = $request->attributes->get('correlation_id')
+                ?? Str::uuid()->toString();
 
-            $status = 500;
-            $code   = 'INTERNAL_ERROR';
+            $status  = 500;
+            $code    = 'INTERNAL_ERROR';
             $message = 'Internal server error';
             $errors  = null;
 
-            // Validation
             if ($e instanceof ValidationException) {
                 $status  = 422;
                 $code    = 'VALIDATION_ERROR';
                 $message = 'Validation failed';
                 $errors  = $e->errors();
             }
-            // Unauthenticated
             elseif ($e instanceof AuthenticationException) {
                 $status  = 401;
                 $code    = 'UNAUTHENTICATED';
                 $message = 'Unauthenticated';
             }
-            // Not found model
             elseif ($e instanceof ModelNotFoundException) {
                 $status  = 404;
                 $code    = 'NOT_FOUND';
                 $message = 'Resource not found';
             }
-            // Rate limit
             elseif ($e instanceof ThrottleRequestsException) {
                 $status  = 429;
                 $code    = 'RATE_LIMITED';
                 $message = 'Too many requests';
             }
-            // HTTP exceptions (403, 404, etc.)
             elseif ($e instanceof HttpExceptionInterface) {
-                $status = $e->getStatusCode();
+                $status  = $e->getStatusCode();
                 $message = $e->getMessage() ?: match ($status) {
                     403 => 'Forbidden',
                     404 => 'Not found',
@@ -117,19 +172,28 @@ return Application::configure(basePath: dirname(__DIR__))
                 'code'           => $code,
                 'correlation_id' => $cid,
             ];
+
             if ($errors) {
                 $payload['errors'] = $errors;
             }
 
-            return response()->json($payload, $status)->withHeaders([
-                'X-Correlation-ID' => $cid,
-            ]);
+            return response()
+                ->json($payload, $status)
+                ->withHeaders([
+                    'X-Correlation-ID' => $cid,
+                ]);
         });
     })
 
+    /*
+    |--------------------------------------------------------------------------
+    | Providers
+    |--------------------------------------------------------------------------
+    */
     ->withProviders([
         AppServiceProvider::class,
         AuthServiceProvider::class,
         RouteServiceProvider::class,
     ])
+
     ->create();
