@@ -19,7 +19,6 @@
     --toast-z: 100001;
     --toast-gap: 12px;
 
-    /* ✅ ใหญ่ขึ้นชัด ๆ */
     --toast-max-w: min(92vw, 460px);
     --toast-min-w: 340px;
 
@@ -52,8 +51,6 @@
     gap: var(--toast-gap);
     padding: 14px;
   }
-
-  /* ✅ ขวาบน */
   .toast-pos.tr{
     align-items:flex-end;
     justify-content:flex-start;
@@ -94,8 +91,6 @@
     padding: var(--toast-pad-y) var(--toast-pad-x);
     color:#fff;
   }
-
-  /* ✅ icon box */
   .toast-ico{
     flex:0 0 var(--toast-icon-box);
     width:var(--toast-icon-box);
@@ -125,7 +120,6 @@
     text-shadow: 0 1px 0 rgba(0,0,0,.18);
   }
 
-  /* ✅ 2 บรรทัด */
   .toast-msg{
     font-size: var(--toast-msg-fs);
     line-height: 1.45;
@@ -169,7 +163,6 @@
     background: rgba(255,255,255,.58);
   }
 
-  /* ✅ สีแบบในรูป */
   .toast--success{ background:#6ea35e; }
   .toast--error  { background:#b5564c; }
   .toast--warning{ background:#e3a23a; }
@@ -236,8 +229,8 @@
 <script>
 (function(){
   const DEFAULT_POSITION = 'tr';
-  const FORCE_POSITION   = 'tr';     // ✅ ล็อกขวาบน
-  const DEFAULT_SIZE     = 'xl';     // ✅ ให้ใหญ่ขึ้นเป็นค่าเริ่มต้น
+  const FORCE_POSITION   = 'tr';
+  const DEFAULT_SIZE     = 'xl';
 
   function ensurePos(position){
     const overlay = document.querySelector('.toast-overlay');
@@ -263,7 +256,6 @@
     }
   }
 
-  // ✅ SVG icons (ไม่ต้องโหลดไลบรารี)
   function iconSvg(type){
     if (type === 'success') return `
       <svg viewBox="0 0 24 24" aria-hidden="true">

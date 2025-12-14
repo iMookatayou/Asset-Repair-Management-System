@@ -103,7 +103,7 @@
                             data-bs-toggle="collapse"
                             data-bs-target="#mobileMenu">
                         <img src="{{ $user->avatar_url ?? asset('images/default-avatar.png') }}"
-                             class="avatar-img">
+                             class="avatar-img" alt="Avatar">
                     </button>
                 @endauth
 
@@ -129,7 +129,7 @@
             <div class="mobile-profile-card mb-3">
                 <div class="d-flex align-items-center gap-2 mb-2">
                     <img src="{{ $user->avatar_url ?? asset('images/default-avatar.png') }}"
-                         width="32" height="32" class="rounded-circle">
+                         width="32" height="32" class="rounded-circle" alt="Avatar">
                     <div class="ff-sarabun small">
                         <div class="fw-semibold">{{ $user->name }}</div>
                         <div class="text-muted">{{ $user->email }}</div>
@@ -164,99 +164,120 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 
-:root {
-    /* ปรับความสูง navbar ให้ใหญ่ขึ้น */
-    --nav-height: 80px;
+:root{
+  --nav-height: 80px;
+
+  /* โทนหลักเดียวกับ footer / brand */
+  --ppk-blue: #0F2D5C;
+  --ppk-blue-2: #133A73;
+  --ppk-border: #e2e8f0;
+  --ppk-text: #0f172a;
+  --ppk-muted: #475569;
+  --ppk-soft: rgba(15,45,92,.08);
 }
 
-.ff-sarabun {
-    font-family: 'Sarabun', sans-serif !important;
+.ff-sarabun{
+  font-family: 'Sarabun', sans-serif !important;
 }
 
-/* ใช้กับข้อความอังกฤษ / system title */
-.brand-en {
-    font-family: 'Sarabun', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-                 Roboto, "Helvetica Neue", Arial, sans-serif;
+.brand-en{
+  font-family: 'Sarabun', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* ข้อความชื่อระบบด้านซ้าย */
-.nav-system-title {
-    font-size: .85rem;
-    font-weight: 600;
-    letter-spacing: .05em;
-    text-transform: uppercase;
-    color: #1f2933;
-    white-space: nowrap;
+/* ===== NAVBAR ===== */
+.navbar-pinwheel{
+  height: var(--nav-height);
+  background:
+    linear-gradient(180deg, rgba(15,45,92,.06) 0%, rgba(15,45,92,0) 100%),
+    #ffffff;
+  padding: 0;
+  border-bottom: 1px solid var(--ppk-border);
+  z-index: 1200;
 }
 
-.navbar-pinwheel {
-    height: var(--nav-height);
-    background-color: #ffffff;
-    padding: 0;
-    border-bottom: 1px solid #e2e8f0;
-    z-index: 1200;
+/* ซ้าย: ชื่อระบบ */
+.nav-system-title{
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ppk-text);
+  white-space: nowrap;
 }
 
-/* โลโก้ + โปรไฟล์เหมือนเดิม */
-.logo-img {
-    height: 32px;
-    width: auto;
+/* กลาง: banner */
+.nav-center .nav-banner-text{
+  font-size: .9rem;
+  color: var(--ppk-muted);
 }
 
-.nav-center .nav-banner-text {
-    font-size: .9rem;
-    color: #475569;
+/* ปุ่ม banner ให้เข้ากับโทนน้ำเงิน */
+.nav-banner-btn{
+  border-radius: 999px;
+  padding-inline: 1rem;
+  font-size: .8rem;
+  background-color: var(--ppk-blue);
+  border-color: var(--ppk-blue);
+  color: #ffffff;
 }
 
-.nav-banner-btn {
-    border-radius: 999px;
-    padding-inline: 1rem;
-    font-size: .8rem;
-    background-color: #4338ca;
-    border-color: #4338ca;
-    color: #ffffff;
+.nav-banner-btn:hover{
+  background-color: var(--ppk-blue-2);
+  border-color: var(--ppk-blue-2);
 }
 
-.nav-banner-btn:hover {
-    background-color: #3730a3;
-    border-color: #3730a3;
+/* โปรไฟล์ */
+.avatar-img{
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(15,45,92,.10);
 }
 
-.avatar-img {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    object-fit: cover;
+.nav-username{
+  font-size: 0.9rem;
+  color: var(--ppk-text);
+  font-weight: 600;
 }
 
-.nav-username {
-    font-size: 0.9rem;
-    color: #0f172a;
-    font-weight: 500;
+/* dropdown */
+.profile-dropdown-menu{
+  min-width: 260px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,45,92,.10);
 }
 
-.profile-dropdown-menu {
-    min-width: 260px;
-    border-radius: 12px;
+/* ให้ dropdown item มี hover เข้าธีม */
+.profile-dropdown-menu .dropdown-item{
+  border-radius: 10px;
+  margin-inline: 8px;
+  width: calc(100% - 16px);
+}
+
+.profile-dropdown-menu .dropdown-item:hover{
+  background-color: var(--ppk-soft);
+  color: var(--ppk-blue);
 }
 
 /* Mobile menu */
-.mobile-profile-card {
-    border-radius: 12px;
-    padding: 10px 12px;
-    border: 1px solid #e5e7eb;
-    background-color: #ffffff;
+.mobile-profile-card{
+  border-radius: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
 }
 
-.custom-toggler {
-    border-color: #cbd5f5;
+.custom-toggler{
+  border-color: rgba(15,45,92,.25);
 }
 
 /* ===== Pinwheel layout: navbar เริ่มหลัง sidebar ===== */
-@media (min-width: 1024px) {
-    .navbar-pinwheel {
-        left: 260px;                   /* sidebar กว้าง 260px */
-        width: calc(100% - 260px);
-    }
+@media (min-width: 1024px){
+  .navbar-pinwheel{
+    left: 260px;               /* sidebar กว้าง 260px */
+    width: calc(100% - 260px);
+  }
 }
 </style>

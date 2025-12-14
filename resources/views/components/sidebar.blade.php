@@ -1,25 +1,6 @@
 {{-- LOGO + TOP BAR (ความสูงตามเดิม) --}}
 <div class="h-full w-64 flex flex-col bg-white border-r border-gray-300">
 
-    {{-- LOGO BLOCK --}}
-    <div class="sidebar-logo px-6 py-5 flex items-center gap-3 border-b border-gray-200 bg-white">
-        <img
-            id="sidebarLogo"
-            src="{{ asset('images/logoppk.png') }}"
-            alt="Phrapokklao Logo"
-            class="sidebar-logo-img h-14 w-auto flex-shrink-0"
-            />
-
-        <div class="flex flex-col min-w-0 leading-tight">
-            <div class="brand-en text-[17px] font-semibold tracking-[0.14em] text-zinc-900">
-                PHRAPOKKLAO
-            </div>
-            <div class="text-[12px] text-zinc-500">
-                โรงพยาบาลพระปกเกล้า
-            </div>
-        </div>
-    </div>
-
     @php
         use Illuminate\Support\Facades\Route;
 
@@ -29,21 +10,44 @@
         // base style ของเมนู + spacing ซ้าย + ความสูงแต่ละแถว
         $base = 'group relative flex items-center h-11 px-6 gap-3 text-sm font-medium rounded-md transition';
 
-        $off  = 'text-zinc-600 hover:bg-emerald-50/60 hover:text-emerald-700';
-        $on   = 'bg-emerald-50 text-emerald-700';
+        // ✅ พื้นหลังขาว → สีตัวหนังสือ/hover ให้สุภาพ
+        $off  = 'text-zinc-600 hover:bg-slate-100 hover:text-[#0F2D5C]';
 
+        // ✅ Active ให้เด่นแต่ไม่แรง: เทาอ่อน + น้ำเงินเดิม
+        $on   = 'bg-slate-100 text-[#0F2D5C]';
+
+        // ✅ ไอคอนตาม active/hover
         $ico = fn($active) =>
             'w-5 h-5 flex-shrink-0 transition '.
-            ($active ? 'text-emerald-600' : 'text-zinc-500 group-hover:text-emerald-600');
+            ($active ? 'text-[#0F2D5C]' : 'text-zinc-500 group-hover:text-[#0F2D5C]');
 
-        // จุด active → ด้านขวา
+        // ✅ จุด active ด้านขวา
         $dot = fn($active) =>
-            'absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-7 rounded-full bg-emerald-500 transition '.
-            ($active ? 'opacity-100' : 'opacity-0 group-hover:opacity-60');
+            'absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-7 rounded-full bg-[#0F2D5C] transition '.
+            ($active ? 'opacity-100' : 'opacity-0 group-hover:opacity-40');
 
         $rl = fn(string $name, string $fallback = '#') =>
             Route::has($name) ? route($name) : $fallback;
     @endphp
+
+    {{-- LOGO BLOCK (น้ำเงินเฉพาะส่วนนี้) --}}
+    <div class="sidebar-logo px-6 py-5 flex items-center gap-3 border-b border-white/10 bg-[#0F2D5C]">
+        <img
+            id="sidebarLogo"
+            src="{{ asset('images/logoppk.png') }}"
+            alt="Phrapokklao Logo"
+            class="sidebar-logo-img h-14 w-auto flex-shrink-0"
+        />
+
+        <div class="flex flex-col min-w-0 leading-tight">
+            <div class="brand-en text-[17px] font-semibold tracking-[0.14em] text-white">
+                PHRAPOKKLAO
+            </div>
+            <div class="text-[12px] text-slate-200">
+                โรงพยาบาลพระปกเกล้า
+            </div>
+        </div>
+    </div>
 
     {{-- NAVIGATION --}}
     <nav class="flex-1 py-3 overflow-y-auto">

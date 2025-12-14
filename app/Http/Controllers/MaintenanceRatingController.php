@@ -12,24 +12,13 @@ use Illuminate\Support\Facades\Validator;
 
 class MaintenanceRatingController extends Controller
 {
-    /**
-     * กำหนดช่วงเวลาที่อนุญาตให้ให้คะแนน (หน่วย: วัน)
-     * เช่น 7 วันหลังจากปิดงาน
-     */
     protected int $ratingDeadlineDays = 7;
 
-    /**
-     * หน้า Evaluate: งานที่รอการให้คะแนน + งานที่เคยให้คะแนนแล้ว
-     *
-     * GET /maintenance/requests/rating/evaluate
-     * route name: maintenance.requests.rating.evaluate
-     */
     public function evaluateList()
     {
         /** @var User $user */
         $user = Auth::user();
 
-        // งานที่ปิดแล้ว + เป็นคนแจ้ง + ยังไม่มี rating + ยังอยู่ใน window
         $pendingRequests = MaintenanceRequest::with(['technician', 'rating'])
             ->where('reporter_id', $user->id)
             ->whereIn('status', [
@@ -38,12 +27,9 @@ class MaintenanceRatingController extends Controller
             ])
             ->whereDoesntHave('rating')
             ->get()
-            ->filter(function (MaintenanceRequest $req) {
-                return $this->withinRatingWindow($req);
-            })
+            ->filter(fn (MaintenanceRequest $req) => $this->withinRatingWindow($req))
             ->values();
 
-        // งานที่เคยให้คะแนนแล้ว
         $ratedRequests = MaintenanceRequest::with(['technician', 'rating'])
             ->where('reporter_id', $user->id)
             ->whereIn('status', [
@@ -60,12 +46,6 @@ class MaintenanceRatingController extends Controller
         ]);
     }
 
-    /**
-     * Dashboard ช่าง (กราฟ + การ์ด) ตามที่คุณทำ blade ไว้
-     *
-     * GET /maintenance/requests/rating/technicians
-     * route name: maintenance.requests.rating.technicians
-     */
     public function technicianDashboard()
     {
         $technicians = User::where('role', 'technician')
@@ -85,12 +65,6 @@ class MaintenanceRatingController extends Controller
         ]);
     }
 
-    /**
-     * แสดงฟอร์มให้คะแนนใบงานเดียว
-     *
-     * GET /maintenance/requests/{maintenanceRequest}/rating
-     * route name: maintenance.requests.rating.create
-     */
     public function create(MaintenanceRequest $maintenanceRequest)
     {
         /** @var User $user */
@@ -100,17 +74,15 @@ class MaintenanceRatingController extends Controller
             return $redirect;
         }
 
+        // ส่ง technician ที่ระบบ "เลือกได้จริง" จาก assignments ไปให้หน้า form ใช้แสดงผล (ถ้าต้องการ)
+        $technicianId = $this->resolveTechnicianIdForRating($maintenanceRequest);
+
         return view('maintenance.rating.form', [
-            'req' => $maintenanceRequest,
+            'req'          => $maintenanceRequest,
+            'technicianId' => $technicianId,
         ]);
     }
 
-    /**
-     * บันทึกคะแนนใบงานเดียว
-     *
-     * POST /maintenance/requests/{maintenanceRequest}/rating
-     * route name: maintenance.requests.rating.store
-     */
     public function store(Request $request, MaintenanceRequest $maintenanceRequest)
     {
         /** @var User $user */
@@ -122,13 +94,29 @@ class MaintenanceRatingController extends Controller
 
         $data = $this->validateRating($request);
 
-        MaintenanceRating::create([
-            'maintenance_request_id' => $maintenanceRequest->id,
-            'rater_id'               => $user->id,
-            'technician_id'          => $maintenanceRequest->technician_id,
-            'score'                  => $data['score'],
-            'comment'                => $data['comment'] ?? null,
-        ]);
+        // ✅ ดึงช่างจาก assignments ของงานนี้จริง
+        $technicianId = $this->resolveTechnicianIdForRating($maintenanceRequest);
+        if (! $technicianId) {
+            return redirect()
+                ->route('maintenance.requests.show', $maintenanceRequest)
+                ->with('toast', [
+                    'type'    => 'warning',
+                    'message' => 'ยังไม่พบช่างที่เกี่ยวข้องกับงานนี้ จึงยังให้คะแนนไม่ได้',
+                ]);
+        }
+
+        // ✅ กันกดซ้ำ/ยิงพร้อมกัน: ไม่พัง 500
+        MaintenanceRating::firstOrCreate(
+            [
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'rater_id'               => $user->id,
+            ],
+            [
+                'technician_id'          => $technicianId,
+                'score'                  => (int) $data['score'],
+                'comment'                => $data['comment'] ?? null,
+            ]
+        );
 
         return redirect()
             ->route('maintenance.requests.show', $maintenanceRequest)
@@ -138,17 +126,15 @@ class MaintenanceRatingController extends Controller
             ]);
     }
 
-    /**
-     * รวมเงื่อนไขสิทธิ์ + เงื่อนไขเชิงธุรกิจของการให้คะแนน
-     */
     protected function guardRatingAccess(MaintenanceRequest $maintenanceRequest, User $user): ?RedirectResponse
     {
-        // ต้องเป็นคนแจ้งซ่อม
+        // ✅ แก้บั๊ก: ให้แน่ใจว่า rating ถูกโหลด (หรือเช็ค exists แบบ query)
+        $maintenanceRequest->loadMissing('rating');
+
         if ($maintenanceRequest->reporter_id !== $user->id) {
             abort(403, 'คุณไม่มีสิทธิ์ให้คะแนนงานนี้');
         }
 
-        // งานต้องปิดแล้ว (RESOLVED/CLOSED)
         if (! in_array($maintenanceRequest->status, [
             MaintenanceRequest::STATUS_RESOLVED,
             MaintenanceRequest::STATUS_CLOSED,
@@ -156,8 +142,12 @@ class MaintenanceRatingController extends Controller
             abort(403, 'สามารถให้คะแนนได้เฉพาะงานที่ปิดแล้วเท่านั้น');
         }
 
-        // ถ้ามี rating แล้ว ห้ามให้ซ้ำ
-        if ($maintenanceRequest->rating) {
+        // ✅ กันซ้ำแบบชัวร์ (ไม่พึ่ง relation อย่างเดียว)
+        $alreadyRated = MaintenanceRating::where('maintenance_request_id', $maintenanceRequest->id)
+            ->where('rater_id', $user->id)
+            ->exists();
+
+        if ($alreadyRated) {
             return redirect()
                 ->route('maintenance.requests.show', $maintenanceRequest)
                 ->with('toast', [
@@ -166,7 +156,6 @@ class MaintenanceRatingController extends Controller
                 ]);
         }
 
-        // ตรวจ window เวลา
         if (! $this->withinRatingWindow($maintenanceRequest)) {
             return redirect()
                 ->route('maintenance.requests.show', $maintenanceRequest)
@@ -176,12 +165,19 @@ class MaintenanceRatingController extends Controller
                 ]);
         }
 
+        // ✅ ต้องมีช่างที่มาจาก assignments จริง (ไม่งั้นไม่ให้รีวิว)
+        if (! $this->resolveTechnicianIdForRating($maintenanceRequest)) {
+            return redirect()
+                ->route('maintenance.requests.show', $maintenanceRequest)
+                ->with('toast', [
+                    'type'    => 'warning',
+                    'message' => 'ยังไม่มีการมอบหมายช่างในงานนี้ จึงยังให้คะแนนไม่ได้',
+                ]);
+        }
+
         return null;
     }
 
-    /**
-     * validate ฟอร์มคะแนน
-     */
     protected function validateRating(Request $request): array
     {
         $validator = Validator::make($request->all(), [
@@ -202,10 +198,6 @@ class MaintenanceRatingController extends Controller
         return $validator->validate();
     }
 
-    /**
-     * เช็คว่าตอนนี้ยังอยู่ในช่วงเวลาที่ให้คะแนนได้ไหม
-     * ใช้ลำดับเวลา: closed_at > resolved_at > completed_date
-     */
     protected function withinRatingWindow(MaintenanceRequest $maintenanceRequest): bool
     {
         $base = $maintenanceRequest->closed_at
@@ -217,5 +209,21 @@ class MaintenanceRatingController extends Controller
         }
 
         return now()->diffInDays($base) <= $this->ratingDeadlineDays;
+    }
+
+    /**
+     * ✅ เลือกช่างที่จะถูกรีวิวจาก assignments ของงานนี้ (แหล่งความจริง)
+     * priority: is_lead=1 ก่อน -> status=done ก่อน -> assigned_at ล่าสุด
+     */
+    protected function resolveTechnicianIdForRating(MaintenanceRequest $maintenanceRequest): ?int
+    {
+        // ต้องมี relation assignments() ใน MaintenanceRequest model
+        $assignment = $maintenanceRequest->assignments()
+            ->orderByDesc('is_lead')
+            ->orderByRaw("CASE WHEN status = 'done' THEN 1 ELSE 0 END DESC")
+            ->orderByDesc('assigned_at')
+            ->first();
+
+        return $assignment?->user_id;
     }
 }

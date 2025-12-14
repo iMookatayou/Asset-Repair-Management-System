@@ -101,7 +101,7 @@ class MaintenanceRequest extends Model
     // งานนี้ถูก assign ให้ใครบ้าง (ทุกคน)
     public function assignments()
     {
-        return $this->hasMany(MaintenanceAssignment::class);
+        return $this->hasMany(MaintenanceAssignment::class, 'maintenance_request_id');
     }
 
     // ดึงรายชื่อ "คนทำงาน" ตรง ๆ แบบ belongsToMany
@@ -132,9 +132,21 @@ class MaintenanceRequest extends Model
         return $this->morphOne(\App\Models\Attachment::class, 'attachable')->latestOfMany('id');
     }
 
+    public function ratings()
+    {
+        return $this->hasMany(MaintenanceRating::class, 'maintenance_request_id');
+    }
+
     public function rating()
     {
-        return $this->hasOne(MaintenanceRating::class, 'maintenance_request_id');
+        return $this->hasOne(MaintenanceRating::class, 'maintenance_request_id')
+            ->where('rater_id', auth()->id());
+    }
+
+    public function ratingBy(int $userId)
+    {
+        return $this->hasOne(MaintenanceRating::class, 'maintenance_request_id')
+            ->where('rater_id', $userId);
     }
 
     public function getNormalizedStatusAttribute(): string
