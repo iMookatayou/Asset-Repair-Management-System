@@ -72,7 +72,7 @@
 
 <div class="w-full flex flex-col">
 
-  {{-- ✅ Sticky Header + Filters (อนุญาตพื้นหลังได้เฉพาะส่วนนี้) --}}
+  {{-- ✅ Sticky Header + Filters --}}
   <div class="sticky top-[6rem] z-20 bg-white/90 backdrop-blur border-b border-slate-200">
     <div class="px-4 md:px-6 lg:px-8 py-4">
       <div class="flex flex-wrap items-start justify-between gap-4">
@@ -159,7 +159,7 @@
     </div>
   </div>
 
-  {{-- ✅ แผงหัวข้อรายการ (เหมือน Asset / ไม่ใส่พื้นหลัง) --}}
+  {{-- Header row --}}
   <div class="px-4 md:px-6 lg:px-8 py-2 border-b border-slate-200">
     <div class="flex items-center justify-between">
       <div class="text-[13px] font-semibold text-slate-800">
@@ -176,8 +176,6 @@
     <table class="min-w-full text-[13px]">
       <thead class="bg-white">
         <tr class="text-slate-600">
-
-          {{-- ✅ Sort เหมือน Asset: inline + icon ตลอด --}}
           <th class="p-3 text-center font-semibold w-[10%] whitespace-nowrap border-b border-slate-200">
             @php
               $isActive = ($sortBy === 'request_no');
@@ -192,8 +190,7 @@
               $iconPath = ($isActive && $sortDir === 'asc') ? $iconPathAsc : $iconPathDesc;
             @endphp
 
-            <a href="{{ $sortUrl }}"
-               onclick="showLoader()"
+            <a href="{{ $sortUrl }}" onclick="showLoader()"
                class="inline-flex items-center justify-center gap-1.5 group select-none">
               <span class="text-[13px] font-semibold whitespace-nowrap {{ $labelCls }}">เลขใบงาน</span>
               <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 {{ $iconCls }}">
@@ -288,14 +285,25 @@
                 ดูรายละเอียด
               </a>
 
-              <a href="{{ route('maintenance.requests.edit', $row) }}"
-                 class="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-white px-2.5 md:px-3 py-1.5 text-[12px] font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 whitespace-nowrap min-w-[80px] justify-center"
-                 onclick="showLoader()">
-                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                </svg>
-                แก้ไข
-              </a>
+              @can('update', $row)
+                <a href="{{ route('maintenance.requests.edit', $row) }}"
+                   class="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-white px-2.5 md:px-3 py-1.5 text-[12px] font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 whitespace-nowrap min-w-[80px] justify-center"
+                   onclick="showLoader()">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                  แก้ไข
+                </a>
+              @else
+                <span
+                  class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 md:px-3 py-1.5 text-[12px] font-medium text-slate-400 whitespace-nowrap min-w-[80px] justify-center cursor-not-allowed"
+                  title="คุณไม่มีสิทธิ์แก้ไขใบงานนี้">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                  แก้ไข
+                </span>
+              @endcan
             </div>
           </td>
         </tr>

@@ -18,6 +18,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class MaintenanceRequestController extends Controller
 {
+    public function create()
+    {
+        return $this->createPage();
+    }
+
     public function indexPage(Request $request)
     {
         $user     = Auth::user();
@@ -196,19 +201,31 @@ class MaintenanceRequestController extends Controller
 
     public function acceptJobQuick(Request $request, MR $req)
     {
-        \Gate::authorize('view-my-jobs');
+        \Gate::authorize('accept', $req);
 
-        if ($req->technician_id && $req->technician_id !== Auth::id()) {
-            return redirect()->back()->with('toast', \App\Support\Toast::warning('งานนี้ถูกรับไปแล้วโดยคนอื่น', 2000));
+        $userId = Auth::id();
+
+        try {
+            DB::transaction(function () use ($req, $userId) {
+
+                $locked = MR::query()
+                    ->whereKey($req->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                // ถ้ามีคนรับไปแล้ว (และไม่ใช่เรา) ให้ชน 409
+                if (!empty($locked->technician_id) && (int)$locked->technician_id !== (int)$userId) {
+                    abort(409, 'งานนี้ถูกรับไปแล้วโดยคนอื่น');
+                }
+
+                // รับงาน -> accepted + auto-assign ใน applyTransition
+                $this->applyTransition($locked, ['status' => 'accepted'], $userId);
+            });
+        } catch (\Throwable $e) {
+            // ถ้าชน 409 หรือ error อื่น ๆ
+            $msg = $e->getCode() === 409 ? 'งานนี้ถูกรับไปแล้วโดยคนอื่น' : 'เกิดข้อผิดพลาดในการรับงาน';
+            return redirect()->back()->with('toast', \App\Support\Toast::warning($msg, 2200));
         }
-
-        // ไม่ต้องบันทึก note พิเศษ (ใช้ defaultNoteForStatus ใน applyTransition แทน)
-        $payload = [
-            'status' => 'accepted',
-            // 'note' => null, // intentionally omitted
-        ];
-
-        $updated = $this->applyTransition($req, $payload, Auth::id());
 
         return redirect()->back()->with('toast', \App\Support\Toast::success('รับงาน #'.$req->id.' เรียบร้อย', 1800));
     }
@@ -327,38 +344,22 @@ class MaintenanceRequestController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'title'        => ['required','string','max:255'],
-            'priority'     => ['required', Rule::in(['low','medium','high','urgent'])],
-            'technician_id'=> ['nullable','integer','exists:users,id'],
-            // ฟิลด์อื่น ๆ เหมือนเดิม
+            'title'     => ['required','string','max:255'],
+            'priority'  => ['required', Rule::in(['low','medium','high','urgent'])],
+            // ไม่มี technician_id
         ];
 
         $data = Validator::make($request->all(), $rules)->validate();
-
         $actorId = optional($request->user())->id;
 
-        $req = DB::transaction(function () use ($data, $request, $actorId) {
-
-            $req = MR::create([
-                'title'         => $data['title'],
-                'priority'      => $data['priority'],
-                'status'        => 'pending',
-                'request_date'  => now(),
-                'technician_id' => $data['technician_id'] ?? null,
-                'reporter_id'   => $actorId,
-            ]);
-
-            if (!empty($req->technician_id)) {
-                $this->syncAssignment(
-                    $req,
-                    (int) $req->technician_id,
-                    $actorId,
-                    true
-                );
-            }
-
-            return $req;
-        });
+        $req = MR::create([
+            'title'        => $data['title'],
+            'priority'     => $data['priority'],
+            'status'       => 'pending',
+            'request_date' => now(),
+            'technician_id'=> null,
+            'reporter_id'  => $actorId,
+        ]);
 
         return redirect()->route('maintenance.requests.show', $req);
     }
@@ -366,7 +367,12 @@ class MaintenanceRequestController extends Controller
     public function update(Request $request, MR $req)
     {
         \Gate::authorize('update', $req);
-        $maxKb = config('uploads.max_kb', 10240);
+
+        $user    = $request->user();
+        $actorId = optional($user)->id;
+        $isTeam  = $user && ($user->isAdmin() || $user->isSupervisor() || $user->isTechnician());
+
+        $maxKb     = config('uploads.max_kb', 10240);
         $mimetypes = implode(',', config('uploads.mimetypes', ['image/*','application/pdf']));
         $fileRules = ['file', 'max:'.$maxKb, 'mimetypes:'.$mimetypes];
 
@@ -375,7 +381,6 @@ class MaintenanceRequestController extends Controller
             'description'  => ['nullable','string','max:5000'],
             'asset_id'     => ['nullable','integer','exists:assets,id'],
             'priority'     => ['nullable', Rule::in(['low','medium','high','urgent'])],
-            'status'       => ['nullable', Rule::in(['pending','accepted','in_progress','on_hold','resolved','closed','cancelled'])],
             'request_date' => ['nullable','date'],
 
             'reporter_name'     => ['nullable','string','max:255'],
@@ -383,174 +388,180 @@ class MaintenanceRequestController extends Controller
             'reporter_email'    => ['nullable','email','max:255'],
             'reporter_position' => ['nullable','string','max:255'],
 
-            'department_id'=> ['nullable','integer','exists:departments,id'],
-            'location_text'=> ['nullable','string','max:255'],
-            'resolution_note'=> ['nullable','string','max:5000'],
-            'cost'         => ['nullable','numeric','min:0','max:99999999.99'],
-            'technician_id'=> ['nullable','integer','exists:users,id'],
-            'files.*'      => $fileRules,
+            'department_id'   => ['nullable','integer','exists:departments,id'],
+            'location_text'   => ['nullable','string','max:255'],
+            'resolution_note' => ['nullable','string','max:5000'],
+            'cost'            => ['nullable','numeric','min:0','max:99999999.99'],
+            'files.*'         => $fileRules,
 
-            // 🔹 เพิ่มฟิลด์ของใบเบิก / operation log
-            'operation_date'   => ['nullable', 'date'],
+            'technician_id' => array_values(array_filter([
+                'bail',
+                Rule::prohibitedIf(!$isTeam),
+                'nullable',
+                'integer',
+                'exists:users,id',
+            ])),
+
+            'status' => $isTeam
+                ? ['nullable', Rule::in(['pending','accepted','in_progress','on_hold','resolved','closed','cancelled'])]
+                : ['nullable', Rule::in(['cancelled'])],
+
+            'operation_date'   => ['nullable','date'],
             'operation_method' => ['nullable', Rule::in(['requisition','service_fee','other'])],
-            'property_code'    => ['nullable', 'string', 'max:100'],
-            'require_precheck' => ['nullable', 'boolean'],
-            'remark'           => ['nullable', 'string'],
-            'issue_software'   => ['nullable', 'boolean'],
-            'issue_hardware'   => ['nullable', 'boolean'],
+            'property_code'    => ['nullable','string','max:100'],
+            'require_precheck' => ['nullable','boolean'],
+            'remark'           => ['nullable','string'],
+            'issue_software'   => ['nullable','boolean'],
+            'issue_hardware'   => ['nullable','boolean'],
         ];
 
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
-            $errors = $validator->errors();
-            $fieldsHuman = [
-                'title' => 'หัวข้อ', 'priority' => 'ระดับความสำคัญ','status' => 'สถานะ',
-                'reporter_email' => 'อีเมลผู้แจ้ง','request_date' => 'วันที่แจ้ง','files.*' => 'ไฟล์แนบ',
-                'operation_date' => 'วันที่ปฏิบัติงาน','operation_method' => 'วิธีการปฏิบัติ',
-                'property_code'  => 'รหัสครุภัณฑ์ (รพจ.)'
-            ];
-            $bad = collect(array_keys($errors->toArray()))
-                ->map(fn($f) => $fieldsHuman[$f] ?? $f)
-                ->implode(', ');
-            $msg = $bad ? ('ข้อมูลไม่ถูกต้อง: '.$bad) : 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
-            if (!$request->expectsJson()) {
-                return redirect()->back()->withErrors($validator)->withInput()
-                    ->with('toast', \App\Support\Toast::warning($msg, 2600));
-            }
-            return response()->json([
-                'errors' => $errors,
-                'toast'  => \App\Support\Toast::warning($msg, 2600),
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('toast', \App\Support\Toast::warning('ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง', 2600));
         }
+
         $data = $validator->validated();
 
-        DB::transaction(function () use ($data, $request, $req) {
-            $originalStatus = $req->status;
-            $actorId = optional($request->user())->id;
+        DB::transaction(function () use ($data, $request, $req, $isTeam, $actorId) {
 
+            $originalStatus = $req->status;
+            $originalTechId = (int) ($req->technician_id ?? 0);
+
+            if (!$isTeam) {
+            if (($data['status'] ?? null) === 'cancelled') {
+                if (!in_array($req->status, ['pending','accepted'], true) || !empty($req->technician_id)) {
+                    unset($data['status']); // หรือ throw validation error
+                }
+            } else {
+                unset($data['status']);
+            }
+
+            unset(
+                $data['technician_id'],
+                $data['cost'],
+                $data['resolution_note'],
+                $data['operation_date'],
+                $data['operation_method'],
+                $data['property_code'],
+                $data['require_precheck'],
+                $data['issue_software'],
+                $data['issue_hardware']
+            );
+        }
+
+            // fill basic fields
             $req->fill($data);
 
-            // หากเปลี่ยนเป็น accepted และยังไม่มีช่าง -> ตั้งเป็นผู้ใช้งานปัจจุบัน
-            if (($data['status'] ?? null) === 'accepted' && empty($req->technician_id) && $actorId) {
+            // auto-assign เมื่อ accepted
+            if (
+                $isTeam &&
+                (($data['status'] ?? null) === 'accepted') &&
+                empty($req->technician_id) &&
+                $actorId
+            ) {
                 $req->technician_id = $actorId;
             }
 
             $req->save();
 
-            // อัปเดตไทม์ไลน์เมื่อมีการเปลี่ยนสถานะ
+            /* ---------- timeline ---------- */
             if (array_key_exists('status', $data) && $originalStatus !== $req->status) {
                 $now = now();
-                switch ($req->status) {
-                    case 'accepted':
-                        if (empty($req->accepted_at)) $req->accepted_at = $now;
-                        if (empty($req->assigned_date)) $req->assigned_date = $now;
-                        break;
-                    case 'in_progress':
-                        if (empty($req->started_at)) $req->started_at = $now;
-                        break;
-                    case 'on_hold':
-                        if (empty($req->on_hold_at)) $req->on_hold_at = $now;
-                        break;
-                    case 'resolved':
-                        if (empty($req->resolved_at)) $req->resolved_at = $now;
-                        break;
-                    case 'closed':
-                        if (empty($req->closed_at)) $req->closed_at = $now;
-                        if (empty($req->completed_date)) $req->completed_date = $now;
-                        break;
+                match ($req->status) {
+                    'accepted'    => $req->accepted_at ??= $now,
+                    'in_progress' => $req->started_at  ??= $now,
+                    'on_hold'     => $req->on_hold_at  ??= $now,
+                    'resolved'    => $req->resolved_at ??= $now,
+                    'closed'      => [
+                        $req->closed_at      ??= $now,
+                        $req->completed_date ??= $now,
+                    ],
+                    default => null,
+                };
+                if ($req->status === 'accepted' && empty($req->assigned_date)) {
+                    $req->assigned_date = $now;
                 }
                 $req->save();
             }
 
-            if (!empty($req->technician_id)) {
-                $this->syncAssignment(
-                    $req,
-                    (int) $req->technician_id,
-                    $actorId,
-                    true // lead technician
-                );
+            /* ---------- assignment ---------- */
+            $newTechId     = (int) ($req->technician_id ?? 0);
+            $techChanged   = $isTeam && $originalTechId !== $newTechId;
+            $statusChanged = array_key_exists('status', $data) && $originalStatus !== $req->status;
+
+            if ($isTeam && ($techChanged || $statusChanged) && $newTechId > 0) {
+                $this->syncAssignment($req, $newTechId, $actorId, true);
             }
 
-            // ถ้าสถานะมีการเปลี่ยน ให้บันทึก transition log พร้อม from/to
+            /* ---------- log ---------- */
             if (class_exists(\App\Models\MaintenanceLog::class)) {
-                if (array_key_exists('status', $data) && $originalStatus !== $req->status) {
-                    $defaultNote = $this->defaultNoteForStatus($req->status, $actorId, $req);
-                    \App\Models\MaintenanceLog::create([
-                        'request_id'  => $req->id,
-                        'action'      => \App\Models\MaintenanceLog::ACTION_TRANSITION,
-                        'note'        => $defaultNote,
-                        'user_id'     => $actorId,
-                        'from_status' => $originalStatus,
-                        'to_status'   => $req->status,
-                    ]);
-                } else {
-                    \App\Models\MaintenanceLog::create([
-                        'request_id' => $req->id,
-                        'action'     => \App\Models\MaintenanceLog::ACTION_UPDATE,
-                        'note'       => null,
-                        'user_id'    => $actorId,
-                    ]);
-                }
+                \App\Models\MaintenanceLog::create([
+                    'request_id'  => $req->id,
+                    'action'      => ($statusChanged
+                        ? \App\Models\MaintenanceLog::ACTION_TRANSITION
+                        : \App\Models\MaintenanceLog::ACTION_UPDATE),
+                    'note'        => $statusChanged
+                        ? $this->defaultNoteForStatus($req->status, $actorId, $req)
+                        : null,
+                    'user_id'     => $actorId,
+                    'from_status' => $statusChanged ? $originalStatus : null,
+                    'to_status'   => $statusChanged ? $req->status : null,
+                ]);
             }
 
-            // จัดการลบไฟล์แนบ
-            $toRemove = array_filter((array) $request->input('remove_attachments', []), fn($v) => is_numeric($v));
+            /* ---------- remove attachments ---------- */
+            $toRemove = array_filter(
+                (array) $request->input('remove_attachments', []),
+                fn($v) => is_numeric($v)
+            );
+
             if (!empty($toRemove)) {
-                $attachments = $req->attachments()->whereIn('id', $toRemove)->get();
-                foreach ($attachments as $att) {
-                    $att->deleteAndCleanup(true);
-                }
+                $req->attachments()->whereIn('id', $toRemove)->get()
+                    ->each(fn($att) => $att->deleteAndCleanup(true));
             }
 
-            // อัปโหลดไฟล์แนบใหม่
+            /* ---------- upload attachments ---------- */
             if ($request->hasFile('files')) {
                 foreach ($request->file('files') as $up) {
                     $disk = 'public';
                     $storedPath = $up->store("maintenance/{$req->id}", $disk);
 
-                    $stream = fopen($up->getRealPath(), 'r');
-                    $ctx = hash_init('sha256');
-                    while (!feof($stream)) {
-                        $buf = fread($stream, 1024 * 1024);
-                        if ($buf === false) break;
-                        hash_update($ctx, $buf);
-                    }
-                    fclose($stream);
-                    $sha = hash_final($ctx);
+                    $sha = hash_file('sha256', $up->getRealPath());
 
                     $file = File::firstOrCreate(
                         ['checksum_sha256' => $sha],
                         [
-                            'path'       => $storedPath,
-                            'disk'       => $disk,
-                            'mime'       => $up->getClientMimeType(),
-                            'size'       => $up->getSize(),
-                            'path_hash'  => hash('sha256', $storedPath),
-                            'meta'       => null,
+                            'path'      => $storedPath,
+                            'disk'      => $disk,
+                            'mime'      => $up->getClientMimeType(),
+                            'size'      => $up->getSize(),
+                            'path_hash' => hash('sha256', $storedPath),
                         ]
                     );
 
                     $existing = $req->attachments()->withTrashed()->where('file_id', $file->id)->first();
                     if ($existing) {
-                        if ($existing->trashed()) {
-                            $existing->restore();
-                        }
-                    } else {
-                        $req->attachments()->create([
-                            'file_id'       => $file->id,
-                            'original_name' => $up->getClientOriginalName(),
-                            'extension'     => $up->getClientOriginalExtension() ?: null,
-                            'uploaded_by'   => $actorId,
-                            'source'        => 'web',
-                            'is_private'    => false,
-                            'order_column'  => 0,
-                        ]);
+                        if ($existing->trashed()) $existing->restore();
+                        continue;
                     }
+
+                    $req->attachments()->create([
+                        'file_id'       => $file->id,
+                        'original_name' => $up->getClientOriginalName(),
+                        'extension'     => $up->getClientOriginalExtension() ?: null,
+                        'uploaded_by'   => $actorId,
+                        'source'        => 'web',
+                        'is_private'    => false,
+                        'order_column'  => 0,
+                    ]);
                 }
             }
 
-            // 🔹 อัปเดต Operation Log จากฟอร์มเดียวกัน (ใบเบิก/รพจ.)
-            $hasOpFields =
+            /* ---------- operation log ---------- */
+            $hasOp =
                 !empty($data['operation_date'] ?? null) ||
                 !empty($data['operation_method'] ?? null) ||
                 !empty($data['property_code'] ?? null) ||
@@ -558,25 +569,22 @@ class MaintenanceRequestController extends Controller
                 !empty($data['require_precheck'] ?? null) ||
                 !empty($data['issue_software'] ?? null) ||
                 !empty($data['issue_hardware'] ?? null) ||
-                $req->operationLog()->exists(); // ถ้าเคยมีแล้ว ให้ update ต่อ
+                $req->operationLog()->exists();
 
-            if ($hasOpFields) {
-                $opData = [
-                    'operation_date'   => $data['operation_date'] ?? null,
-                    'operation_method' => $data['operation_method'] ?? null,
-                    'property_code'    => $data['property_code'] ?? null,
-                    'require_precheck' => !empty($data['require_precheck']),
-                    'remark'           => $data['remark'] ?? null,
-                    'issue_software'   => !empty($data['issue_software']),
-                    'issue_hardware'   => !empty($data['issue_hardware']),
-                    'user_id'          => $actorId,
-                ];
-
-                $req->operationLog()
-                    ->updateOrCreate(
-                        ['maintenance_request_id' => $req->id],
-                        $opData
-                    );
+            if ($hasOp) {
+                $req->operationLog()->updateOrCreate(
+                    ['maintenance_request_id' => $req->id],
+                    [
+                        'operation_date'   => $data['operation_date'] ?? null,
+                        'operation_method' => $data['operation_method'] ?? null,
+                        'property_code'    => $data['property_code'] ?? null,
+                        'require_precheck' => !empty($data['require_precheck']),
+                        'remark'           => $data['remark'] ?? null,
+                        'issue_software'   => !empty($data['issue_software']),
+                        'issue_hardware'   => !empty($data['issue_hardware']),
+                        'user_id'          => $actorId,
+                    ]
+                );
             }
         });
 
@@ -585,7 +593,7 @@ class MaintenanceRequestController extends Controller
         return $this->respondWithToast(
             $request,
             \App\Support\Toast::success('อัปเดตคำขอเรียบร้อย', 1600),
-            redirect()->route('maintenance.requests.show', ['req' => $req->id]),
+            redirect()->route('maintenance.requests.show', $req),
             ['data' => $req]
         );
     }
@@ -593,29 +601,48 @@ class MaintenanceRequestController extends Controller
     public function transition(Request $request, MR $req)
     {
         \Gate::authorize('transition', $req);
+
+        $user = $request->user();
+        $actorId = optional($user)->id;
+
+        $isTeam = $user && ($user->isAdmin() || $user->isSupervisor() || $user->isTechnician());
+
         $rules = [
-            'status'        => ['required', Rule::in(['pending','accepted','in_progress','on_hold','resolved','closed','cancelled'])],
-            'note'          => ['nullable','string','max:2000'],
-            'technician_id' => ['nullable','integer','exists:users,id'],
+            'status' => $isTeam
+                ? ['bail','required', Rule::in(['pending','accepted','in_progress','on_hold','resolved','closed','cancelled'])]
+                : ['prohibited'],
+
+            'note' => ['nullable','string','max:2000'],
+
+            'technician_id' => array_values(array_filter([
+                Rule::prohibitedIf(!$isTeam),
+                'nullable','integer','exists:users,id',
+            ])),
         ];
+
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             $errors = $validator->errors();
             $fieldsHuman = ['status' => 'สถานะ','technician_id' => 'รหัสช่าง','note'=>'บันทึก'];
-            $bad = collect(array_keys($errors->toArray()))->map(fn($f) => $fieldsHuman[$f] ?? $f)->implode(', ');
+            $bad = collect(array_keys($errors->toArray()))
+                ->map(fn($f) => $fieldsHuman[$f] ?? $f)
+                ->implode(', ');
             $msg = $bad ? ('ข้อมูลไม่ถูกต้อง: '.$bad) : 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
+
             if (!$request->expectsJson()) {
                 return redirect()->back()->withErrors($validator)->withInput()
                     ->with('toast', \App\Support\Toast::warning($msg, 2200));
             }
+
             return response()->json([
                 'errors' => $errors,
                 'toast'  => \App\Support\Toast::warning($msg, 2200),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+
         $data = $validator->validated();
 
-        $req = $this->applyTransition($req, $data, optional(Auth::user())->id);
+        $req = $this->applyTransition($req, $data, $actorId);
 
         return $this->respondWithToast(
             $request,
@@ -668,19 +695,24 @@ class MaintenanceRequestController extends Controller
     protected function applyTransition(MR $req, array $data, ?int $actorId = null): MR
     {
         DB::transaction(function () use ($req, $data, $actorId) {
+
             $originalStatus = $req->status;
+            $originalTechId = (int) ($req->technician_id ?? 0);
+
+            // ต้องมี status เสมอ
             $req->status = $data['status'];
 
             $technicianChanged = false;
 
-            if (!empty($data['technician_id']) && $req->technician_id !== $data['technician_id']) {
-                $req->technician_id = $data['technician_id'];
+            // เปลี่ยนช่างจาก payload (เฉพาะทีมงาน/ผ่าน policy แล้ว)
+            if (!empty($data['technician_id']) && (int)$req->technician_id !== (int)$data['technician_id']) {
+                $req->technician_id = (int) $data['technician_id'];
                 $technicianChanged = true;
             }
 
             // รับงาน แต่ยังไม่มีช่าง -> ตั้งเป็นผู้กดรับ
             if ($req->status === 'accepted' && empty($req->technician_id) && $actorId) {
-                $req->technician_id = $actorId;
+                $req->technician_id = (int) $actorId;
                 $technicianChanged = true;
             }
 
@@ -691,15 +723,19 @@ class MaintenanceRequestController extends Controller
                     if (empty($req->accepted_at)) $req->accepted_at = $now;
                     if (empty($req->assigned_date)) $req->assigned_date = $now;
                     break;
+
                 case 'in_progress':
                     if (empty($req->started_at)) $req->started_at = $now;
                     break;
+
                 case 'on_hold':
                     if (empty($req->on_hold_at)) $req->on_hold_at = $now;
                     break;
+
                 case 'resolved':
                     if (empty($req->resolved_at)) $req->resolved_at = $now;
                     break;
+
                 case 'closed':
                     if (empty($req->closed_at)) $req->closed_at = $now;
                     if (empty($req->completed_date)) $req->completed_date = $now;
@@ -708,13 +744,13 @@ class MaintenanceRequestController extends Controller
 
             $req->save();
 
-            if (!empty($req->technician_id)) {
-                $this->syncAssignment(
-                    $req,
-                    (int) $req->technician_id,
-                    $actorId,
-                    true // lead technician
-                );
+            $statusChanged = $originalStatus !== $req->status;
+
+            $newTechId = (int) ($req->technician_id ?? 0);
+            $techChanged = ($originalTechId !== $newTechId);
+
+            if (($techChanged || $statusChanged) && $newTechId > 0) {
+                $this->syncAssignment($req, $newTechId, $actorId, true);
             }
 
             // ---- log ----
@@ -722,10 +758,11 @@ class MaintenanceRequestController extends Controller
                 $defaultNote = $data['note']
                     ?? $this->defaultNoteForStatus($req->status, $actorId, $req);
 
-                if ($technicianChanged && $req->technician) {
+                // ถ้ามีการเปลี่ยนช่าง ให้ใส่ชื่อช่างในโน้ต
+                if ($techChanged && $req->technician) {
                     $defaultNote = trim(
-                        ($defaultNote ? $defaultNote.' • ' : '')
-                        .'ช่าง: '.$req->technician->name
+                        ($defaultNote ? $defaultNote.' • ' : '') .
+                        'ช่าง: '.$req->technician->name
                     );
                 }
 
@@ -991,15 +1028,21 @@ class MaintenanceRequestController extends Controller
 
     protected function syncAssignment(MR $req, int $userId, ?int $actorId = null, bool $isLead = true): void
     {
+        $status = match ($req->status) {
+            'resolved', 'closed' => MaintenanceAssignment::STATUS_DONE,
+            'cancelled'          => MaintenanceAssignment::STATUS_CANCELLED,
+            default              => MaintenanceAssignment::STATUS_IN_PROGRESS,
+        };
+
         MaintenanceAssignment::updateOrCreate(
             ['maintenance_request_id' => $req->id, 'user_id' => $userId],
             [
-                'role'       => $req->technician?->role ?? 'technician',
-                'is_lead'    => $isLead,
-                'assigned_at'=> now(),
-                'status'     => in_array($req->status, ['resolved','closed'], true) ? 'done' : 'in_progress',
+                'role'    => $req->technician?->role ?? 'technician',
+                'is_lead' => $isLead,
+                'status'  => $status,
             ]
-        );
+        )->fill([
+            'assigned_at' => now(),
+        ])->save();
     }
-
 }

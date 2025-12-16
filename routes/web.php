@@ -15,7 +15,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\MaintenanceOperationLogController;
-use App\Http\Controllers\MaintenanceAssignmentController;
+use App\Http\Controllers\MaintenanceAssignmentController; // ✅ เพิ่ม
 use App\Http\Controllers\MaintenanceRatingController;
 
 // Admin User Controller
@@ -71,25 +71,19 @@ Route::middleware(['auth'])->group(function () {
 
             // ---------- กลุ่ม Rating (ไม่มี id ใบงาน) ----------
             Route::prefix('rating')->name('rating.')->group(function () {
-                // หน้า Evaluate: งานที่เสร็จแล้ว รอรีวิว
-                // GET /maintenance/requests/rating/evaluate
                 Route::get('/evaluate', [MaintenanceRatingController::class, 'evaluateList'])
                     ->name('evaluate');
 
-                // Technician Dashboard: สรุปคะแนนช่าง + กราฟ (ถ้าใช้)
-                // GET /maintenance/requests/rating/technicians
                 Route::get('/technicians', [MaintenanceRatingController::class, 'technicianDashboard'])
                     ->name('technicians');
             });
 
             // ---------- ให้คะแนนใบงานทีละใบ ----------
-            // GET /maintenance/requests/{maintenanceRequest}/rating
             Route::get(
                 '/{maintenanceRequest}/rating',
                 [MaintenanceRatingController::class, 'create']
             )->name('rating.create');
 
-            // POST /maintenance/requests/{maintenanceRequest}/rating
             Route::post(
                 '/{maintenanceRequest}/rating',
                 [MaintenanceRatingController::class, 'store']
@@ -125,12 +119,19 @@ Route::middleware(['auth'])->group(function () {
                 [MaintenanceRequestController::class, 'printWorkOrder']
             )->name('work-order');
         });
+
+        Route::post('requests/{req}/assignments', [MaintenanceAssignmentController::class, 'store'])
+            ->name('assignments.store');
+
+        Route::post('maintenance/requests/{req}/assignments', [MaintenanceAssignmentController::class, 'store'])
+            ->name('maintenance.assignments.store');
+
     });
 
     // ===== Attachments (serve private files after auth) =====
     Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');
 
-    // Chatฟ
+    // Chat
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::post('/chat/threads', [ChatController::class, 'storeThread'])->name('chat.store');
     Route::get('/chat/threads/{thread}', [ChatController::class, 'show'])->name('chat.show');

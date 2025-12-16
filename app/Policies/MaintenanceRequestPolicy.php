@@ -11,71 +11,100 @@ class MaintenanceRequestPolicy
 {
     use HandlesAuthorization;
 
-    // ไม่ให้สิทธิ์พิเศษทั่วระบบ (ของใครของมัน)
-    // - Admin/หัวหน้า: ทำได้ทุกอย่าง
+    protected function isAdminTeam(User $user): bool
+    {
+        return $user->isAdmin() || $user->isSupervisor();
+    }
+
+    protected function isTech(User $user): bool
+    {
+        return $user->isTechnician();
+    }
+
+    protected function isAssignedTech(User $user, MR $req): bool
+    {
+        return $this->isTech($user) && (int) $req->technician_id === (int) $user->id;
+    }
+
+    protected function isOpenForTech(MR $req): bool
+    {
+        return empty($req->technician_id) && in_array($req->status, ['pending', 'accepted'], true);
+    }
 
     public function view(User $user, MR $req): Response
     {
-        // Admin และ Supervisor ดูได้ทุกงาน
-        if ($user->isAdmin() || $user->isSupervisor()) {
-            return Response::allow();
-        }
-        // ผู้รับผิดชอบดูได้
-        if ($user->isTechnician() && (int)$req->technician_id === (int)$user->id) {
-            return Response::allow();
-        }
-        // ผู้แจ้งดูงานตนเองได้
-        if ((int)$req->reporter_id === (int)$user->id) {
-            return Response::allow();
-        }
+        if ($this->isAdminTeam($user)) return Response::allow();
+
+        if ($this->isTech($user) && $this->isOpenForTech($req)) return Response::allow();
+
+        if ($this->isAssignedTech($user, $req)) return Response::allow();
+
+        if ((int) $req->reporter_id === (int) $user->id) return Response::allow();
+
         return Response::deny('อนุญาตให้ดูเฉพาะงานของตนเองหรือที่ได้รับมอบหมายเท่านั้น');
     }
 
     public function update(User $user, MR $req): Response
     {
-        // Admin และ Supervisor แก้ไขได้ทุกงาน
-        if ($user->isAdmin() || $user->isSupervisor()) {
+        if ($this->isAdminTeam($user)) return Response::allow();
+
+        if ($this->isAssignedTech($user, $req)) return Response::allow();
+
+        if ((int) $req->reporter_id === (int) $user->id && empty($req->technician_id)) {
             return Response::allow();
         }
-        // ผู้รับผิดชอบแก้ไขได้
-        if ($user->isTechnician() && (int)$req->technician_id === (int)$user->id) {
-            return Response::allow();
-        }
-        // ผู้แจ้งแก้ไขได้เฉพาะช่วงยังไม่มีผู้รับผิดชอบ
-        if ((int)$req->reporter_id === (int)$user->id && empty($req->technician_id)) {
-            return Response::allow();
-        }
-        return Response::deny('ไม่มีสิทธิ์แก้ไขงานนี้');
+
+        return Response::deny('ไม่มีสิทธิ์แก้ไขข้อมูลใบงานนี้');
     }
 
+    /**
+     * เปลี่ยนสถานะ (ยกเว้นรับงาน) = ทีมงานหรือช่างที่รับผิดชอบเท่านั้น
+     */
     public function transition(User $user, MR $req): Response
     {
-        // Admin และ Supervisor เปลี่ยนสถานะได้ทุกงาน
-        if ($user->isAdmin() || $user->isSupervisor()) {
-            return Response::allow();
-        }
-        // ผู้รับผิดชอบเปลี่ยนสถานะได้
-        if ($user->isTechnician() && (int)$req->technician_id === (int)$user->id) {
-            return Response::allow();
-        }
+        if ($this->isAdminTeam($user)) return Response::allow();
+
+        if ($this->isAssignedTech($user, $req)) return Response::allow();
+
         return Response::deny('อนุญาตให้เปลี่ยนสถานะเฉพาะช่างที่รับผิดชอบหรือผู้ดูแลระบบเท่านั้น');
+    }
+
+    public function accept(User $user, MR $req): Response
+    {
+        // ให้ admin/sup รับแทนได้ ถ้าอยาก (ปล่อยไว้เป็น allow)
+        if ($this->isAdminTeam($user)) return Response::allow();
+
+        if (!$this->isTech($user)) return Response::deny('เฉพาะช่างเท่านั้น');
+
+        if ($this->isOpenForTech($req)) return Response::allow();
+
+        return Response::deny('งานนี้ถูกมอบหมายแล้วหรือไม่อยู่ในสถานะที่รับได้');
     }
 
     public function attach(User $user, MR $req): Response
     {
-        // Admin และ Supervisor แนบไฟล์ได้ทุกงาน
-        if ($user->isAdmin() || $user->isSupervisor()) {
-            return Response::allow();
-        }
-        return $this->update($user, $req);
+        if ($this->isAdminTeam($user)) return Response::allow();
+
+        if ($this->isAssignedTech($user, $req)) return Response::allow();
+
+        if ((int) $req->reporter_id === (int) $user->id) return Response::allow();
+
+        return Response::deny('ไม่มีสิทธิ์แนบไฟล์ในงานนี้');
     }
 
     public function deleteAttachment(User $user, MR $req): Response
     {
-        // Admin และ Supervisor ลบไฟล์ได้ทุกงาน
-        if ($user->isAdmin() || $user->isSupervisor()) {
-            return Response::allow();
-        }
-        return $this->update($user, $req);
+        if ($this->isAdminTeam($user)) return Response::allow();
+
+        return Response::deny('ไม่มีสิทธิ์ลบไฟล์แนบ');
+    }
+
+    public function assign(User $user, MR $req): Response
+    {
+        if ($this->isAdminTeam($user)) return Response::allow();
+
+        if ($this->isAssignedTech($user, $req)) return Response::allow();
+
+        return Response::deny('อนุญาตให้มอบหมายทีมช่างเฉพาะผู้ดูแล/ช่างผู้รับผิดชอบเท่านั้น');
     }
 }
