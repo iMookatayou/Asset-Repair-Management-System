@@ -1,216 +1,188 @@
 @extends('layouts.app')
-@section('title','Community Chat')
+@section('title', 'Community Chat | ระบบแลกเปลี่ยนเรียนรู้')
 
 @section('content')
-  <style>
-    .btn-hard{
-      display:inline-flex;align-items:center;justify-content:center;
-      height:44px;min-width:110px;padding:0 16px;border-radius:10px;
-      font-weight:600;background:#059669;color:#fff;
-      box-shadow: 0 1px 0 rgba(0,0,0,.02);
+@php
+    /* ประกาศ Class แค่นี้พอครับ ตัวแดงจะหายไป */
+    use Illuminate\Support\Str;
+    $q = request('q');
+@endphp
+
+<style>
+    /* คุมโทนจากหน้าทรัพย์สิน */
+    .sticky-chat-header {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 6rem;
+        z-index: 20;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid #E2E8F0;
     }
-    .btn-hard:hover{background:#047857}
-    .btn-hard:active{transform:translateY(.5px)}
-    .btn-outline{
-      display:inline-flex;align-items:center;justify-content:center;
-      height:40px;padding:0 12px;border-radius:10px;
-      border:1px solid #CBD5E1;color:#0F172A;background:#fff;
-    }
-    .btn-outline:hover{background:#F8FAFC}
-    .chip{
-      display:inline-flex;align-items:center;gap:6px;
-      height:24px;padding:0 8px;border-radius:999px;
-      background:#F1F5F9;color:#334155;font-size:12px;font-weight:500;
-    }
-  </style>
+</style>
 
-  {{-- ระยะใต้ navbar ให้เท่าหน้าอื่น ๆ --}}
-  <div class="pt-6 md:pt-8 lg:pt-10"></div>
+<div class="pt-6 md:pt-8 lg:pt-10"></div>
 
-  <div class="max-w-5xl mx-auto px-4 pb-8 space-y-4">
+<div class="w-full flex flex-col">
 
-    {{-- Sticky header + search --}}
-    <div class="sticky top-[6rem] z-20 bg-slate-50/90 backdrop-blur">
-      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="px-5 py-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div class="flex items-center gap-3">
-            <div class="size-10 grid place-items-center rounded-xl bg-emerald-50 text-emerald-700">
-              <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"
-                      d="M6 8h12M6 12h8M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v11l-3.5 3.5H6a2 2 0 0 1-2-2V5z"/>
-              </svg>
-            </div>
-            <div>
-              <h1 class="text-xl font-semibold text-slate-900">Community Chat</h1>
-              <p class="text-sm text-slate-600">ถาม-ตอบ แชร์ทริก แลกเปลี่ยนประสบการณ์กันได้ที่นี่</p>
-            </div>
-          </div>
-
-          <form method="GET" action="{{ route('chat.index') }}"
-                class="w-full md:w-[440px] flex items-center rounded-xl border border-slate-300 bg-white shadow-sm focus-within:ring-2 focus-within:ring-emerald-500">
-            <input
-              type="text"
-              name="q"
-              value="{{ request('q','') }}"
-              placeholder="ค้นหากระทู้…"
-              class="flex-1 px-3 h-11 text-sm bg-transparent outline-none border-0 rounded-l-xl"
-              aria-label="Search threads"
-            >
-            <button type="submit"
-                    class="h-11 px-4 text-sm font-medium text-white bg-emerald-700 rounded-r-xl hover:bg-emerald-800 active:translate-y-[0.5px]">
-              Search
-            </button>
-          </form>
-        </div>
-        <div class="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
-      </div>
-    </div>
-
-    {{-- การ์ดสร้างกระทู้ใหม่ --}}
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="p-5 space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="text-sm text-slate-600">สร้างกระทู้ใหม่</div>
-          @auth
-            <div class="chip" title="คุณกำลังโพสต์ในนาม: {{ auth()->user()->name }}">
-              <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM12 14c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z"/></svg>
-              {{ auth()->user()->name }}
-            </div>
-          @endauth
-        </div>
-
-        <form method="POST" action="{{ route('chat.store') }}" class="space-y-3">
-          @csrf
-          <div class="flex flex-col sm:flex-row gap-3">
-            <input
-              name="title"
-              required
-              maxlength="180"
-              class="w-full sm:flex-1 rounded-lg border border-slate-300 px-3 h-11 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder='หัวข้อกระทู้ เช่น "เลือกเครื่องพิมพ์เวรดึกยังไงให้ไม่งอแง?"'
-              value="{{ old('title') }}"
-              aria-label="Thread title"
-            >
-            <button type="submit" class="btn-hard" aria-label="Post thread">
-              โพสต์
-            </button>
-          </div>
-
-          @error('title')
-            <p class="text-sm text-rose-600">{{ $message }}</p>
-          @enderror
-
-          @if (session('status'))
-            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              {{ session('status') }}
-            </div>
-          @endif
-        </form>
-      </div>
-    </div>
-
-    {{-- รายการกระทู้ --}}
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div class="px-5 py-3 border-b border-slate-200 text-sm font-medium text-slate-800">
-        กระทูล่าสุด
-        @if(request('q'))
-          <span class="ml-2 text-slate-500 font-normal">ผลลัพธ์สำหรับ “{{ request('q') }}”</span>
-        @endif
-      </div>
-
-      @if($threads->count())
-        <ul class="divide-y divide-slate-200">
-          @foreach($threads as $th)
-            <li>
-              <a href="{{ route('chat.show', $th) }}" class="block px-5 py-4 hover:bg-slate-50 focus:bg-slate-50">
-                <div class="flex items-start gap-3">
-                  {{-- สถานะกระทู้: Locked / เปิดรับข้อความ --}}
-                  @php $locked = (bool)$th->is_locked; @endphp
-                  <span class="chip shrink-0"
-                        @if($locked)
-                          style="background:#FEF3C7;color:#92400E;"
-                          title="Thread locked"
-                        @else
-                          style="background:#ECFDF5;color:#047857;"
-                          title="เปิดรับข้อความ"
-                        @endif
-                  >
-                    @if($locked)
-                      <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                              d="M7 10V7a5 5 0 0 1 10 0v3M6 10h12v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-9z"/>
-                      </svg>
-                      Locked
-                    @else
-                      {{-- bubble แชต + เปิดรับข้อความ --}}
-                      <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                              d="M5 6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H11l-3.5 3.5a.7.7 0 0 1-1.2-.5V15A3 3 0 0 1 5 12V6z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                              d="M9 9h6"/>
-                      </svg>
-                      เปิดรับข้อความ
-                    @endif
-                  </span>
-
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2">
-                      <h2 class="font-medium text-slate-900 line-clamp-1">{{ $th->title }}</h2>
-                      <span class="chip" title="จำนวนข้อความในกระทู้นี้">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                                d="M7 8h10M7 12h7M5 4h14a2 2 0 012 2v10l-4 4H5a2 2 0 01-2-2V6a2 2 0 012-2z"/>
-                        </svg>
-                        {{ $th->messages_count ?? 0 }}
-                      </span>
-                    </div>
-
-                    <div class="mt-1 text-xs text-slate-600">
-                      โดย {{ $th->author->name ?? 'Unknown' }}
-                      • {{ $th->created_at?->diffForHumans() }}
-                    </div>
-
-                    @php
-                      $last = $th->latestMessage ?? null;
-                    @endphp
-                    @if($last)
-                      <div class="mt-2 text-sm text-slate-700 line-clamp-2">
-                        <span class="font-medium">{{ optional($last->user)->name ?? 'Someone' }}: </span>
-                        {{ \Illuminate\Support\Str::limit(strip_tags($last->body), 180) }}
-                        <span class="text-xs text-slate-500">— {{ $last->created_at?->diffForHumans() }}</span>
-                      </div>
-                    @endif
-                  </div>
-
-                  <div class="shrink-0 self-center text-slate-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M9 5l7 7-7 7"/>
-                    </svg>
-                  </div>
+    {{-- ✅ ส่วนที่ 1: Header (ลอกขนาดและโครงสร้างหน้าทรัพย์สิน) --}}
+    <div class="sticky-chat-header">
+        <div class="px-4 md:px-6 lg:px-8 py-4">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h1 class="text-[17px] font-semibold text-slate-900">Community Chat</h1>
+                    <p class="text-[13px] text-slate-500">พื้นที่แลกเปลี่ยนและสอบถามข้อมูลภายในองค์กร</p>
                 </div>
-              </a>
-            </li>
-          @endforeach
-        </ul>
-      @else
-        <div class="p-10 text-center">
-          <div class="mx-auto mb-3 size-12 grid place-items-center rounded-full bg-slate-100">
-            <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"
-                    d="M7 8h10M7 12h7M5 4h14a2 2 0 012 2v10l-4 4H5a2 2 0 01-2-2V6a2 2 0 012-2z"/>
-            </svg>
-          </div>
-          <div class="font-medium text-slate-800">ยังไม่มีกระทู้</div>
-          <p class="text-sm text-slate-600">เริ่มพูดคุยกันได้เลยด้วยการสร้างกระทู้ใหม่ด้านบน</p>
+
+                <button type="submit" form="main-chat-form"
+                        class="inline-flex items-center gap-2 rounded-md bg-[#0F2D5C] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#1e3a6d] shadow-sm transition-all">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    สร้างกระทู้ใหม่
+                </button>
+            </div>
+
+            {{-- Search Grid 12 ช่อง ตามหน้าทรัพย์สิน --}}
+            <form method="GET" id="main-chat-form" action="{{ route('chat.index') }}"
+                  class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
+
+                <div class="md:col-span-10">
+                    <label class="mb-1 block text-[12px] font-semibold text-slate-600">ค้นหาหัวข้อ / เริ่มตั้งหัวข้อใหม่</label>
+                    <div class="relative">
+                        <input name="q" value="{{ $q }}" id="chat-input"
+                               class="w-full rounded-md border border-slate-200 bg-white pl-10 pr-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/20 transition-all"
+                               placeholder="พิมพ์หัวข้อที่ต้องการค้นหา หรือพิมพ์ที่นี่แล้วกดปุ่มสร้างกระทู้ด้านบน...">
+                        <span class="absolute inset-y-0 left-0 flex items-center justify-center pl-3 text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2 flex items-end justify-end gap-2">
+                    <a href="{{ route('chat.index') }}" onclick="showLoader()"
+                       class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-all"
+                       title="ล้างค่า">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                    </a>
+                    <button type="submit" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#0F2D5C] text-white hover:bg-[#1e3a6d] shadow-md transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </button>
+                </div>
+            </form>
         </div>
-      @endif
     </div>
 
-    @if($threads->count())
-      <div class="mt-2">
-        {{ $threads->withQueryString()->links() }}
-      </div>
-    @endif
+    {{-- ✅ ส่วนที่ 2: แถบสถานะย่อย --}}
+    <div class="px-4 md:px-6 lg:px-8 py-2.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+        <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-[0.16em]">รายการกระทู้ล่าสุด</h3>
+        <span class="text-[11px] font-semibold text-slate-400 uppercase">จำนวน {{ $threads->total() }} รายการ</span>
+    </div>
 
-  </div>
+    {{-- ✅ ส่วนที่ 3: รายการกระทู้ (สไตล์ List คมๆ) --}}
+    <div class="divide-y divide-slate-100 bg-white">
+        @forelse($threads as $th)
+            <div class="group relative hover:bg-slate-50/50 transition-colors">
+                <a href="{{ route('chat.show', $th) }}" class="block px-4 md:px-6 lg:px-8 py-4" onclick="showLoader()">
+                    <div class="flex flex-col md:flex-row md:items-center gap-4">
+
+                        {{-- Status & Replies --}}
+                        <div class="flex items-center gap-3 md:w-32 shrink-0">
+                            @if($th->is_locked)
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200">ปิดกระทู้</span>
+                            @else
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 uppercase">Active</span>
+                            @endif
+                            <div class="flex items-center gap-1 text-slate-400 text-[11px] font-bold">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                                {{ $th->messages_count ?? 0 }}
+                            </div>
+                        </div>
+
+                        {{-- Title & Preview Content --}}
+                        <div class="flex-1 min-w-0">
+                            <h2 class="text-[14px] font-bold text-slate-800 group-hover:text-[#0F2D5C] transition-colors line-clamp-1">
+                                {{ $th->title }}
+                            </h2>
+                            @php $last = $th->latestMessage; @endphp
+                            <div class="text-[12px] text-slate-500 line-clamp-1 mt-0.5">
+                                @if($last)
+                                    <span class="font-bold text-slate-700">{{ $last->user->name ?? 'สมาชิก' }}:</span>
+                                    {{ Str::limit(strip_tags($last->body), 100) }}
+                                @else
+                                    <span class="italic text-slate-300">ยังไม่มีการตอบกลับ...</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Author & Time (ภาษาไทย) --}}
+                        <div class="md:text-right shrink-0">
+                            <div class="text-[12px] font-bold text-slate-700">{{ $th->author->name ?? 'User' }}</div>
+                            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">
+                                {{ $th->updated_at?->diffForHumans() }}
+                            </div>
+                        </div>
+
+                        <div class="hidden md:block text-slate-200 group-hover:text-[#0F2D5C] transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        @empty
+            <div class="py-24 text-center text-slate-400 text-[13px] bg-white">
+                ไม่พบข้อมูลกระทู้ในขณะนี้
+            </div>
+        @endforelse
+    </div>
+
+    {{-- Pagination --}}
+    @if($threads->hasPages())
+        <div class="px-4 md:px-6 lg:px-8 mt-6 mb-12">
+            {{ $threads->withQueryString()->links() }}
+        </div>
+    @endif
+</div>
+
+{{-- Hidden Form สำหรับสร้างกระทู้ --}}
+<form id="hidden-create-thread" method="POST" action="{{ route('chat.store') }}" style="display:none;">
+    @csrf
+    <input type="hidden" name="title" id="final-thread-title">
+</form>
+
+<script>
+    // ดักปุ่ม "สร้างกระทู้ใหม่"
+    document.querySelector('button[form="main-chat-form"]').addEventListener('click', function(e) {
+        e.preventDefault();
+        const inputVal = document.getElementById('chat-input').value;
+        if(!inputVal.trim()) {
+            alert('กรุณากรอกหัวข้อกระทู้ที่ต้องการสร้าง');
+            return;
+        }
+        document.getElementById('final-thread-title').value = inputVal;
+        showLoader();
+        document.getElementById('hidden-create-thread').submit();
+    });
+</script>
+@endsection
+
+@section('after-content')
+<div id="loaderOverlay" class="loader-overlay">
+    <div class="loader-spinner"></div>
+</div>
+<style>
+    .loader-overlay{position:fixed;inset:0;background:rgba(255,255,255,.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:99999;visibility:hidden;opacity:0;transition:all .2s}
+    .loader-overlay.show{visibility:visible;opacity:1}
+    .loader-spinner{width:36px;height:36px;border:3.5px solid #0F2D5C;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+<script>
+    function showLoader(){document.getElementById('loaderOverlay')?.classList.add('show')}
+    function hideLoader(){document.getElementById('loaderOverlay')?.classList.remove('show')}
+    document.addEventListener('DOMContentLoaded', hideLoader);
+</script>
 @endsection
