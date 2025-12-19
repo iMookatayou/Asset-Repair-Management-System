@@ -1,226 +1,211 @@
 @php
   /** @var \App\Models\MaintenanceRequest|null $req */
-  $req    = $req ?? null;
-  $assets = is_iterable($assets ?? null) ? collect($assets) : collect();
-  $depts  = is_iterable($depts ?? null) ? collect($depts) : collect();
-  $attachments = is_iterable($attachments ?? null) ? $attachments : [];
+  $req = $req ?? null;
 
-  $user = auth()->user();
+  $assets = is_iterable($assets ?? null) ? collect($assets) : collect();
+  $depts  = is_iterable($depts  ?? null) ? collect($depts)  : collect();
+
+  $user   = auth()->user();
+  $isEdit = (bool) optional($req)->exists;
+
+  $input = "mt-2 w-full h-11 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm
+            focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
+
+  $textarea = "mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm
+              focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
+
+  $headCls   = "flex items-start gap-3 pb-3 min-h-[56px]";
+  $noCls     = "w-8 h-8 shrink-0 rounded-full border border-emerald-600 bg-emerald-600
+                flex items-center justify-center text-sm font-bold text-white leading-none";
+  $titleCls  = "text-base font-semibold text-slate-900 leading-tight";
+  $subCls    = "text-sm text-slate-500 leading-snug";
+  $accentWrap= "min-w-0 relative pl-3 pt-[1px]";
+  $accentBar = "absolute left-0 top-[2px] w-[3px] h-9 rounded-full bg-emerald-600/90";
+
+  $v = fn($key, $default = '') => old($key, data_get($req, $key, $default));
 @endphp
 
-<div class="space-y-8">
+<div class="space-y-10">
 
-  {{-- ===========================
-       SECTION 1 : ข้อมูลหลัก
-  ============================ --}}
-  <section class="space-y-4">
-    <div>
-      <h2 class="text-base font-semibold text-slate-900">ข้อมูลหลัก</h2>
-      <p class="text-sm text-slate-500">ทรัพย์สิน หน่วยงาน ผู้แจ้ง และสถานที่</p>
-    </div>
+  <div class="relative grid grid-cols-1 lg:grid-cols-2 gap-10">
+    <div class="hidden lg:block absolute inset-y-0 left-1/2 w-px bg-slate-300"></div>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-      {{-- ทรัพย์สิน --}}
-      @php $field = 'asset_id'; @endphp
-      <div>
-        <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">
-          ทรัพย์สิน (Asset)
-        </label>
-        <p class="mt-0.5 text-xs text-slate-500">ถ้าไม่ระบุ ระบบจะบันทึกเป็นงานซ่อมทั่วไป</p>
-
-        <select id="{{ $field }}" name="{{ $field }}"
-                class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                       focus:border-emerald-600 focus:ring-emerald-600 @error($field) border-rose-400 @enderror">
-          <option value="">— ไม่ระบุ —</option>
-          @foreach($assets as $a)
-            @php
-              $label = trim(($a->asset_code ? $a->asset_code.' - ' : '').($a->name ?? ''));
-            @endphp
-            <option value="{{ $a->id }}" @selected(old($field, $req->asset_id ?? null) == $a->id)>
-              {{ $label ?: '—' }}
-            </option>
-          @endforeach
-        </select>
-
-        @error($field)
-          <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
-        @enderror
-      </div>
-
-      {{-- หน่วยงาน --}}
-      @php $field = 'department_id'; @endphp
-      <div>
-        <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">
-          หน่วยงาน
-        </label>
-        <p class="mt-0.5 text-xs text-slate-500">เลือกหน่วยงานที่เกี่ยวข้องกับทรัพย์สิน/ผู้ใช้งาน</p>
-
-        <select id="{{ $field }}" name="{{ $field }}"
-                class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                       focus:border-emerald-600 focus:ring-emerald-600 @error($field) border-rose-400 @enderror">
-          <option value="">— ไม่ระบุ —</option>
-          @foreach($depts as $d)
-            @php
-              $deptName = $d->name_th ?: $d->name_en ?: '';
-              $label = trim(($d->code ? $d->code.' - ' : '').$deptName);
-            @endphp
-            <option value="{{ $d->id }}" @selected(old($field, $req->department_id ?? null) == $d->id)>
-              {{ $label ?: '—' }}
-            </option>
-          @endforeach
-        </select>
-
-        @error($field)
-          <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
-        @enderror
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-      {{-- ผู้แจ้ง (lock) --}}
-      @php
-        $field = 'reporter_id';
-        $reporterId = old($field, $req->reporter_id ?? $user?->id);
-        $reporterName = $req?->reporter?->name ?? $user?->name ?? '-';
-      @endphp
-      <div>
-        <label class="block text-sm font-medium text-slate-700">ผู้แจ้ง</label>
-        <p class="mt-0.5 text-xs text-slate-500">ระบบจะล็อกผู้แจ้งตามผู้ใช้งานที่เข้าสู่ระบบ</p>
-
-        <div class="mt-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm">
-          {{ $reporterName }}
+    <section>
+      <div class="{{ $headCls }}">
+        <div class="{{ $noCls }}">1</div>
+        <div class="{{ $accentWrap }}">
+          <span class="{{ $accentBar }}"></span>
+          <div class="{{ $titleCls }}">ข้อมูลหลัก</div>
+          <div class="{{ $subCls }}">ทรัพย์สิน / หน่วยงาน / สถานที่</div>
         </div>
-        <input type="hidden" name="{{ $field }}" value="{{ $reporterId }}">
       </div>
 
-      {{-- สถานที่ --}}
-      @php $field = 'location_text'; @endphp
-      <div>
-        <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">
-          สถานที่ / ตำแหน่งงาน
-        </label>
-        <p class="mt-0.5 text-xs text-slate-500">เช่น ห้อง 203 / ตึก IT / แผนกการเงิน</p>
+      <label class="block text-sm font-medium text-slate-700">ทรัพย์สิน</label>
+      <select name="asset_id"
+              class="ts-basic mt-2 w-full"
+              data-placeholder="— เลือกทรัพย์สิน —">
+        <option value="">— ไม่ระบุ —</option>
+        @foreach($assets as $a)
+          @php $label = trim(($a->asset_code ? $a->asset_code.' - ' : '').($a->name ?? '')); @endphp
+          <option value="{{ $a->id }}" @selected((string)$v('asset_id') === (string)$a->id)>
+            {{ $label ?: '—' }}
+          </option>
+        @endforeach
+      </select>
 
-        <input id="{{ $field }}" name="{{ $field }}" type="text"
-               value="{{ old($field, $req->location_text ?? '') }}"
-               class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                      focus:border-emerald-600 focus:ring-emerald-600 @error($field) border-rose-400 @enderror">
+      <label class="block text-sm font-medium text-slate-700 mt-4">หน่วยงาน</label>
+      <select name="department_id"
+              class="ts-basic mt-2 w-full"
+              data-placeholder="— เลือกหน่วยงาน —">
+        <option value="">— ไม่ระบุ —</option>
+        @foreach($depts as $d)
+          @php
+            $deptName = $d->name_th ?: ($d->name_en ?? '');
+            $label = trim(($d->code ? $d->code.' - ' : '').$deptName);
+          @endphp
+          <option value="{{ $d->id }}" @selected((string)$v('department_id') === (string)$d->id)>
+            {{ $label ?: '—' }}
+          </option>
+        @endforeach
+      </select>
 
-        @error($field)
-          <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
-        @enderror
+      <label class="block text-sm font-medium text-slate-700 mt-4">สถานที่ / ตำแหน่งงาน</label>
+      <input type="text"
+             name="location_text"
+             value="{{ $v('location_text') }}"
+             autocomplete="off"
+             class="{{ $input }}">
+    </section>
+
+    <section>
+      <div class="{{ $headCls }}">
+        <div class="{{ $noCls }}">2</div>
+        <div class="{{ $accentWrap }}">
+          <span class="{{ $accentBar }}"></span>
+          <div class="{{ $titleCls }}">รายละเอียดปัญหา</div>
+          <div class="{{ $subCls }}">หัวข้อและอาการเสีย</div>
+        </div>
       </div>
-    </div>
-  </section>
 
-  <hr class="border-slate-200">
-
-  {{-- ===========================
-       SECTION 2 : รายละเอียดปัญหา
-  ============================ --}}
-  <section class="space-y-4">
-    <div>
-      <h2 class="text-base font-semibold text-slate-900">รายละเอียดปัญหา</h2>
-      <p class="text-sm text-slate-500">หัวข้อและรายละเอียดอาการเสีย (หัวข้อจำเป็นต้องกรอก)</p>
-    </div>
-
-    @php $field = 'title'; @endphp
-    <div>
-      <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">
+      <label class="block text-sm font-medium text-slate-700">
         หัวข้อ <span class="text-rose-600">*</span>
       </label>
-      <p class="mt-0.5 text-xs text-slate-500">สั้น กระชับ เช่น “คอมเปิดไม่ติด / Printer กระดาษติด”</p>
+      <input type="text"
+             name="title"
+             value="{{ $v('title') }}"
+             autocomplete="off"
+             class="{{ $input }}"
+             required>
 
-      <input id="{{ $field }}" name="{{ $field }}" type="text" required
-             value="{{ old($field, $req->title ?? '') }}"
-             class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                    focus:border-emerald-600 focus:ring-emerald-600 @error($field) border-rose-400 @enderror">
+      <label class="block text-sm font-medium text-slate-700 mt-4">รายละเอียด / อาการเสีย</label>
+      <textarea name="description" rows="6" class="{{ $textarea }}">{{ $v('description') }}</textarea>
+    </section>
+  </div>
 
-      @error($field)
-        <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
-      @enderror
-    </div>
+  <div class="border-t border-slate-300"></div>
 
-    @php $field = 'description'; @endphp
-    <div>
-      <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">
-        รายละเอียด / อาการเสีย
-      </label>
-      <p class="mt-0.5 text-xs text-slate-500">อธิบายอาการ จุดเกิดเหตุ และสิ่งที่ลองทำแล้ว</p>
+  <div class="relative grid grid-cols-1 lg:grid-cols-2 gap-10">
+    <div class="hidden lg:block absolute inset-y-0 left-1/2 w-px bg-slate-300"></div>
 
-      <textarea id="{{ $field }}" name="{{ $field }}" rows="5"
-                class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                       focus:border-emerald-600 focus:ring-emerald-600 @error($field) border-rose-400 @enderror"
-      >{{ old($field, $req->description ?? '') }}</textarea>
-
-      @error($field)
-        <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
-      @enderror
-    </div>
-  </section>
-
-  <hr class="border-slate-200">
-
-  {{-- ===========================
-       SECTION 3 : ความสำคัญ
-  ============================ --}}
-  <section class="space-y-3">
-    <div>
-      <h2 class="text-base font-semibold text-slate-900">ความสำคัญ</h2>
-      <p class="text-sm text-slate-500">ช่วยจัดลำดับคิวงานได้ถูกต้อง</p>
-    </div>
-
-    @php
-      $field = 'priority';
-      $priorities = ['low'=>'ต่ำ','medium'=>'ปานกลาง','high'=>'สูง','urgent'=>'เร่งด่วน'];
-      $selected = old($field, $req->priority ?? 'medium');
-    @endphp
-
-    <label for="{{ $field }}" class="block text-sm font-medium text-slate-700">
-      ระดับความสำคัญ <span class="text-rose-600">*</span>
-    </label>
-
-    <select id="{{ $field }}" name="{{ $field }}" required
-            class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                   focus:border-emerald-600 focus:ring-emerald-600">
-      @foreach($priorities as $k=>$label)
-        <option value="{{ $k }}" @selected($selected === $k)>{{ $label }}</option>
-      @endforeach
-    </select>
-  </section>
-
-  <hr class="border-slate-200">
-
-  {{-- ===========================
-       SECTION 4 : ไฟล์แนบ
-  ============================ --}}
-  <section class="space-y-3">
-    <div>
-      <h2 class="text-base font-semibold text-slate-900">ไฟล์แนบ</h2>
-      <p class="text-sm text-slate-500">แนบรูป/เอกสารประกอบ (ถ้ามี)</p>
-    </div>
-
-    @if(count($attachments))
-      <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
-        <div class="text-xs font-medium text-slate-600">ไฟล์ที่มีอยู่แล้ว</div>
-        @foreach($attachments as $att)
-          <label class="flex items-center justify-between gap-2 text-sm">
-            <span class="truncate text-slate-700">{{ $att->original_name }}</span>
-            <span class="inline-flex items-center gap-2 text-rose-600">
-              <input type="checkbox" name="remove_attachments[]" value="{{ $att->id }}">
-              ลบ
-            </span>
-          </label>
-        @endforeach
+    <section>
+      <div class="{{ $headCls }}">
+        <div class="{{ $noCls }}">3</div>
+        <div class="{{ $accentWrap }}">
+          <span class="{{ $accentBar }}"></span>
+          <div class="{{ $titleCls }}">ผู้แจ้ง & ความสำคัญ</div>
+          <div class="{{ $subCls }}">ข้อมูลผู้แจ้ง + ระดับความสำคัญ</div>
+        </div>
       </div>
-    @endif
 
-    <div>
-      <label class="block text-sm font-medium text-slate-700">อัปโหลดไฟล์ใหม่</label>
-      <p class="mt-0.5 text-xs text-slate-500">รองรับรูปภาพและ PDF</p>
-      <input type="file" name="files[]" multiple accept="image/*,application/pdf"
-             class="mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-    </div>
-  </section>
+      <div class="grid grid-cols-1 gap-4">
+        @if($user)
+          <div>
+            <label class="block text-sm font-medium text-slate-700">ผู้แจ้ง</label>
+            <div class="mt-2 h-11 rounded-md border border-slate-300 bg-slate-50 px-3 flex items-center text-sm text-slate-700">
+              {{ $user->name }}
+            </div>
+            <input type="hidden" name="reporter_name" value="{{ $v('reporter_name', $user->name) }}">
+          </div>
 
+          <div>
+            <label class="block text-sm font-medium text-slate-700">เบอร์โทร (ถ้ามี)</label>
+            <input type="text" name="reporter_phone" value="{{ $v('reporter_phone') }}" class="{{ $input }}">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">อีเมล (ถ้ามี)</label>
+            <input type="email" name="reporter_email" value="{{ $v('reporter_email', $user->email) }}" class="{{ $input }}">
+          </div>
+        @else
+          <div>
+            <label class="block text-sm font-medium text-slate-700">ชื่อผู้แจ้ง</label>
+            <input type="text" name="reporter_name" value="{{ $v('reporter_name') }}" class="{{ $input }}">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">เบอร์โทร</label>
+            <input type="text" name="reporter_phone" value="{{ $v('reporter_phone') }}" class="{{ $input }}">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">อีเมล</label>
+            <input type="email" name="reporter_email" value="{{ $v('reporter_email') }}" class="{{ $input }}">
+          </div>
+        @endif
+      </div>
+
+      <label class="block text-sm font-medium text-slate-700 mt-4">
+        ระดับความสำคัญ <span class="text-rose-600">*</span>
+      </label>
+      @php $priority = $v('priority', 'medium'); @endphp
+      <select name="priority" class="{{ $input }}" required>
+        <option value="low"    @selected($priority === 'low')>ต่ำ</option>
+        <option value="medium" @selected($priority === 'medium')>ปานกลาง</option>
+        <option value="high"   @selected($priority === 'high')>สูง</option>
+        <option value="urgent" @selected($priority === 'urgent')>เร่งด่วน</option>
+      </select>
+    </section>
+
+    <section>
+      <div class="{{ $headCls }}">
+        <div class="{{ $noCls }}">4</div>
+        <div class="{{ $accentWrap }}">
+          <span class="{{ $accentBar }}"></span>
+          <div class="{{ $titleCls }}">ไฟล์แนบ</div>
+          <div class="{{ $subCls }}">รูป / เอกสารประกอบ</div>
+        </div>
+      </div>
+
+      @if(!$isEdit)
+        <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          แนบไฟล์ได้หลังจาก “สร้างคำขอ” แล้ว (ในหน้าแก้ไข/รายละเอียด)
+        </div>
+      @else
+        @php $attachments = is_iterable($attachments ?? null) ? $attachments : []; @endphp
+
+        @if(!empty($attachments) && count($attachments))
+          <div class="mb-4">
+            <div class="text-xs font-medium text-slate-600">ไฟล์ที่มีอยู่แล้ว</div>
+            <div class="mt-2 divide-y divide-slate-200 rounded-md border border-slate-200">
+              @foreach($attachments as $att)
+                <label class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                  <span class="truncate text-slate-700">{{ $att->original_name }}</span>
+                  <span class="inline-flex items-center gap-2 text-rose-600">
+                    <input type="checkbox" name="remove_attachments[]" value="{{ $att->id }}">
+                    ลบ
+                  </span>
+                </label>
+              @endforeach
+            </div>
+          </div>
+        @endif
+
+        <input type="file"
+               name="files[]"
+               multiple
+               accept="image/*,application/pdf"
+               class="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+      @endif
+    </section>
+  </div>
 </div>
