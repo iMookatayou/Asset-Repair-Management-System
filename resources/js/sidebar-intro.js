@@ -5,12 +5,12 @@
   sessionStorage.removeItem(NEXT);
 
   /* ====== Tuning ====== */
-  const HOLD_MS = 1700;        // ระยะเวลา spin 1 รอบ
-  const FLY_MS  = 1150;        // ระยะเวลาบินกลับ sidebar
-  const START_SCALE = 1.42;    // ขนาดตอนเปิดตัว
-  const PERSPECTIVE = 1100;    // ความลึก 3D
-  const TILT_X = 7;            // เอียงนิดๆ ให้ดูแพง
-  const OVERLAY_FADE_MS = 220; // fade ออกตอนจบ
+  const HOLD_MS = 1700;        // ระยะเวลา spin
+  const FLY_MS  = 1150;        // ระยะเวลาบิน
+  const START_SCALE = 1.42;    // ขนาดตอนเริ่ม
+  const PERSPECTIVE = 1100;
+  const TILT_X = 7;
+  const OVERLAY_FADE_MS = 220;
 
   const waitForLogo = (tries = 0) => {
     const logo =
@@ -23,12 +23,19 @@
     }
 
     const rect = logo.getBoundingClientRect();
+    // ต้องเช็คว่ามีขนาดจริงๆ แล้วหรือยัง
     if (!rect.width || !rect.height) {
       return setTimeout(() => waitForLogo(tries + 1), 50);
     }
 
     const prevVis = logo.style.visibility;
     logo.style.visibility = 'hidden';
+
+    // 1. คำนวณจุดเริ่มต้น (กลางจอ) และจุดสิ้นสุด (ตำแหน่งโลโก้จริง) แบบ Pixel เป๊ะๆ
+    const startX = (window.innerWidth / 2) - (rect.width / 2);
+    const startY = (window.innerHeight / 2) - (rect.height / 2);
+    const endX   = rect.left;
+    const endY   = rect.top;
 
     // Overlay
     const overlay = document.createElement('div');
@@ -38,22 +45,22 @@
       'transition:opacity .35s ease;opacity:1;';
     document.body.appendChild(overlay);
 
-    // Wrap (ตำแหน่ง + perspective)
+    // Wrap: ใช้ left:0, top:0 แล้วคุมด้วย translate ทั้งหมด เพื่อความแม่นยำสูงสุด
     const wrap = document.createElement('div');
     wrap.style.cssText = [
       'position:fixed',
-      'left:50%',
-      'top:50%',
-      'transform:translate(-50%,-50%)',
+      'left:0',
+      'top:0',
       `width:${rect.width}px`,
       `height:${rect.height}px`,
+      `transform: translate3d(${startX}px, ${startY}px, 0)`, // เริ่มที่กลางจอ
       `perspective:${PERSPECTIVE}px`,
       'z-index:1000001',
       'pointer-events:none'
     ].join(';');
     document.body.appendChild(wrap);
 
-    // Spinner (ตัวที่หมุนจริง) — ใช้ 2 หน้า กัน “หายตอนหมุน”
+    // Spinner
     const spinner = document.createElement('div');
     spinner.style.cssText = [
       `width:${rect.width}px`,
@@ -65,18 +72,13 @@
     ].join(';');
     wrap.appendChild(spinner);
 
-    // สร้างหน้า front/back
     const makeFace = (rotateYdeg) => {
       const face = document.createElement('img');
       face.src = logo.currentSrc || logo.src;
-      face.alt = 'intro-logo';
       face.style.cssText = [
-        'position:absolute',
-        'inset:0',
-        `width:${rect.width}px`,
-        `height:${rect.height}px`,
-        'object-fit:contain',
-        'display:block',
+        'position:absolute;inset:0',
+        'width:100%;height:100%',
+        'object-fit:contain', // ใช้ contain เพื่อให้สัดส่วนรูปไม่เพี้ยน
         'backface-visibility:hidden',
         `transform:rotateY(${rotateYdeg}deg)`
       ].join(';');
@@ -88,9 +90,6 @@
     spinner.appendChild(front);
     spinner.appendChild(back);
 
-    const dx = (rect.left + rect.width / 2) - (window.innerWidth / 2);
-    const dy = (rect.top + rect.height / 2) - (window.innerHeight / 2);
-
     const cleanup = () => {
       wrap.remove();
       overlay.remove();
@@ -98,14 +97,10 @@
     };
 
     const run = async () => {
-      // fade in (กันกระพริบ)
-      spinner.animate([{ opacity: 0 }, { opacity: 1 }], {
-        duration: 200,
-        easing: 'ease-out',
-        fill: 'forwards'
-      });
+      // Fade in spinner
+      spinner.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'forwards' });
 
-      // 1) Spin 1 รอบเต็ม (360deg) — ไม่หาย เพราะมี 2 หน้า
+      // Step 1: Spin อยู่กับที่ (ที่กลางจอ)
       const spin = spinner.animate(
         [
           { transform: `scale(${START_SCALE}) rotateX(${TILT_X}deg) rotateY(0deg)` },
@@ -117,14 +112,13 @@
           fill: 'forwards'
         }
       );
-
       try { await spin.finished; } catch (_) {}
 
-      // 2) บินกลับ sidebar (คง orientation ให้ดูเนียน) + ลด scale เข้าที่
+      // Step 2: บินเข้าตำแหน่งจริง (Wrap เคลื่อนที่ X/Y)
       wrap.animate(
         [
-          { transform: 'translate(-50%,-50%)' },
-          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))` }
+          { transform: `translate3d(${startX}px, ${startY}px, 0)` },
+          { transform: `translate3d(${endX}px, ${endY}px, 0)` }
         ],
         {
           duration: FLY_MS,
@@ -133,6 +127,7 @@
         }
       );
 
+      // Step 3: ลดขนาดและหมุนให้ตรง (Spinner ปรับ Scale/Rotation)
       const settle = spinner.animate(
         [
           { transform: `scale(${START_SCALE}) rotateX(${TILT_X}deg) rotateY(360deg)` },
@@ -147,11 +142,11 @@
 
       settle.onfinish = () => {
         overlay.style.opacity = '0';
+        // รอให้ fade overlay จบแล้วค่อยลบ DOM ทิ้ง จะได้เนียนที่สุด
         setTimeout(cleanup, OVERLAY_FADE_MS);
       };
     };
 
-    // รอรูป “พร้อมจริง” ก่อนค่อยเริ่ม
     const imgs = [front, back];
     const decodes = imgs.map(im => (im.decode ? im.decode().catch(() => {}) : Promise.resolve()));
     Promise.all(decodes).then(run);

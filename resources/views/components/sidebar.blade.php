@@ -7,24 +7,27 @@
         // ให้รองรับ pattern ได้หลายอัน
         $is = fn(...$p) => request()->routeIs($p);
 
-        // base style ของเมนู + spacing ซ้าย + ความสูงแต่ละแถว
-        $base = 'group relative flex items-center h-11 px-6 gap-3 text-sm font-medium rounded-md transition';
+        // base style ของเมนู
+        // ปรับ: relative เพื่อให้วางแถบสีได้ / overflow-hidden เพื่อไม่ให้สีล้น
+        $base = 'group relative flex items-center h-11 px-6 gap-3 text-sm font-medium transition-all duration-200 ease-in-out';
 
         // ✅ พื้นหลังขาว → สีตัวหนังสือ/hover ให้สุภาพ
-        $off  = 'text-zinc-600 hover:bg-slate-100 hover:text-[#0F2D5C]';
+        // ปรับ: ตอน Hover ให้มี bg จางๆ
+        $off  = 'text-zinc-600 hover:bg-slate-50 hover:text-[#0F2D5C]';
 
-        // ✅ Active ให้เด่นแต่ไม่แรง: เทาอ่อน + น้ำเงินเดิม
-        $on   = 'bg-slate-100 text-[#0F2D5C]';
+        // ✅ Active: พื้นหลังฟ้าจางๆ + ตัวหนาขึ้นนิดนึง
+        $on   = 'bg-slate-100/80 text-[#0F2D5C] font-semibold';
 
-        // ✅ ไอคอนตาม active/hover
+        // ✅ ไอคอน
         $ico = fn($active) =>
-            'w-5 h-5 flex-shrink-0 transition '.
-            ($active ? 'text-[#0F2D5C]' : 'text-zinc-500 group-hover:text-[#0F2D5C]');
+            'w-5 h-5 flex-shrink-0 transition-colors duration-200 '.
+            ($active ? 'text-[#0F2D5C]' : 'text-zinc-400 group-hover:text-[#0F2D5C]');
 
-        // ✅ จุด active ด้านขวา
+        // ✅ [NEW] จุด Active แบบใหม่: "Left Accent Strip"
+        // เปลี่ยนจากขีดขวา เป็นแถบซ้าย + Animation ยืดหด (Scale Y)
         $dot = fn($active) =>
-            'absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-7 rounded-full bg-[#0F2D5C] transition '.
-            ($active ? 'opacity-100' : 'opacity-0 group-hover:opacity-40');
+            'absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-8 rounded-r bg-[#0F2D5C] transition-all duration-300 ease-out origin-left '.
+            ($active ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-50');
 
         $rl = fn(string $name, string $fallback = '#') =>
             Route::has($name) ? route($name) : $fallback;
@@ -53,13 +56,16 @@
     <nav class="flex-1 py-3 overflow-y-auto">
 
         {{-- SECTION: Overview --}}
-        <div class="px-6 mt-1 mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+        <div class="px-6 mt-1 mb-1 text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-400/80">
             Overview
         </div>
 
         {{-- Dashboard --}}
         @php $active = $is('repair.dashboard'); @endphp
         <a href="{{ $rl('repair.dashboard') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+            {{-- ใส่ $dot ไว้ด้านบนสุดของ loop เพื่อให้ render ก่อน --}}
+            <span class="{{ $dot($active) }}"></span>
+
             <svg class="{{ $ico($active) }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 3v18h18"/>
                 <rect x="7" y="10" width="3" height="7" rx="1"/>
@@ -67,15 +73,14 @@
                 <rect x="17" y="13" width="3" height="4" rx="1"/>
             </svg>
             <span class="truncate">Dashboard</span>
-            <span class="{{ $dot($active) }}"></span>
         </a>
 
         {{-- SECTION: Operations --}}
-        <div class="px-6 mt-3 mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+        <div class="px-6 mt-4 mb-1 text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-400/80">
             Operations
         </div>
 
-        {{-- Requests (ไม่ใช้ * แล้ว เลือกเฉพาะ route ของ request จริง ๆ) --}}
+        {{-- Requests --}}
         @php
             $active = $is(
                 'maintenance.requests.index',
@@ -85,58 +90,59 @@
             );
         @endphp
         <a href="{{ $rl('maintenance.requests.index') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+            <span class="{{ $dot($active) }}"></span>
             <svg class="{{ $ico($active) }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14.7 6.3a4.5 4.5 0 1 0-6.36 6.36l8.49 8.49a2 2 0 0 0 2.83-2.83l-8.49-8.49z"/>
                 <path d="m8 8 3 3"/>
             </svg>
             <span class="truncate">Requests</span>
-            <span class="{{ $dot($active) }}"></span>
         </a>
 
         {{-- Jobs (เฉพาะสิทธิ์) --}}
         @can('view-my-jobs')
             @php $active = $is('repairs.my_jobs'); @endphp
             <a href="{{ $rl('repairs.my_jobs') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+                <span class="{{ $dot($active) }}"></span>
                 <svg class="{{ $ico($active) }}" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <rect x="8" y="4" width="8" height="4" rx="1"/>
                     <path d="M9 12h6M9 16h6"/>
                     <rect x="4" y="4" width="16" height="18" rx="2"/>
                 </svg>
                 <span class="truncate">Jobs</span>
-                <span class="{{ $dot($active) }}"></span>
             </a>
         @endcan
 
         {{-- Assets --}}
         @php $active = $is('assets.*'); @endphp
         <a href="{{ $rl('assets.index') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+            <span class="{{ $dot($active) }}"></span>
             <svg class="{{ $ico($active) }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="7" width="20" height="14" rx="2"/>
                 <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
                 <path d="M2 13h20"/>
             </svg>
             <span class="truncate">Assets</span>
-            <span class="{{ $dot($active) }}"></span>
         </a>
 
         {{-- Livechat --}}
         @php $active = $is('chat.*'); @endphp
         <a href="{{ $rl('chat.index') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+            <span class="{{ $dot($active) }}"></span>
             <svg class="{{ $ico($active) }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V5a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
             </svg>
             <span class="truncate">Livechat</span>
-            <span class="{{ $dot($active) }}"></span>
         </a>
 
         {{-- SECTION: Feedback --}}
-        <div class="px-6 mt-3 mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+        <div class="px-6 mt-4 mb-1 text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-400/80">
             Feedback
         </div>
 
         {{-- Evaluate --}}
         @php $active = $is('maintenance.requests.rating.evaluate'); @endphp
         <a href="{{ $rl('maintenance.requests.rating.evaluate') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+            <span class="{{ $dot($active) }}"></span>
             <svg class="{{ $ico($active) }}" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <rect x="6" y="4" width="12" height="16" rx="2"/>
                 <path d="M9 4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V6H9V4.5z"/>
@@ -145,12 +151,12 @@
                 <path d="m11 18 1-2 1 2"/>
             </svg>
             <span class="truncate">Evaluate</span>
-            <span class="{{ $dot($active) }}"></span>
         </a>
 
         {{-- Technician Ratings --}}
         @php $active = $is('maintenance.requests.rating.technicians'); @endphp
         <a href="{{ $rl('maintenance.requests.rating.technicians') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+            <span class="{{ $dot($active) }}"></span>
             <svg class="{{ $ico($active) }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 21h18"/>
                 <rect x="5" y="10" width="3" height="7" rx="1"/>
@@ -158,16 +164,16 @@
                 <rect x="16" y="4" width="3" height="13" rx="1"/>
             </svg>
             <span class="truncate">Technician Ratings</span>
-            <span class="{{ $dot($active) }}"></span>
         </a>
 
         {{-- SECTION: Account --}}
-        <div class="px-6 mt-3 mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+        <div class="px-6 mt-4 mb-1 text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-400/80">
             Account
         </div>
 
         @php $active = $is('profile.*'); @endphp
         <a href="{{ $rl('profile.show') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+            <span class="{{ $dot($active) }}"></span>
             <svg class="{{ $ico($active) }}" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <circle cx="9" cy="7" r="4"/>
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -175,23 +181,22 @@
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
             <span class="truncate">Profile</span>
-            <span class="{{ $dot($active) }}"></span>
         </a>
 
         {{-- SECTION: Administration --}}
         @can('manage-users')
-            <div class="px-6 mt-3 mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            <div class="px-6 mt-4 mb-1 text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-400/80">
                 Administration
             </div>
 
             @php $active = $is('admin.users.*'); @endphp
             <a href="{{ $rl('admin.users.index') }}" class="{{ $base }} {{ $active ? $on : $off }}">
+                <span class="{{ $dot($active) }}"></span>
                 <svg class="{{ $ico($active) }}" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     <path d="M9 11l2 2 4-4"/>
                 </svg>
                 <span class="truncate">Manage Users</span>
-                <span class="{{ $dot($active) }}"></span>
             </a>
         @endcan
 
