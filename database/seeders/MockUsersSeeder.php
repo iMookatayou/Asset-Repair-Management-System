@@ -12,7 +12,7 @@ class MockUsersSeeder extends Seeder
     {
         $users = [
             [
-                'name'        => 'ผู้ดูแล ระบบ',
+                'name'        => 'Admin',
                 'citizen_id'  => '1000000000001',
                 'email'       => 'admin.simple@example.com',
                 'role'        => User::ROLE_ADMIN,

@@ -20,7 +20,6 @@ class MaintenanceAssignmentController extends Controller
      */
     public function store(Request $request, MaintenanceRequest $req)
     {
-        // ✅ ล็อกสิทธิ์ตาม Policy: assign()
         Gate::authorize('assign', $req);
 
         $data = $request->validate([
@@ -31,27 +30,27 @@ class MaintenanceAssignmentController extends Controller
 
         $userIds = collect($data['user_ids'] ?? [])
             ->filter()
-            ->map(fn($v) => (int)$v)
+            ->map(fn ($v) => (int) $v)
             ->unique()
             ->values();
 
-        $leadId = isset($data['lead_user_id']) ? (int)$data['lead_user_id'] : null;
+        $leadId = ($data['lead_user_id'] ?? null);
+        $leadId = ($leadId === null || $leadId === '') ? null : (int) $leadId;
 
-        // กัน lead ไม่อยู่ใน list → ใส่เข้า list ให้
+        // ถ้ามี lead แต่ไม่อยู่ใน user_ids ให้ใส่เข้าไป
         if ($leadId && !$userIds->contains($leadId)) {
             $userIds = $userIds->push($leadId)->unique()->values();
         }
 
-        // ✅ กรองเฉพาะ "ทีมช่าง/ทีมงาน" (ปรับ roles ให้ตรงโปรเจกต์คุณ)
-        $workerRoles = ['supervisor', 'it_support', 'network', 'developer', 'technician'];
+        // ใช้มาตรฐานเดียวกับระบบหลัก (ทีมช่าง/หัวหน้า/IT ฯลฯ)
+        $workerRoles = User::teamRoles();
 
         $workers = User::query()
             ->whereIn('id', $userIds->all())
             ->whereIn('role', $workerRoles)
-            ->get()
+            ->get(['id', 'name', 'role'])
             ->keyBy('id');
 
-        // ถ้าเลือกมาแต่ไม่มีช่างเลย
         if ($workers->isEmpty()) {
             return back()->with('toast', [
                 'type'    => 'error',
@@ -62,38 +61,42 @@ class MaintenanceAssignmentController extends Controller
         DB::transaction(function () use ($req, $workers, $userIds, &$leadId) {
             $now = now();
 
-            // ดึง assignment เดิม
-            $existing = $req->assignments()
+            // ✅ lock ใบงานกัน race (assign พร้อมกัน)
+            $lockedReq = MaintenanceRequest::query()
+                ->whereKey($req->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $existing = $lockedReq->assignments()
                 ->get()
                 ->keyBy('user_id');
 
-            // ✅ เลือก lead ให้เสถียร:
-            // 1) ถ้า leadId ไม่ใช่ worker → ทิ้ง
+            // ✅ เลือก lead ให้ predictable:
+            // 1) ถ้า leadId ไม่ใช่ worker -> ทิ้ง
             if ($leadId && !$workers->has($leadId)) {
                 $leadId = null;
             }
-            // 2) ถ้า req มี technician_id และอยู่ในทีม → ให้เป็น lead
-            if (!$leadId && $req->technician_id && $workers->has((int)$req->technician_id)) {
-                $leadId = (int)$req->technician_id;
+
+            // 2) ถ้าในใบงานมี technician_id และยังอยู่ใน workers -> เป็น lead
+            if (!$leadId && $lockedReq->technician_id && $workers->has((int) $lockedReq->technician_id)) {
+                $leadId = (int) $lockedReq->technician_id;
             }
-            // 3) ไม่งั้นให้คนแรกในลิสต์ที่เป็น worker
+
+            // 3) ไม่งั้นเลือกคนแรกจาก "ลิสต์ที่ user ส่งมา" ที่เป็น worker จริง
             if (!$leadId) {
-                $leadId = (int)$workers->keys()->first();
+                $leadId = (int) $userIds->first(fn($id) => $workers->has((int)$id));
             }
 
-            // 1) upsert assignments ตาม userIds (แต่ต้องเป็น worker จริง)
+            // 1) upsert assignments เฉพาะ worker
             foreach ($userIds as $uid) {
-                /** @var \App\Models\User|null $worker */
-                $worker = $workers->get((int)$uid);
-                if (!$worker) {
-                    continue; // ไม่ใช่ worker
-                }
+                $uid = (int) $uid;
 
-                $isLead = ((int)$leadId === (int)$uid);
+                $worker = $workers->get($uid);
+                if (!$worker) continue;
 
-                /** @var \App\Models\MaintenanceAssignment|null $assignment */
-                $assignment = $existing->get((int)$uid);
+                $isLead = ($leadId === $uid);
 
+                $assignment = $existing->get($uid);
                 if ($assignment) {
                     $assignment->fill([
                         'role'    => $worker->role,
@@ -102,14 +105,16 @@ class MaintenanceAssignmentController extends Controller
 
                     // ถ้าเคย cancelled แล้วถูก assign กลับมา
                     if ($assignment->status === MaintenanceAssignment::STATUS_CANCELLED) {
-                        $assignment->status      = MaintenanceAssignment::STATUS_IN_PROGRESS;
-                        $assignment->assigned_at = $assignment->assigned_at ?? $now;
+                        $assignment->status = MaintenanceAssignment::STATUS_IN_PROGRESS;
                     }
+
+                    // ให้มี assigned_at เสมอเมื่ออยู่ในทีม
+                    $assignment->assigned_at = $assignment->assigned_at ?? $now;
 
                     $assignment->save();
                 } else {
                     MaintenanceAssignment::create([
-                        'maintenance_request_id' => $req->id,
+                        'maintenance_request_id' => $lockedReq->id,
                         'user_id'                => $worker->id,
                         'role'                   => $worker->role,
                         'is_lead'                => $isLead,
@@ -119,17 +124,16 @@ class MaintenanceAssignmentController extends Controller
                 }
             }
 
-            // 2) ยกเลิกคนที่ไม่อยู่ในทีมแล้ว
-            // - ผมแนะนำ "cancelled" แทน delete เพื่อเก็บประวัติ
-            $keepIds = $workers->keys()->map(fn($v)=>(int)$v)->all();
+            // 2) ยกเลิกคนที่ "เคยอยู่" แต่ตอนนี้ไม่อยู่ใน workers แล้ว
+            $keepIds = $workers->keys()->map(fn($v) => (int) $v)->all();
 
             $toCancel = $existing->keys()
-                ->map(fn($v)=>(int)$v)
+                ->map(fn($v) => (int) $v)
                 ->filter(fn($uid) => !in_array($uid, $keepIds, true))
                 ->all();
 
             if (!empty($toCancel)) {
-                $req->assignments()
+                $lockedReq->assignments()
                     ->whereIn('user_id', $toCancel)
                     ->update([
                         'status'     => MaintenanceAssignment::STATUS_CANCELLED,
@@ -138,21 +142,39 @@ class MaintenanceAssignmentController extends Controller
                     ]);
             }
 
-            // 3) อัปเดต assigned_date ถ้ายังว่าง
-            if ($req->assigned_date === null) {
-                $req->assigned_date = $now;
+            // 3) ถ้าหลังปรับทีมแล้ว "ไม่มี lead" (เคส lead ถูก cancel) -> ตั้ง lead ใหม่ให้ 1 คน
+            $stillHasLead = $lockedReq->assignments()
+                ->whereIn('user_id', $keepIds)
+                ->where('is_lead', true)
+                ->where('status', '!=', MaintenanceAssignment::STATUS_CANCELLED)
+                ->exists();
+
+            if (!$stillHasLead) {
+                $newLeadId = (int) ($leadId ?: ($keepIds[0] ?? 0));
+                if ($newLeadId) {
+                    $lockedReq->assignments()
+                        ->where('user_id', $newLeadId)
+                        ->update(['is_lead' => true, 'updated_at' => $now]);
+                    $leadId = $newLeadId;
+                }
             }
 
-            // 4) อัปเดต technician_id ให้สอดคล้องกับ lead
-            // ถ้าใบงานยังไม่มี technician_id หรือ technician_id ไม่อยู่ในทีมแล้ว → set = lead
-            $leadStillInTeam = $workers->has((int)$leadId);
-            $techStillInTeam = $req->technician_id ? $workers->has((int)$req->technician_id) : false;
-
-            if ($leadStillInTeam && (!$req->technician_id || !$techStillInTeam)) {
-                $req->technician_id = (int)$leadId;
+            // 4) อัปเดต assigned_date ถ้ายังว่าง
+            if ($lockedReq->assigned_date === null) {
+                $lockedReq->assigned_date = $now;
             }
 
-            $req->save();
+            // 5) sync technician_id ตาม lead (ถ้า technician เดิมหลุดทีม)
+            $leadStillInTeam = $leadId && in_array((int)$leadId, $keepIds, true);
+            $techStillInTeam = $lockedReq->technician_id
+                ? in_array((int)$lockedReq->technician_id, $keepIds, true)
+                : false;
+
+            if ($leadStillInTeam && (!$lockedReq->technician_id || !$techStillInTeam)) {
+                $lockedReq->technician_id = (int) $leadId;
+            }
+
+            $lockedReq->save();
         });
 
         return back()->with('toast', [
@@ -162,12 +184,19 @@ class MaintenanceAssignmentController extends Controller
     }
 
     /**
-     * ยกเลิก assignment ของช่าง 1 คนออกจากงาน (unassign)
-     * (แนะนำให้ยกเลิกเป็น cancelled เพื่อเก็บประวัติ)
+     * ยกเลิก assignment ของช่าง 1 คนออกจากงาน (เก็บประวัติด้วย cancelled)
      */
     public function destroy(MaintenanceAssignment $assignment)
     {
         Gate::authorize('assign', $assignment->maintenanceRequest);
+
+        // ถ้า done แล้วและคุณไม่อยากให้ยกเลิกย้อนหลัง ให้กันไว้ (เลือกได้)
+        if ($assignment->status === MaintenanceAssignment::STATUS_DONE) {
+            return back()->with('toast', [
+                'type'    => 'warning',
+                'message' => 'งานนี้ถูกทำเสร็จแล้ว ไม่สามารถยกเลิกการมอบหมายย้อนหลังได้',
+            ]);
+        }
 
         $assignment->update([
             'status'  => MaintenanceAssignment::STATUS_CANCELLED,

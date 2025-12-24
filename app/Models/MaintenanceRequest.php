@@ -16,7 +16,7 @@ class MaintenanceRequest extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        // อ้างอิง/พื้นฐาน
+        // ===== อ้างอิง / พื้นฐาน =====
         'request_no',
         'asset_id',
         'department_id',
@@ -27,17 +27,18 @@ class MaintenanceRequest extends Model
         'status',
         'technician_id',
 
-        // ผู้แจ้ง (กรณีคนนอก)
+        // ===== ผู้แจ้ง =====
         'reporter_name',
         'reporter_phone',
         'reporter_email',
         'reporter_position',
-        'reporter_ip',
 
-        // ที่ตั้ง/หน่วยงาน
+        'legacy_payload',
+
+        // ===== สถานที่ =====
         'location_text',
 
-        // ไทม์ไลน์
+        // ===== timeline =====
         'request_date',
         'assigned_date',
         'completed_date',
@@ -47,7 +48,7 @@ class MaintenanceRequest extends Model
         'resolved_at',
         'closed_at',
 
-        // หมายเหตุ/ผลการซ่อม/ต้นทาง/ข้อมูลเสริม
+        // ===== อื่น ๆ =====
         'remark',
         'resolution_note',
         'cost',
@@ -64,52 +65,77 @@ class MaintenanceRequest extends Model
         'on_hold_at'     => 'datetime',
         'resolved_at'    => 'datetime',
         'closed_at'      => 'datetime',
+
         'cost'           => 'decimal:2',
+
+        // รองรับระบบเก่า / เก็บข้อมูลเพิ่ม
+        'legacy_payload' => 'array',
         'extra'          => 'array',
+
         'deleted_at'     => 'datetime',
     ];
 
-    public const STATUS_PENDING     = 'pending';
-    public const STATUS_IN_PROGRESS = 'in_progress';
-    public const STATUS_COMPLETED   = 'completed';
-    public const STATUS_CANCELLED   = 'cancelled';
+    /* ================= STATUS ================= */
 
-    public const STATUS_ACCEPTED = 'accepted';
-    public const STATUS_ON_HOLD  = 'on_hold';
-    public const STATUS_RESOLVED = 'resolved';
-    public const STATUS_CLOSED   = 'closed';
+    public const STATUS_PENDING     = 'pending';
+    public const STATUS_ACCEPTED    = 'accepted';
+    public const STATUS_IN_PROGRESS = 'in_progress';
+    public const STATUS_ON_HOLD     = 'on_hold';
+    public const STATUS_RESOLVED    = 'resolved';
+    public const STATUS_CLOSED      = 'closed';
+    public const STATUS_CANCELLED   = 'cancelled';
+    public const STATUS_REJECTED    = 'rejected';
+
+    // legacy (เผื่อยังมีข้อมูลเก่าใน DB)
+    public const STATUS_COMPLETED   = 'completed';
 
     public const PRIORITY_LOW    = 'low';
     public const PRIORITY_MEDIUM = 'medium';
     public const PRIORITY_HIGH   = 'high';
     public const PRIORITY_URGENT = 'urgent';
 
-    public const GROUP_PENDING    = ['pending', 'accepted', null];
-    public const GROUP_INPROGRESS = ['in_progress', 'on_hold'];
-    public const GROUP_COMPLETED  = ['resolved', 'completed', 'closed'];
+    // ให้สอดคล้องกับหน้าคิว/งานของฉัน (Controller)
+    public const GROUP_PENDING    = ['pending'];
+    public const GROUP_INPROGRESS = ['accepted','in_progress','on_hold'];
+    public const GROUP_COMPLETED  = ['resolved','closed','completed'];// completed เป็น legacy
 
-    public function asset()      { return $this->belongsTo(Asset::class); }
-    public function department() { return $this->belongsTo(Department::class); }
-    public function reporter()   { return $this->belongsTo(User::class, 'reporter_id'); }
-    public function technician() { return $this->belongsTo(User::class, 'technician_id'); }
+    /* ================= RELATION ================= */
+
+    public function asset()
+    {
+        return $this->belongsTo(Asset::class);
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function reporter()
+    {
+        return $this->belongsTo(User::class, 'reporter_id');
+    }
+
+    public function technician()
+    {
+        return $this->belongsTo(User::class, 'technician_id');
+    }
 
     public function operationLog()
     {
-        return $this->hasOne(\App\Models\MaintenanceOperationLog::class, 'maintenance_request_id');
+        return $this->hasOne(MaintenanceOperationLog::class, 'maintenance_request_id');
     }
 
-    // งานนี้ถูก assign ให้ใครบ้าง (ทุกคน)
     public function assignments()
     {
         return $this->hasMany(MaintenanceAssignment::class, 'maintenance_request_id');
     }
 
-    // ดึงรายชื่อ "คนทำงาน" ตรง ๆ แบบ belongsToMany
     public function workers()
     {
         return $this->belongsToMany(User::class, 'maintenance_assignments')
-                    ->withPivot(['role', 'is_lead', 'assigned_at', 'status'])
-                    ->withTimestamps();
+            ->withPivot(['role', 'is_lead', 'assigned_at', 'status'])
+            ->withTimestamps();
     }
 
     public function logs()
@@ -124,12 +150,14 @@ class MaintenanceRequest extends Model
 
     public function imageAttachments()
     {
-        return $this->attachments()->whereHas('file', fn($q) => $q->where('mime', 'like', 'image/%'));
+        return $this->attachments()
+            ->whereHas('file', fn ($q) => $q->where('mime', 'like', 'image/%'));
     }
 
     public function latestAttachment()
     {
-        return $this->morphOne(\App\Models\Attachment::class, 'attachable')->latestOfMany('id');
+        return $this->morphOne(\App\Models\Attachment::class, 'attachable')
+            ->latestOfMany('id');
     }
 
     public function ratings()
@@ -149,51 +177,52 @@ class MaintenanceRequest extends Model
             ->where('rater_id', $userId);
     }
 
+    /* ================= ACCESSOR ================= */
+
     public function getNormalizedStatusAttribute(): string
     {
+        // normalize legacy completed -> resolved (ถ้ามี timestamp resolved_at)
         if ($this->status === self::STATUS_COMPLETED && $this->resolved_at) {
             return self::STATUS_RESOLVED;
         }
         return (string) $this->status;
     }
 
+    /* ================= REQUEST NO ================= */
+
     /**
-     * สร้างเลขใบงานแบบ legacy: YY + TYPE + RUNNING(5 หลัก)
-     * เช่น ปี พ.ศ. 2568 → 68, type 10 → 681000001
+     * Legacy format: YY + TYPE + RUNNING(5)
+     * example: 68 + 10 + 00001 = 681000001
      */
     public static function generateLegacyRequestNo(): string
     {
-        // ปี พ.ศ. → เอา 2 หลักท้าย เช่น 2568 -> "68"
         $thaiYear = now()->year + 543;
         $yy = substr((string) $thaiYear, -2);
 
-        // TODO: ภายหลังอาจ map จาก department หรือประเภทงาน
-        $type = '10'; // ตอนนี้ fix 10 ไปก่อนแบบระบบเก่า
+        $type = '10'; // legacy fixed type
 
-        // นับจำนวนงานในปี ค.ศ. ปัจจุบัน แล้ว +1 ให้เป็น running
         $count = static::query()
             ->whereYear('created_at', now()->year)
             ->count() + 1;
 
-        // เติม 5 หลัก เช่น 1 -> 00001
         $run = str_pad((string) $count, 5, '0', STR_PAD_LEFT);
 
-        return $yy.$type.$run; // ถ้าจะใส่ขีดก็เปลี่ยนเป็น "{$yy}-{$type}-{$run}"
+        return $yy . $type . $run;
     }
 
     protected static function booted(): void
     {
         static::creating(function (self $model) {
-            // ถ้ายังไม่มี request_no ให้ใช้เลขแบบ legacy 68xxxxxxx ไปก่อน
             if (empty($model->request_no)) {
                 $model->request_no = static::generateLegacyRequestNo();
             }
-
             if (empty($model->source)) {
                 $model->source = 'web';
             }
         });
     }
+
+    /* ================= SCOPE ================= */
 
     public function scopeStatus($q, ?string $s)
     {
@@ -212,21 +241,60 @@ class MaintenanceRequest extends Model
         return $q;
     }
 
+    /**
+     * ให้ผลค้นหาสอดคล้องกับ Controller (title/description/request_no/reporter fields + reporter relation + asset)
+     */
     public function scopeSearch($q, ?string $term)
     {
-        if (!$term) return $q;
+        $term = trim((string) $term);
+        if ($term === '') return $q;
+
+        $isNumeric = ctype_digit($term);
+        $len = strlen($term);
+
+        // ไม่ต้องไป match request_no (เลขใบงานยาว) เพราะมันจะปนเหมือนในรูป
+        if ($isNumeric && $len <= 5) {
+            $hash = '#'.$term;
+
+            return $q->where(function ($w) use ($term, $hash) {
+                    $w->where('id', (int) $term)
+                    ->orWhere('title', 'like', "%{$hash}%")
+                    ->orWhere('title', 'like', "%{$term}%"); // เผื่อบางคนพิมพ์ไม่มี #
+                })
+                ->orderByRaw(
+                    "CASE
+                        WHEN id = ? THEN 0
+                        WHEN title LIKE ? THEN 1
+                        WHEN title LIKE ? THEN 2
+                        ELSE 9
+                    END ASC",
+                    [(int)$term, "%{$hash}%", "%{$term}%"]
+                )
+                ->orderByDesc('id');
+        }
+
         return $q->where(function ($w) use ($term) {
             $w->where('title', 'like', "%{$term}%")
-              ->orWhere('description', 'like', "%{$term}%");
-        });
+            ->orWhere('description', 'like', "%{$term}%")
+            ->orWhere('request_no', 'like', "%{$term}%")
+            ->orWhere('reporter_name', 'like', "%{$term}%")
+            ->orWhere('reporter_phone', 'like', "%{$term}%")
+            ->orWhere('reporter_email', 'like', "%{$term}%")
+            ->orWhereHas('reporter', fn ($qr) =>
+                    $qr->where('name', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%")
+            )
+            ->orWhereHas('asset', fn ($qa) =>
+                    $qa->where('name', 'like', "%{$term}%")
+                    ->orWhere('asset_code', 'like', "%{$term}%")
+            );
+        })
+        ->orderByDesc('id');
     }
 
     public function scopePendingGroup($q)
     {
-        return $q->where(function ($w) {
-            $w->whereIn('status', ['pending', 'accepted'])
-              ->orWhereNull('status');
-        });
+        return $q->whereIn('status', self::GROUP_PENDING);
     }
 
     public function scopeInProgressGroup($q)

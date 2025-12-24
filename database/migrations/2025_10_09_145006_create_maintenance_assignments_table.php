@@ -14,31 +14,29 @@ return new class extends Migration
         Schema::create('maintenance_assignments', function (Blueprint $table) {
             $table->id();
 
-            // งานอะไร
             $table->foreignId('maintenance_request_id')
                 ->constrained('maintenance_requests')
+                ->cascadeOnUpdate()
                 ->cascadeOnDelete();
 
-            // คนที่ถูก assign (ทุก role ในระบบยกเว้น member)
             $table->foreignId('user_id')
                 ->constrained('users')
+                ->cascadeOnUpdate()
                 ->cascadeOnDelete();
 
-            // เผื่อเก็บ role ตอน assign ไว้ใช้ filter ย้อนหลัง (snapshot)
             $table->string('role', 50)->nullable();
-
-            // อันนี้เผื่อในอนาคต กรณีมีหัวหน้าทีม / คนหลักของงาน
             $table->boolean('is_lead')->default(false);
 
             $table->dateTime('assigned_at')->nullable();
-            $table->string('status')->default('in_progress'); // in_progress / done / cancelled ...
+
+            $table->enum('status', ['in_progress', 'done', 'cancelled'])->default('in_progress');
 
             $table->timestamps();
 
-            $table->unique(
-                ['maintenance_request_id', 'user_id'],
-                'uniq_request_user'
-            ); // กันไม่ให้ assign คนเดิมซ้ำงานเดียวกัน
+            $table->unique(['maintenance_request_id', 'user_id'], 'uniq_request_user');
+
+            $table->index(['user_id', 'status']);
+            $table->index(['maintenance_request_id', 'status']);
         });
     }
 

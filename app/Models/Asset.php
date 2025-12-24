@@ -60,12 +60,12 @@ class Asset extends Model
     public function requestAttachments()
     {
         return $this->hasManyThrough(
-            Attachment::class,          // ปลายทาง (ไฟล์แนบ)
-            MaintenanceRequest::class,  // ผ่าน (ใบงาน)
-            'asset_id',                 // maintenance_requests.asset_id -> assets.id
-            'attachable_id',            // attachments.attachable_id -> maintenance_requests.id
-            'id',                       // assets.id
-            'id'                        // maintenance_requests.id
+            Attachment::class,
+            MaintenanceRequest::class,
+            'asset_id',
+            'attachable_id',
+            'id',
+            'id'
         )->where('attachments.attachable_type', (new MaintenanceRequest())->getMorphClass());
     }
 
@@ -74,22 +74,44 @@ class Asset extends Model
         return $this->hasManyThrough(
             MaintenanceLog::class,
             MaintenanceRequest::class,
-            'asset_id',                 // maintenance_requests.asset_id -> assets.id
-            self::REQ_FK,               // maintenance_logs.FK -> maintenance_requests.id
+            'asset_id',
+            self::REQ_FK,
             'id',
             'id'
         );
     }
+
     public function scopeSearch($q, ?string $term)
     {
         $term = trim((string) $term);
         if ($term === '') return $q;
 
+        $isNumeric = ctype_digit($term);
+
+        if ($isNumeric) {
+            return $q->where(function ($w) use ($term) {
+                $w->where('id', (int) $term)
+                ->orWhere('asset_code', 'like', "%{$term}%");
+            })
+            // ให้ id ตรงเป๊ะขึ้นก่อน
+            ->orderByRaw(
+                "CASE
+                    WHEN id = ? THEN 0
+                    WHEN asset_code LIKE ? THEN 1
+                    ELSE 9
+                END",
+                [(int)$term, "{$term}%"]
+            )
+            ->orderBy('id', 'desc');
+        }
+
+        // 🔍 กรณีเป็น text → search ปกติ
         return $q->where(function ($w) use ($term) {
-            $w->where('asset_code', 'like', "%{$term}%")
-              ->orWhere('name', 'like', "%{$term}%")
-              ->orWhere('serial_number', 'like', "%{$term}%");
-        });
+                $w->where('asset_code', 'like', "%{$term}%")
+                ->orWhere('name', 'like', "%{$term}%")
+                ->orWhere('serial_number', 'like', "%{$term}%");
+            })
+            ->orderBy('id', 'desc');
     }
 
     public function scopeDepartmentId($q, ?int $departmentId)

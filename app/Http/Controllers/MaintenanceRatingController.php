@@ -14,29 +14,44 @@ class MaintenanceRatingController extends Controller
 {
     protected int $ratingDeadlineDays = 7;
 
+    /**
+     * หน้า "ให้คะแนนงาน" แยกเป็น:
+     * - pendingRequests: งานที่ปิดแล้ว แต่ user คนนี้ยังไม่ให้คะแนน และยังอยู่ในช่วงเวลาให้คะแนน
+     * - ratedRequests: งานที่ user คนนี้ให้คะแนนแล้ว
+     */
     public function evaluateList()
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $pendingRequests = MaintenanceRequest::with(['technician', 'rating'])
+        $baseQuery = MaintenanceRequest::query()
             ->where('reporter_id', $user->id)
             ->whereIn('status', [
                 MaintenanceRequest::STATUS_RESOLVED,
                 MaintenanceRequest::STATUS_CLOSED,
-            ])
-            ->whereDoesntHave('rating')
+            ]);
+
+        // งานที่ยังไม่ให้คะแนน (ของ user คนนี้จริง ๆ)
+        $pendingRequests = (clone $baseQuery)
+            ->with(['technician:id,name', 'assignments.user:id,name,role'])
+            ->whereDoesntHave('ratings', function ($q) use ($user) {
+                $q->where('rater_id', $user->id);
+            })
             ->get()
             ->filter(fn (MaintenanceRequest $req) => $this->withinRatingWindow($req))
             ->values();
 
-        $ratedRequests = MaintenanceRequest::with(['technician', 'rating'])
-            ->where('reporter_id', $user->id)
-            ->whereIn('status', [
-                MaintenanceRequest::STATUS_RESOLVED,
-                MaintenanceRequest::STATUS_CLOSED,
+        // งานที่ให้คะแนนแล้ว (ของ user คนนี้จริง ๆ)
+        $ratedRequests = (clone $baseQuery)
+            ->with([
+                'technician:id,name',
+                'ratings' => function ($q) use ($user) {
+                    $q->where('rater_id', $user->id);
+                },
             ])
-            ->whereHas('rating')
+            ->whereHas('ratings', function ($q) use ($user) {
+                $q->where('rater_id', $user->id);
+            })
             ->latest('closed_at')
             ->get();
 
@@ -46,25 +61,29 @@ class MaintenanceRatingController extends Controller
         ]);
     }
 
+    /**
+     * Dashboard คะแนนของช่าง (avg, count)
+     * ต้องมี relation ใน User: technicianRatings() -> hasMany(MaintenanceRating::class, 'technician_id')
+     */
     public function technicianDashboard()
     {
-        $technicians = User::where('role', 'technician')
+        $technicians = User::query()
+            ->where('role', 'technician')
             ->withAvg('technicianRatings', 'score')
             ->withCount('technicianRatings')
-            ->get();
-
-        $chartLabels = $technicians->pluck('name');
-        $chartAvg    = $technicians->pluck('technician_ratings_avg_score');
-        $chartCount  = $technicians->pluck('technician_ratings_count');
+            ->get(['id', 'name']);
 
         return view('maintenance.rating.technicians-dashboard', [
             'technicians' => $technicians,
-            'chartLabels' => $chartLabels,
-            'chartAvg'    => $chartAvg,
-            'chartCount'  => $chartCount,
+            'chartLabels' => $technicians->pluck('name'),
+            'chartAvg'    => $technicians->pluck('technician_ratings_avg_score'),
+            'chartCount'  => $technicians->pluck('technician_ratings_count'),
         ]);
     }
 
+    /**
+     * ฟอร์มให้คะแนน
+     */
     public function create(MaintenanceRequest $maintenanceRequest)
     {
         /** @var User $user */
@@ -74,7 +93,7 @@ class MaintenanceRatingController extends Controller
             return $redirect;
         }
 
-        // ส่ง technician ที่ระบบ "เลือกได้จริง" จาก assignments ไปให้หน้า form ใช้แสดงผล (ถ้าต้องการ)
+        // เลือกช่างจาก assignments (แหล่งความจริง) และกรองเฉพาะ role=technician
         $technicianId = $this->resolveTechnicianIdForRating($maintenanceRequest);
 
         return view('maintenance.rating.form', [
@@ -83,6 +102,11 @@ class MaintenanceRatingController extends Controller
         ]);
     }
 
+    /**
+     * บันทึกคะแนน
+     * - ใช้ updateOrCreate กัน race condition + กดซ้ำแล้วค่าหาย
+     * - ยืนยันช่างจาก assignments (ไม่รับ technician_id จาก request เพื่อกันปลอม)
+     */
     public function store(Request $request, MaintenanceRequest $maintenanceRequest)
     {
         /** @var User $user */
@@ -94,7 +118,6 @@ class MaintenanceRatingController extends Controller
 
         $data = $this->validateRating($request);
 
-        // ✅ ดึงช่างจาก assignments ของงานนี้จริง
         $technicianId = $this->resolveTechnicianIdForRating($maintenanceRequest);
         if (! $technicianId) {
             return redirect()
@@ -105,8 +128,7 @@ class MaintenanceRatingController extends Controller
                 ]);
         }
 
-        // ✅ กันกดซ้ำ/ยิงพร้อมกัน: ไม่พัง 500
-        MaintenanceRating::firstOrCreate(
+        MaintenanceRating::updateOrCreate(
             [
                 'maintenance_request_id' => $maintenanceRequest->id,
                 'rater_id'               => $user->id,
@@ -126,12 +148,17 @@ class MaintenanceRatingController extends Controller
             ]);
     }
 
+    /**
+     * กันสิทธิ์/เงื่อนไขการให้คะแนนให้ครบ:
+     * - ต้องเป็นคนแจ้งงาน
+     * - ต้องเป็นงานสถานะ resolved/closed
+     * - ต้องยังอยู่ในช่วง 7 วัน
+     * - ต้องยังไม่เคยให้คะแนน (เช็คด้วย query ชัวร์)
+     * - ต้องมีช่างจาก assignments (ไม่งั้นไม่ให้รีวิว)
+     */
     protected function guardRatingAccess(MaintenanceRequest $maintenanceRequest, User $user): ?RedirectResponse
     {
-        // ✅ แก้บั๊ก: ให้แน่ใจว่า rating ถูกโหลด (หรือเช็ค exists แบบ query)
-        $maintenanceRequest->loadMissing('rating');
-
-        if ($maintenanceRequest->reporter_id !== $user->id) {
+        if ((int) $maintenanceRequest->reporter_id !== (int) $user->id) {
             abort(403, 'คุณไม่มีสิทธิ์ให้คะแนนงานนี้');
         }
 
@@ -142,8 +169,8 @@ class MaintenanceRatingController extends Controller
             abort(403, 'สามารถให้คะแนนได้เฉพาะงานที่ปิดแล้วเท่านั้น');
         }
 
-        // ✅ กันซ้ำแบบชัวร์ (ไม่พึ่ง relation อย่างเดียว)
-        $alreadyRated = MaintenanceRating::where('maintenance_request_id', $maintenanceRequest->id)
+        $alreadyRated = MaintenanceRating::query()
+            ->where('maintenance_request_id', $maintenanceRequest->id)
             ->where('rater_id', $user->id)
             ->exists();
 
@@ -165,7 +192,6 @@ class MaintenanceRatingController extends Controller
                 ]);
         }
 
-        // ✅ ต้องมีช่างที่มาจาก assignments จริง (ไม่งั้นไม่ให้รีวิว)
         if (! $this->resolveTechnicianIdForRating($maintenanceRequest)) {
             return redirect()
                 ->route('maintenance.requests.show', $maintenanceRequest)
@@ -178,6 +204,9 @@ class MaintenanceRatingController extends Controller
         return null;
     }
 
+    /**
+     * validate + rule เพิ่ม: ถ้าให้ 1–2 ดาว ต้องมี comment
+     */
     protected function validateRating(Request $request): array
     {
         $validator = Validator::make($request->all(), [
@@ -188,7 +217,7 @@ class MaintenanceRatingController extends Controller
         $validator->after(function ($v) {
             $data    = $v->getData();
             $score   = isset($data['score']) ? (int) $data['score'] : null;
-            $comment = trim($data['comment'] ?? '');
+            $comment = trim((string) ($data['comment'] ?? ''));
 
             if ($score !== null && $score <= 2 && $comment === '') {
                 $v->errors()->add('comment', 'ถ้าให้ 1–2 ดาว กรุณาระบุความคิดเห็นเพิ่มเติม');
@@ -204,21 +233,15 @@ class MaintenanceRatingController extends Controller
             ?? $maintenanceRequest->resolved_at
             ?? $maintenanceRequest->completed_date;
 
-        if (! $base) {
-            return false;
-        }
+        if (! $base) return false;
 
-        return now()->diffInDays($base) <= $this->ratingDeadlineDays;
+        return $base->isPast() && now()->diffInDays($base) <= $this->ratingDeadlineDays;
     }
 
-    /**
-     * ✅ เลือกช่างที่จะถูกรีวิวจาก assignments ของงานนี้ (แหล่งความจริง)
-     * priority: is_lead=1 ก่อน -> status=done ก่อน -> assigned_at ล่าสุด
-     */
     protected function resolveTechnicianIdForRating(MaintenanceRequest $maintenanceRequest): ?int
     {
-        // ต้องมี relation assignments() ใน MaintenanceRequest model
         $assignment = $maintenanceRequest->assignments()
+            ->whereHas('user', fn($q) => $q->where('role', 'technician'))
             ->orderByDesc('is_lead')
             ->orderByRaw("CASE WHEN status = 'done' THEN 1 ELSE 0 END DESC")
             ->orderByDesc('assigned_at')

@@ -9,75 +9,75 @@ return new class extends Migration {
         Schema::create('maintenance_requests', function (Blueprint $table) {
             $table->id();
 
-            // รหัสอ้างอิงงาน (มนุษย์อ่านง่าย)
+            // ====== เลขใบงาน ======
             $table->string('request_no', 32)->nullable()->unique();
 
-            // ครุภัณฑ์ (optional เผื่อแจ้งงานทั่วไป)
+            // ====== ครุภัณฑ์ ======
             $table->foreignId('asset_id')
                 ->nullable()
                 ->constrained('assets')
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
 
-            // ผู้แจ้ง: รองรับทั้ง user ภายในและคนนอก
+            // ====== ผู้แจ้ง ======
             $table->foreignId('reporter_id')
                 ->nullable()
                 ->constrained('users')
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
 
-            // ข้อมูลผู้แจ้ง (กรณีคนนอก)
             $table->string('reporter_name')->nullable();
             $table->string('reporter_phone', 30)->nullable();
             $table->string('reporter_email')->nullable();
-            $table->string('reporter_position')->nullable();   // <- เพิ่ม
-            $table->string('reporter_ip', 45)->nullable();     // <- เพิ่ม
 
-            // หน่วยงาน/ตำแหน่ง/สถานที่ซ่อม
-            $table->foreignId('department_id')->nullable()
-                ->constrained('departments')->nullOnDelete();
+            // ====== หน่วยงาน / สถานที่ ======
+            $table->foreignId('department_id')
+                ->nullable()
+                ->constrained('departments')
+                ->nullOnDelete();
+
             $table->string('location_text')->nullable();
 
-            // ข้อมูลทั่วไป
+            // ====== รายละเอียดงาน ======
             $table->string('title');
             $table->text('description')->nullable();
-            $table->enum('priority', ['low','medium','high','urgent'])->default('medium');
 
-            // ใช้ string แทน enum เพื่อรองรับสถานะใหม่ในอนาคต
+            $table->enum('priority', ['low','medium','high','urgent'])
+                ->default('medium');
+
             $table->string('status', 32)->default('pending');
 
-            // ผู้รับผิดชอบ
+            // ====== ผู้รับผิดชอบ ======
             $table->foreignId('technician_id')
                 ->nullable()
                 ->constrained('users')
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
 
-            // ไทม์ไลน์หลัก
+            // ====== Timeline ======
             $table->timestamp('request_date')->useCurrent();
             $table->timestamp('assigned_date')->nullable();
-            $table->timestamp('completed_date')->nullable(); // legacy/back-compat
+            $table->timestamp('completed_date')->nullable(); // legacy
 
-            // เวิร์กโฟลว์ละเอียด
             $table->timestamp('accepted_at')->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('on_hold_at')->nullable();
             $table->timestamp('resolved_at')->nullable();
             $table->timestamp('closed_at')->nullable();
 
-            // หมายเหตุ/ผลการซ่อม/ค่าใช้จ่าย
+            // ====== ผลการซ่อม ======
             $table->text('remark')->nullable();
             $table->text('resolution_note')->nullable();
             $table->decimal('cost', 10, 2)->nullable();
 
-            // ช่องทาง + ข้อมูลเพิ่มเติม
+            // ====== Metadata ======
             $table->string('source', 32)->default('web');
             $table->json('extra')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
 
-            // ดัชนี
+            // ====== Index ======
             $table->index(['asset_id', 'request_date']);
             $table->index(['status', 'priority']);
             $table->index(['technician_id', 'status']);

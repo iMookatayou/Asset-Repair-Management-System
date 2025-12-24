@@ -10,6 +10,9 @@
   $status   = $status   ?? request('status');
   $priority = $priority ?? request('priority');
 
+  // ✅ keep asset_id ทั้งหน้า
+  $assetId  = request('asset_id');
+
   // sort from controller (fallback from request)
   $sortBy  = $sortBy  ?? request('sort_by', 'request_no');
   $sortDir = $sortDir ?? request('sort_dir', 'desc');
@@ -81,7 +84,7 @@
           <p class="text-[13px] text-slate-600">รายการคำขอบำรุงรักษา • ค้นหา กรอง และตรวจทานคำขอ</p>
         </div>
 
-        <a href="{{ route('maintenance.requests.create') }}"
+        <a href="{{ route('maintenance.requests.create', $assetId ? ['asset_id' => $assetId] : []) }}"
            class="inline-flex items-center gap-2 rounded-md bg-[#0F2D5C] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#0F2D5C]/90 focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/40"
            onclick="showLoader()">
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -99,6 +102,11 @@
         {{-- keep sort --}}
         <input type="hidden" name="sort_by"  value="{{ $sortBy }}">
         <input type="hidden" name="sort_dir" value="{{ $sortDir }}">
+
+        {{-- ✅ keep asset_id ทุกครั้งที่ submit --}}
+        @if($assetId)
+          <input type="hidden" name="asset_id" value="{{ $assetId }}">
+        @endif
 
         <div class="md:col-span-5 min-w-0">
           <label for="q" class="mb-1 block text-[12px] text-slate-600">คำค้นหา</label>
@@ -137,7 +145,8 @@
         </div>
 
         <div class="md:col-span-2 flex items-end justify-end gap-2">
-          <a href="{{ route('maintenance.requests.index') }}"
+          {{-- ✅ ล้างตัวกรอง แต่คง asset_id --}}
+          <a href="{{ route('maintenance.requests.index', $assetId ? ['asset_id' => $assetId] : []) }}"
              onclick="showLoader()"
              class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/30 focus:ring-offset-1"
              title="ล้างตัวกรอง" aria-label="ล้างตัวกรอง">
@@ -164,6 +173,9 @@
     <div class="flex items-center justify-between">
       <div class="text-[13px] font-semibold text-slate-800">
         รายการคำขอบำรุงรักษา
+        @if($assetId)
+          <span class="ml-2 text-[12px] font-medium text-slate-500">• (กรองตามครุภัณฑ์ #{{ $assetId }})</span>
+        @endif
       </div>
       <div class="text-[12px] text-slate-500">
         ทั้งหมด {{ $list->total() }} รายการ
@@ -180,7 +192,13 @@
             @php
               $isActive = ($sortBy === 'request_no');
               $nextDir  = ($isActive && $sortDir === 'asc') ? 'desc' : 'asc';
-              $sortUrl  = request()->fullUrlWithQuery(['sort_by' => 'request_no', 'sort_dir' => $nextDir]);
+
+              // ✅ force keep asset_id ในการ sort
+              $sortUrl  = request()->fullUrlWithQuery([
+                'sort_by'  => 'request_no',
+                'sort_dir' => $nextDir,
+                'asset_id' => $assetId,
+              ]);
 
               $labelCls = $isActive ? 'text-[#0F2D5C]' : 'text-slate-600 group-hover:text-slate-900';
               $iconCls  = $isActive ? 'text-[#0F2D5C]' : 'text-slate-300 group-hover:text-slate-400';
@@ -312,7 +330,8 @@
           $hasFilter =
             (($q ?? null) && $q !== '') ||
             (($status ?? null) && $status !== '') ||
-            (($priority ?? null) && $priority !== '');
+            (($priority ?? null) && $priority !== '') ||
+            (($assetId ?? null) && $assetId !== ''); // ✅ นับ asset_id เป็น filter ด้วย
         @endphp
         <tr>
           <td colspan="7" class="py-16 text-center text-slate-600">

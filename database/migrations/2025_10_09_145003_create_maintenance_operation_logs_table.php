@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::create('maintenance_operation_logs', function (Blueprint $table) {
             $table->id();
 
+            $table->index('user_id');
+
             // ผูกกับใบงาน (ใช้ชื่อให้เข้ากับ maintenance_assignments)
             $table->foreignId('maintenance_request_id')
                 ->constrained('maintenance_requests')

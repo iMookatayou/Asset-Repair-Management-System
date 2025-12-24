@@ -19,7 +19,7 @@ class DevAdminSeeder extends Seeder
         // ===== ข้อมูล Dev Admin จาก .env (ตั้งค่าได้เอง) =====
         $citizenId = env('DEV_ADMIN_CITIZEN_ID', '1234567890123');   // <— ใช้ citizen_id
         $email     = env('DEV_ADMIN_EMAIL', 'dev@example.com');       // optional
-        $name      = env('DEV_ADMIN_NAME', 'ผู้ดูแลระบบ Admin');
+        $name      = env('DEV_ADMIN_NAME', 'Developer Admin');
         $password  = env('DEV_ADMIN_PASSWORD', 'Dev12345!');
 
         // ===== สร้างหรืออัปเดต Dev Admin =====

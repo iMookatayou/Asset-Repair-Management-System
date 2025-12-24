@@ -28,7 +28,8 @@ class MaintenanceRequestController extends Controller
         $user     = Auth::user();
         $status   = $request->string('status')->toString();
         $priority = $request->string('priority')->toString();
-        $q        = $request->string('q')->toString();
+        $q        = trim($request->string('q')->toString());
+        $assetId  = $request->integer('asset_id');
 
         // ---- ใช้ helper ดึงค่าการเรียง + จัดการ session ต่อ user ----
         [$sortBy, $sortDir] = $this->resolveSort($request);
@@ -42,43 +43,46 @@ class MaintenanceRequestController extends Controller
                     ->select('id','attachable_id','attachable_type','file_id','original_name','is_private','order_column')
                     ->with(['file:id,path,disk,mime,size']),
             ])
-            // จำกัดเฉพาะผู้ใช้ระดับ Member (computer_officer) ให้เห็นงานที่ตนแจ้งเท่านั้น
-            // Admin / Supervisor / Technician roles เห็นทั้งหมด
+
+            // จำกัดเฉพาะผู้ใช้ระดับ Member ให้เห็นงานที่ตนแจ้งเท่านั้น
             ->when(
                 ($user && !$user->isAdmin() && !$user->isSupervisor() && !$user->isTechnician()),
                 fn($qb) => $qb->where('reporter_id', $user->id)
             )
-            ->when($status, fn ($qb) => $qb->where('status', $status))
-            ->when($priority, fn ($qb) => $qb->where('priority', $priority))
-            ->when($q, function ($w) use ($q) {
-                $w->where(function ($ww) use ($q) {
-                    $ww->where('title','like',"%{$q}%")
-                    ->orWhere('description','like',"%{$q}%")
-                    ->orWhere('request_no','like',"%{$q}%")              // ค้นด้วยเลขใบงาน 68xxxx
-                    ->orWhere('reporter_name','like',"%{$q}%")           // ชื่อผู้แจ้ง
-                    ->orWhere('reporter_position','like',"%{$q}%")       // ตำแหน่งผู้แจ้ง
-                    ->orWhere('reporter_phone','like',"%{$q}%")          // เบอร์ผู้แจ้ง
-                    ->orWhere('reporter_email','like',"%{$q}%")          // อีเมลที่เก็บในฟิลด์
-                    ->orWhereHas('reporter', fn($qr) =>                  // user ภายใน
-                            $qr->where('email','like',"%{$q}%")
-                            ->orWhere('name','like',"%{$q}%")
-                    );
-                });
-            });
 
-        if ($sortBy === 'request_no') {
-            $dir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+            // filter อื่น ๆ
+            ->when($assetId, fn($qb) => $qb->where('asset_id', $assetId))
+            ->when($status, fn($qb) => $qb->where('status', $status))
+            ->when($priority, fn($qb) => $qb->where('priority', $priority))
 
-            // 1) เอา request_no ว่าง/NULL ไปท้ายเสมอ
-            $query->orderByRaw("CASE WHEN request_no IS NULL OR request_no = '' THEN 1 ELSE 0 END ASC");
+            ->when($q !== '', fn($qb) => $qb->search($q));
 
-            // 2) เรียง request_no ตามทิศทางที่เลือก
-            $query->orderBy('request_no', $dir);
-
-            // 3) tie-breaker กันสลับแถว
-            $query->orderBy('id', $dir);
+        if ($q !== '') {
+            // กันผลสลับแถว + ทำให้ผลคงที่
+            // (ถ้าใน scopeSearch ของคุณมี orderByRaw ranking อยู่แล้ว ตัวนี้เป็นแค่ tie-break)
+            $query->orderByDesc('id');
         } else {
-            $query->orderBy($sortBy, $sortDir);
+            if ($sortBy === 'request_no') {
+                $dir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+
+                // 1) เอา request_no ว่าง/NULL ไปท้ายเสมอ
+                $query->orderByRaw("CASE WHEN request_no IS NULL OR request_no = '' THEN 1 ELSE 0 END ASC");
+
+                // 2) เรียง request_no ตามทิศทางที่เลือก
+                $query->orderBy('request_no', $dir);
+
+                // 3) tie-breaker กันสลับแถว
+                $query->orderBy('id', $dir);
+            } else {
+                // safety: กัน sort_by หลุดเงื่อนไข (เผื่อ resolveSort โดนแก้ในอนาคต)
+                $allowed = ['request_no', 'id', 'request_date'];
+                if (!in_array($sortBy, $allowed, true)) {
+                    $sortBy = 'request_no';
+                }
+                $sortDir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+
+                $query->orderBy($sortBy, $sortDir);
+            }
         }
 
         $list = $query
@@ -104,10 +108,10 @@ class MaintenanceRequestController extends Controller
             ->when($q, function ($qb) use ($q) {
                 $qb->where(function ($w) use ($q) {
                     $w->where('title','like',"%{$q}%")
-                      ->orWhere('description','like',"%{$q}%")
-                      ->orWhere('request_no','like',"%{$q}%")              // ค้นด้วยเลขใบงาน 68xxxx
-                      ->orWhereHas('reporter', fn($qr) => $qr->where('name','like',"%{$q}%")->orWhere('email','like',"%{$q}%"))
-                      ->orWhereHas('asset', fn($qa) => $qa->where('name','like',"%{$q}%")->orWhere('asset_code','like',"%{$q}%"));
+                        ->orWhere('description','like',"%{$q}%")
+                        ->orWhere('request_no','like',"%{$q}%")
+                        ->orWhereHas('reporter', fn($qr) => $qr->where('name','like',"%{$q}%")->orWhere('email','like',"%{$q}%"))
+                        ->orWhereHas('asset', fn($qa) => $qa->where('name','like',"%{$q}%")->orWhere('asset_code','like',"%{$q}%"));
                 });
             })
             ->orderByRaw("FIELD(priority,'urgent','high','medium','low')")
@@ -119,7 +123,7 @@ class MaintenanceRequestController extends Controller
             'total'       => (clone $base)->count(),
             'pending'     => (clone $base)->where('status','pending')->count(),
             'in_progress' => (clone $base)->where('status','in_progress')->count(),
-            'completed'   => MR::query()->where('status','resolved')->orWhere('status','closed')->count(),
+            'completed'   => MR::query()->whereIn('status', ['resolved','closed'])->count(),
         ];
 
         return view('repair.queue', compact('list','stats','just'));
@@ -128,26 +132,65 @@ class MaintenanceRequestController extends Controller
     public function myJobsPage(Request $request)
     {
         \Gate::authorize('view-my-jobs');
-        $user = Auth::user();
+
+        $user   = Auth::user();
         $userId = $user->id;
 
         $filter = $request->string('filter')->toString() ?: 'all'; // my|available|all
         $status = $request->string('status')->toString();
-        $q      = $request->string('q')->toString();
+        $q      = trim($request->string('q')->toString());
         $tech   = $request->integer('tech'); // optional technician filter
 
-        // สถิติภาพรวม
+        // ✅ ระบบใหม่: exclude แค่ cancelled ก็พอ
+        $excluded = [MR::STATUS_CANCELLED];
+
+        // ✅ sort toggle
+        $sortBy  = $request->string('sort_by')->toString() ?: '';
+        $sortDir = strtolower($request->string('sort_dir')->toString() ?: 'desc');
+        $sortDir = in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : 'desc';
+
+        // ✅ เพิ่ม sort ที่ควรมีจริง (ให้ตรง “ใหม่→เก่า / เก่า→ใหม่” และ “เลขใบงาน”)
+        $allowedSort = ['id', 'created_at', 'updated_at', 'request_date', 'request_no'];
+        if (!in_array($sortBy, $allowedSort, true)) {
+            $sortBy = '';
+        }
+
+        /**
+         * ✅ Base query for stats/list consistency
+         * - หากใช้ SoftDeletes: ใช้ whereNull('deleted_at')
+         * - ถ้า MR model ใช้ SoftDeletes อยู่แล้ว query จะ exclude deleted ให้เอง
+         */
+        $base = MR::query();
+
+        // ===== Stats (consistent with excluded) =====
         $stats = [
-            'pending'     => MR::whereIn('status', ['pending'])->count(),
-            'in_progress' => MR::whereIn('status', ['accepted','in_progress','on_hold'])->count(),
-            'completed'   => MR::whereIn('status', ['resolved','closed'])->count(),
-            'my_active'   => MR::where('technician_id', $userId)
-                ->whereNotIn('status', ['resolved','closed','cancelled'])->count(),
+            'pending'     => (clone $base)
+                ->where('status', MR::STATUS_PENDING)
+                ->whereNotIn('status', $excluded)
+                ->count(),
+
+            'in_progress' => (clone $base)
+                ->whereIn('status', [MR::STATUS_ACCEPTED, MR::STATUS_IN_PROGRESS, MR::STATUS_ON_HOLD])
+                ->whereNotIn('status', $excluded)
+                ->count(),
+
+            'completed'   => (clone $base)
+                ->whereIn('status', [MR::STATUS_RESOLVED, MR::STATUS_CLOSED])
+                ->count(),
+
+            'my_active'   => (clone $base)
+                ->where('technician_id', $userId)
+                ->whereNotIn('status', array_merge([MR::STATUS_RESOLVED, MR::STATUS_CLOSED], $excluded))
+                ->count(),
+
+            'cancelled'   => (clone $base)
+                ->where('status', MR::STATUS_CANCELLED)
+                ->count(),
         ];
 
-        // ทีมงาน (หัวหน้า + ช่าง) + ผู้ที่ถูกระบุเป็น technician ในงานที่ยังไม่เสร็จ
-        $activeTechIds = MR::query()
-            ->whereNotIn('status', ['resolved','closed','cancelled'])
+        // ===== Team (active technicians) =====
+        $activeTechIds = (clone $base)
+            ->whereNotIn('status', array_merge([MR::STATUS_RESOLVED, MR::STATUS_CLOSED], $excluded))
             ->whereNotNull('technician_id')
             ->pluck('technician_id')
             ->unique()
@@ -163,43 +206,94 @@ class MaintenanceRequestController extends Controller
             })
             ->where('role', '!=', \App\Models\User::ROLE_ADMIN)
             ->withCount([
-                'assignedRequests as active_count' => function ($q) {
-                    $q->whereNotIn('maintenance_requests.status', ['resolved','closed','cancelled'])
-                    ->whereNull('maintenance_requests.deleted_at');
+                'assignedRequests as active_count' => function ($q) use ($excluded) {
+                    $q->whereNotIn('maintenance_requests.status', array_merge([MR::STATUS_RESOLVED, MR::STATUS_CLOSED], $excluded));
                 },
                 'assignedRequests as total_count' => function ($q) {
-                    $q->whereNull('maintenance_requests.deleted_at');
+                    // no extra filter
                 },
             ])
             ->orderBy('name')
-            ->get(['id','name','role']);
+            ->get(['id', 'name', 'role']);
 
-        // รายการงาน
+        // ===== Main list query =====
         $query = MR::query()
-            ->with(['asset','reporter:id,name,email','technician:id,name'])
+            ->select([
+                'id',
+                'request_no',
+                'request_date',
+                'title',
+                'description',
+                'status',
+                'priority',
+                'updated_at',
+                'created_at',
+                'asset_id',
+                'department_id',
+                'location_text',
+                'reporter_id',
+                'reporter_name',
+                'reporter_phone',
+                'technician_id',
+            ])
+            ->with([
+                'asset:id,name,asset_code',
+                'department',
+                'reporter:id,name,email',
+                'technician:id,name',
+            ])
             ->when($filter === 'my', fn($qb) => $qb->where('technician_id', $userId))
-            ->when($filter === 'available', fn($qb) => $qb->whereNull('technician_id')->whereIn('status', ['pending','accepted']))
+            ->when($filter === 'available', fn($qb) => $qb->whereNull('technician_id')->where('status', MR::STATUS_PENDING))
             ->when($tech, fn($qb) => $qb->where('technician_id', $tech))
-            ->when($status, fn($qb) => $qb->where('status', $status))
-            ->when($q, function ($qb) use ($q) {
-                $qb->where(function ($w) use ($q) {
-                    $w->where('title','like',"%{$q}%")
-                      ->orWhere('description','like',"%{$q}%")
-                      ->orWhere('request_no','like',"%{$q}%")              // ค้นด้วยเลขใบงาน 68xxxx
-                      ->orWhereHas('asset', fn($qa) => $qa->where('name','like',"%{$q}%")->orWhere('asset_code','like',"%{$q}%"));
-                });
-            })
-            ->whereNotIn('status', ['cancelled'])
-            ->orderByRaw("FIELD(status,'pending','accepted','in_progress','on_hold','resolved','closed')")
-            ->orderByRaw("FIELD(priority,'urgent','high','medium','low')")
-            ->orderByDesc('updated_at');
+            ->when($status !== '', fn($qb) => $qb->where('status', $status))
+            ->when($q !== '', fn($qb) => $qb->search($q))
+            ->whereNotIn('status', $excluded);
+
+        /**
+         * ✅ ลำดับใหม่ (แก้ “เรียงมั่ว”):
+         * - ถ้าผู้ใช้เลือก sort_by/sort_dir → เคารพ sort ของผู้ใช้ก่อน (ไม่เอา status/priority มาขวาง)
+         * - ถ้าไม่เลือกอะไรเลย → default เป็น “คิวงานราชการ”
+         */
+        $userSorting = ($sortBy !== '');
+
+        if ($userSorting) {
+
+            // กรณีเรียงตามเลขใบงาน: ดันค่าว่างไปท้ายเพื่อไม่ให้ปนด้านบน
+            if ($sortBy === 'request_no') {
+                $query->orderByRaw("CASE WHEN request_no IS NULL OR request_no = '' THEN 1 ELSE 0 END ASC");
+            }
+
+            // เรียงตามที่ user เลือก
+            $query->orderBy($sortBy, $sortDir)
+                ->orderByDesc('updated_at')
+                ->orderByDesc('id');
+
+        } else {
+
+            // default: “คิวงานราชการ”
+            $query->orderByRaw("FIELD(status,'pending','accepted','in_progress','on_hold','resolved','closed')")
+                ->orderByRaw("FIELD(priority,'urgent','high','medium','low')")
+                ->orderByDesc('request_date')
+                ->orderByDesc('updated_at')
+                ->orderByDesc('id');
+        }
 
         $list = $query->paginate(20)->withQueryString();
 
-        return view('repair.my-jobs', compact('list','stats','team','filter','status','q','tech'));
+        return view('repair.my-jobs', compact(
+            'list',
+            'stats',
+            'team',
+            'filter',
+            'status',
+            'q',
+            'tech',
+            'sortBy',
+            'sortDir'
+        ));
     }
 
-    public function acceptJobQuick(Request $request, MR $req)
+    public function acceptCase(Request $request, MR $req)
     {
         \Gate::authorize('accept', $req);
 
@@ -213,46 +307,209 @@ class MaintenanceRequestController extends Controller
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                // ถ้ามีคนรับไปแล้ว (และไม่ใช่เรา) ให้ชน 409
-                if (!empty($locked->technician_id) && (int)$locked->technician_id !== (int)$userId) {
-                    abort(409, 'งานนี้ถูกรับไปแล้วโดยคนอื่น');
+                // ✅ ต้องเป็นงานว่างจริงเท่านั้น
+                // (กันกรณีงานถูกปิด/ยกเลิก/รับไปแล้ว)
+                if ($locked->status !== MR::STATUS_PENDING) {
+                    abort(409, 'งานนี้ไม่อยู่ในสถานะที่รับได้');
                 }
 
-                // รับงาน -> accepted + auto-assign ใน applyTransition
-                $this->applyTransition($locked, ['status' => 'accepted'], $userId);
+                // ✅ กัน race condition: มีคนอื่นรับไปก่อน
+                if (!empty($locked->technician_id) && (int) $locked->technician_id !== (int) $userId) {
+                    abort(409, 'งานนี้ถูกรับไปแล้ว');
+                }
+
+                // ✅ รับงานผ่าน transition กลาง
+                $this->applyTransition(
+                    $locked,
+                    ['status' => MR::STATUS_ACCEPTED],
+                    $userId
+                );
             });
         } catch (\Throwable $e) {
-            // ถ้าชน 409 หรือ error อื่น ๆ
-            $msg = $e->getCode() === 409 ? 'งานนี้ถูกรับไปแล้วโดยคนอื่น' : 'เกิดข้อผิดพลาดในการรับงาน';
-            return redirect()->back()->with('toast', \App\Support\Toast::warning($msg, 2200));
+
+            // 409 = business rule (แสดง message ได้)
+            $msg = ((int) $e->getCode() === 409)
+                ? ($e->getMessage() ?: 'งานนี้ไม่อยู่ในสถานะที่รับได้')
+                : 'เกิดข้อผิดพลาดในการรับเรื่อง';
+
+            return back()->with(
+                'toast',
+                \App\Support\Toast::warning($msg, 2200)
+            );
         }
 
-        return redirect()->back()->with('toast', \App\Support\Toast::success('รับงาน #'.$req->id.' เรียบร้อย', 1800));
+        return back()->with(
+            'toast',
+            \App\Support\Toast::success('รับเรื่องเรียบร้อย', 1800)
+        );
     }
 
-    public function showPage(MR $req)
+    public function rejectCase(Request $request, MR $req)
     {
-        \Gate::authorize('view', $req);
-        $req->loadMissing([
+        \Gate::authorize('reject', $req);
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        $actorId = Auth::id();
+
+        try {
+            DB::transaction(function () use ($req, $actorId, $data) {
+
+                $locked = MR::query()
+                    ->whereKey($req->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                // ✅ ต้องเป็นงานว่างจริงเท่านั้น (ยังอยู่ในคิว)
+                if ($locked->status !== MR::STATUS_PENDING || !empty($locked->technician_id)) {
+                    abort(409, 'งานนี้ไม่อยู่ในสถานะที่ไม่รับเรื่องได้');
+                }
+
+                // ✅ ไม่รับเรื่อง = งานยังอยู่ในคิว (pending)
+                // เก็บเหตุผลไว้เพื่อ audit / analytics
+                $locked->remark = $data['reason'];
+                $locked->save();
+
+                // ✅ log การไม่รับเรื่อง (ไม่เปลี่ยน status)
+                \App\Models\MaintenanceLog::create([
+                    'request_id' => $locked->id,
+                    'action'     => 'decline', // ชัดกว่า reject ในเชิงความหมาย
+                    'note'       => 'ไม่รับเรื่อง: ' . $data['reason'],
+                    'user_id'    => $actorId,
+                ]);
+            });
+        } catch (\Throwable $e) {
+
+            $msg = ((int) $e->getCode() === 409)
+                ? ($e->getMessage() ?: 'งานนี้ไม่อยู่ในสถานะที่ไม่รับเรื่องได้')
+                : 'เกิดข้อผิดพลาดในการทำรายการ';
+
+            return back()->with(
+                'toast',
+                \App\Support\Toast::warning($msg, 2200)
+            );
+        }
+
+        return back()->with(
+            'toast',
+            \App\Support\Toast::success('บันทึกไม่รับเรื่องแล้ว (งานยังอยู่ในคิว)', 1800)
+        );
+    }
+
+    public function cancelCase(Request $request, MR $req)
+    {
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        $actorId = Auth::id();
+
+        try {
+            DB::transaction(function () use ($req, $actorId, $data) {
+
+                $locked = MR::query()
+                    ->whereKey($req->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                // ✅ งานจบแล้ว/ถูกยกเลิกแล้ว ห้ามทำซ้ำ
+                if (in_array($locked->status, [
+                    MR::STATUS_RESOLVED,
+                    MR::STATUS_CLOSED,
+                    MR::STATUS_CANCELLED,
+                ], true)) {
+                    abort(409, 'งานนี้อยู่ในสถานะที่ทำรายการไม่ได้');
+                }
+
+                // ✅ 1) ผู้แจ้ง / แอดมิน = ยกเลิกใบงานจริง
+                if (\Gate::check('cancelByReporter', $locked)) {
+
+                    $this->applyTransition(
+                        $locked,
+                        [
+                            'status' => MR::STATUS_CANCELLED,
+                            'note'   => 'ยกเลิกซ่อม: ' . $data['reason'],
+                        ],
+                        $actorId
+                    );
+
+                    return;
+                }
+
+                // ✅ 2) ช่าง = คืนงานเข้าคิว (return to pool)
+                \Gate::authorize('cancelByTech', $locked);
+
+                // คืนงานเข้าคิว = pending + ไม่มีช่าง
+                $locked->update([
+                    'status'        => MR::STATUS_PENDING,
+                    'technician_id' => null,
+                    'remark'        => $data['reason'],
+
+                    // เคลียร์ timeline ที่สะท้อนการรับ/เริ่มงาน เพื่อไม่ให้ข้อมูลหลอก
+                    'accepted_at'   => null,
+                    'started_at'    => null,
+                    'on_hold_at'    => null,
+                ]);
+
+                // log audit
+                \App\Models\MaintenanceLog::create([
+                    'request_id' => $locked->id,
+                    'action'     => 'returned_to_pool',
+                    'note'       => 'คืนงานเข้าคิว: ' . $data['reason'],
+                    'user_id'    => $actorId,
+                ]);
+            });
+        } catch (\Throwable $e) {
+
+            $msg = ((int) $e->getCode() === 409)
+                ? ($e->getMessage() ?: 'งานนี้อยู่ในสถานะที่ทำรายการไม่ได้')
+                : 'เกิดข้อผิดพลาดในการทำรายการ';
+
+            return back()->with('toast', \App\Support\Toast::warning($msg, 2200));
+        }
+
+        return back()->with('toast', \App\Support\Toast::success('ทำรายการเรียบร้อย', 1800));
+    }
+
+
+    public function acceptJobQuick(Request $request, MR $req)
+    {
+        // ไม่ทำ logic ซ้ำ ให้ acceptCase เป็นตัวเดียวที่ทำ business logic
+        // acceptCase มี authorize/transaction/lock/check/status/transition ครบแล้ว
+        return $this->acceptCase($request, $req);
+    }
+
+
+    public function showPage(MR $maintenanceRequest)
+    {
+        \Gate::authorize('view', $maintenanceRequest);
+
+        $maintenanceRequest->loadMissing([
             'asset',
+            'department',
             'reporter:id,name,email',
             'technician:id,name',
-            'attachments' => fn($qq) => $qq->with('file'),
-            'logs.user:id,name',
 
+            'assignments.user:id,name,role,profile_photo_path,profile_photo_thumb',
+
+            'attachments' => fn($q) => $q->with('file'),
+            'logs.user:id,name',
             'rating',
             'rating.rater:id,name',
-
             'operationLog.user:id,name',
         ]);
 
-        // รายชื่อทีมงาน (หัวหน้า + ช่าง) สำหรับ dropdown เลือกผู้รับผิดชอบ
         $techUsers = \App\Models\User::query()
             ->inRoles(\App\Models\User::teamRoles())
             ->orderBy('name')
             ->get(['id','name']);
 
-        return view('maintenance.requests.show', compact('req','techUsers'));
+        return view('maintenance.requests.show', [
+            'req' => $maintenanceRequest,
+            'techUsers' => $techUsers,
+        ]);
     }
 
     public function createPage()
@@ -268,7 +525,8 @@ class MaintenanceRequestController extends Controller
     {
         $status   = $request->string('status')->toString();
         $priority = $request->string('priority')->toString();
-        $q        = $request->string('q')->toString();
+        $q        = trim($request->string('q')->toString());
+        $assetId  = $request->integer('asset_id');
 
         $user = $request->user();
 
@@ -277,42 +535,44 @@ class MaintenanceRequestController extends Controller
 
         $query = MR::query()
             ->with(['asset','reporter:id,name,email','technician:id,name'])
-            // API: บังคับ filter เช่นเดียวกับหน้าเว็บ สำหรับ Member เท่านั้น
+
+            // API/Web: บังคับ filter เหมือนกัน สำหรับ Member เท่านั้น
             ->when(
                 ($user && !$user->isAdmin() && !$user->isSupervisor() && !$user->isTechnician()),
                 fn($qb) => $qb->where('reporter_id', $user->id)
             )
-            ->when($status, fn ($qb) => $qb->where('status', $status))
-            ->when($priority, fn ($qb) => $qb->where('priority', $priority))
-            ->when($q, function ($w) use ($q) {
-                $w->where(function ($ww) use ($q) {
-                    $ww->where('title','like',"%{$q}%")
-                    ->orWhere('description','like',"%{$q}%")
-                    ->orWhere('request_no','like',"%{$q}%")        // ค้นเลขใบงาน 68xxxx
-                    ->orWhere('reporter_name','like',"%{$q}%")     // ชื่อผู้แจ้ง
-                    ->orWhere('reporter_position','like',"%{$q}%") // ตำแหน่งผู้แจ้ง
-                    ->orWhere('reporter_phone','like',"%{$q}%")    // เบอร์ผู้แจ้ง
-                    ->orWhere('reporter_email','like',"%{$q}%")    // อีเมลฟิลด์ตรง
-                    ->orWhereHas('reporter', fn($qr) =>            // user ภายใน
-                            $qr->where('email','like',"%{$q}%")
-                            ->orWhere('name','like',"%{$q}%")
-                    );
-                });
-            });
 
-        if ($sortBy === 'request_no') {
-            $dir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+            ->when($assetId, fn($qb) => $qb->where('asset_id', $assetId))
+            ->when($status, fn($qb) => $qb->where('status', $status))
+            ->when($priority, fn($qb) => $qb->where('priority', $priority))
 
-            // 1) เอา request_no ว่าง/NULL ไปท้ายเสมอ
-            $query->orderByRaw("CASE WHEN request_no IS NULL OR request_no = '' THEN 1 ELSE 0 END ASC");
+            ->when($q !== '', fn($qb) => $qb->search($q));
 
-            // 2) เรียง request_no ตามทิศทางที่เลือก
-            $query->orderBy('request_no', $dir);
-
-            // 3) tie-breaker กันสลับแถว
-            $query->orderBy('id', $dir);
+        if ($q !== '') {
+            // กันผลสลับแถว + ทำให้ผลคงที่
+            $query->orderByDesc('id');
         } else {
-            $query->orderBy($sortBy, $sortDir);
+            if ($sortBy === 'request_no') {
+                $dir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+
+                // 1) เอา request_no ว่าง/NULL ไปท้ายเสมอ
+                $query->orderByRaw("CASE WHEN request_no IS NULL OR request_no = '' THEN 1 ELSE 0 END ASC");
+
+                // 2) เรียง request_no ตามทิศทางที่เลือก
+                $query->orderBy('request_no', $dir);
+
+                // 3) tie-breaker กันสลับแถว
+                $query->orderBy('id', $dir);
+            } else {
+                // safety
+                $allowed = ['request_no', 'id', 'request_date'];
+                if (!in_array($sortBy, $allowed, true)) {
+                    $sortBy = 'request_no';
+                }
+                $sortDir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+
+                $query->orderBy($sortBy, $sortDir);
+            }
         }
 
         $list = $query
@@ -344,21 +604,41 @@ class MaintenanceRequestController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'title'     => ['required','string','max:255'],
-            'priority'  => ['required', Rule::in(['low','medium','high','urgent'])],
-            // ไม่มี technician_id
+            'title'        => ['required','string','max:255'],
+            'priority'     => ['required', Rule::in(['low','medium','high','urgent'])],
+
+            'asset_id'      => ['nullable','integer','exists:assets,id'],
+            'department_id' => ['nullable','integer','exists:departments,id'],
+            'location_text' => ['nullable','string','max:255'],
+
+            'reporter_name'  => ['nullable','string','max:255'],
+            'reporter_phone' => ['nullable','string','max:30'],
+            'reporter_email' => ['nullable','email','max:255'],
+
+            'description'   => ['nullable','string','max:5000'],
         ];
 
         $data = Validator::make($request->all(), $rules)->validate();
-        $actorId = optional($request->user())->id;
+        $user = $request->user();
 
         $req = MR::create([
             'title'        => $data['title'],
+            'description'  => $data['description'] ?? null,
             'priority'     => $data['priority'],
             'status'       => 'pending',
             'request_date' => now(),
-            'technician_id'=> null,
-            'reporter_id'  => $actorId,
+
+            'asset_id'      => $data['asset_id'] ?? null,
+            'department_id' => $data['department_id'] ?? null,
+            'location_text' => $data['location_text'] ?? null,
+
+            // ผู้แจ้ง
+            'reporter_id'    => $user?->id,
+            'reporter_name'  => $data['reporter_name'] ?? $user?->name,
+            'reporter_email' => $data['reporter_email'] ?? $user?->email,
+            'reporter_phone' => $data['reporter_phone'] ?? null,
+
+            'technician_id' => null,
         ]);
 
         return redirect()->route('maintenance.requests.show', $req);
@@ -369,7 +649,7 @@ class MaintenanceRequestController extends Controller
         \Gate::authorize('update', $req);
 
         $user    = $request->user();
-        $actorId = optional($user)->id;
+        $actorId = $user?->id;
         $isTeam  = $user && ($user->isAdmin() || $user->isSupervisor() || $user->isTechnician());
 
         $maxKb     = config('uploads.max_kb', 10240);
@@ -383,10 +663,9 @@ class MaintenanceRequestController extends Controller
             'priority'     => ['nullable', Rule::in(['low','medium','high','urgent'])],
             'request_date' => ['nullable','date'],
 
-            'reporter_name'     => ['nullable','string','max:255'],
-            'reporter_phone'    => ['nullable','string','max:30'],
-            'reporter_email'    => ['nullable','email','max:255'],
-            'reporter_position' => ['nullable','string','max:255'],
+            'reporter_name'  => ['nullable','string','max:255'],
+            'reporter_phone' => ['nullable','string','max:30'],
+            'reporter_email' => ['nullable','email','max:255'],
 
             'department_id'   => ['nullable','integer','exists:departments,id'],
             'location_text'   => ['nullable','string','max:255'],
@@ -406,11 +685,12 @@ class MaintenanceRequestController extends Controller
                 ? ['nullable', Rule::in(['pending','accepted','in_progress','on_hold','resolved','closed','cancelled'])]
                 : ['nullable', Rule::in(['cancelled'])],
 
+            // ---- operation log ----
             'operation_date'   => ['nullable','date'],
             'operation_method' => ['nullable', Rule::in(['requisition','service_fee','other'])],
             'property_code'    => ['nullable','string','max:100'],
             'require_precheck' => ['nullable','boolean'],
-            'remark'           => ['nullable','string'],
+            'remark'           => ['nullable','string','max:5000'],
             'issue_software'   => ['nullable','boolean'],
             'issue_hardware'   => ['nullable','boolean'],
         ];
@@ -430,29 +710,31 @@ class MaintenanceRequestController extends Controller
             $originalStatus = $req->status;
             $originalTechId = (int) ($req->technician_id ?? 0);
 
+            // ✅ สมาชิกทั่วไป: จำกัดสิทธิ์เหมือนเดิม
             if (!$isTeam) {
-            if (($data['status'] ?? null) === 'cancelled') {
-                if (!in_array($req->status, ['pending','accepted'], true) || !empty($req->technician_id)) {
-                    unset($data['status']); // หรือ throw validation error
+                if (($data['status'] ?? null) === 'cancelled') {
+                    if (!in_array($req->status, ['pending','accepted'], true) || !empty($req->technician_id)) {
+                        unset($data['status']);
+                    }
+                } else {
+                    unset($data['status']);
                 }
-            } else {
-                unset($data['status']);
+
+                unset(
+                    $data['technician_id'],
+                    $data['cost'],
+                    $data['resolution_note'],
+                    $data['operation_date'],
+                    $data['operation_method'],
+                    $data['property_code'],
+                    $data['require_precheck'],
+                    $data['remark'],
+                    $data['issue_software'],
+                    $data['issue_hardware']
+                );
             }
 
-            unset(
-                $data['technician_id'],
-                $data['cost'],
-                $data['resolution_note'],
-                $data['operation_date'],
-                $data['operation_method'],
-                $data['property_code'],
-                $data['require_precheck'],
-                $data['issue_software'],
-                $data['issue_hardware']
-            );
-        }
-
-            // fill basic fields
+            // fill fields
             $req->fill($data);
 
             // auto-assign เมื่อ accepted
@@ -560,28 +842,33 @@ class MaintenanceRequestController extends Controller
                 }
             }
 
-            /* ---------- operation log ---------- */
+            //operation log
             $hasOp =
-                !empty($data['operation_date'] ?? null) ||
-                !empty($data['operation_method'] ?? null) ||
-                !empty($data['property_code'] ?? null) ||
-                !empty($data['remark'] ?? null) ||
-                !empty($data['require_precheck'] ?? null) ||
-                !empty($data['issue_software'] ?? null) ||
-                !empty($data['issue_hardware'] ?? null) ||
+                array_key_exists('operation_date', $data) ||
+                array_key_exists('operation_method', $data) ||
+                array_key_exists('property_code', $data) ||
+                array_key_exists('remark', $data) ||
+                array_key_exists('require_precheck', $data) ||
+                array_key_exists('issue_software', $data) ||
+                array_key_exists('issue_hardware', $data) ||
                 $req->operationLog()->exists();
 
             if ($hasOp) {
+                $opDate = $data['operation_date'] ?? null;
+                if (!empty($opDate)) {
+                    $opDate = \Carbon\Carbon::parse($opDate)->toDateString();
+                }
+
                 $req->operationLog()->updateOrCreate(
                     ['maintenance_request_id' => $req->id],
                     [
-                        'operation_date'   => $data['operation_date'] ?? null,
+                        'operation_date'   => $opDate,
                         'operation_method' => $data['operation_method'] ?? null,
                         'property_code'    => $data['property_code'] ?? null,
-                        'require_precheck' => !empty($data['require_precheck']),
+                        'require_precheck' => (bool) ($data['require_precheck'] ?? false),
                         'remark'           => $data['remark'] ?? null,
-                        'issue_software'   => !empty($data['issue_software']),
-                        'issue_hardware'   => !empty($data['issue_hardware']),
+                        'issue_software'   => (bool) ($data['issue_software'] ?? false),
+                        'issue_hardware'   => (bool) ($data['issue_hardware'] ?? false),
                         'user_id'          => $actorId,
                     ]
                 );
@@ -656,6 +943,7 @@ class MaintenanceRequestController extends Controller
     {
         \Gate::authorize('transition', $req);
         $action = (string) $request->string('action');
+
         if ($action) {
             $map = [
                 'accept' => 'accepted',
@@ -663,6 +951,7 @@ class MaintenanceRequestController extends Controller
                 'start'  => 'in_progress',
             ];
             $status = $map[$action] ?? null;
+
             if ($status) {
                 $payload = [
                     'status' => $status,
@@ -689,6 +978,7 @@ class MaintenanceRequestController extends Controller
                 );
             }
         }
+
         return $this->transition($request, $req);
     }
 
@@ -702,18 +992,14 @@ class MaintenanceRequestController extends Controller
             // ต้องมี status เสมอ
             $req->status = $data['status'];
 
-            $technicianChanged = false;
-
             // เปลี่ยนช่างจาก payload (เฉพาะทีมงาน/ผ่าน policy แล้ว)
             if (!empty($data['technician_id']) && (int)$req->technician_id !== (int)$data['technician_id']) {
                 $req->technician_id = (int) $data['technician_id'];
-                $technicianChanged = true;
             }
 
             // รับงาน แต่ยังไม่มีช่าง -> ตั้งเป็นผู้กดรับ
             if ($req->status === 'accepted' && empty($req->technician_id) && $actorId) {
                 $req->technician_id = (int) $actorId;
-                $technicianChanged = true;
             }
 
             // ---- timeline ----
@@ -753,7 +1039,7 @@ class MaintenanceRequestController extends Controller
                 $this->syncAssignment($req, $newTechId, $actorId, true);
             }
 
-            // ---- log ----
+            // log
             if (class_exists(\App\Models\MaintenanceLog::class)) {
                 $defaultNote = $data['note']
                     ?? $this->defaultNoteForStatus($req->status, $actorId, $req);
@@ -820,6 +1106,7 @@ class MaintenanceRequestController extends Controller
                 'meta'       => null,
             ]
         );
+
         $existing = $req->attachments()->withTrashed()->where('file_id', $file->id)->first();
         if ($existing) {
             if ($existing->trashed()) {
@@ -935,12 +1222,10 @@ class MaintenanceRequestController extends Controller
         return view('maintenance.requests.edit', compact('mr','assets','users','attachments','depts'));
     }
 
-    /**
-     * สร้าง note เริ่มต้นเมื่อเปลี่ยนสถานะ หากผู้ใช้ไม่ได้ใส่ note เอง
-     */
     protected function defaultNoteForStatus(string $status, ?int $actorId, MR $req): string
     {
         $actorName = optional(\App\Models\User::find($actorId))->name;
+
         return match ($status) {
             'pending'     => 'ตั้งคิวงานใหม่',
             'accepted'    => $actorName ? ('รับงานโดย '.$actorName) : 'รับงานแล้ว',
@@ -953,12 +1238,11 @@ class MaintenanceRequestController extends Controller
         };
     }
 
-    public function printWorkOrder(Request $request, MR $req)
+    public function printWorkOrder(Request $request, MR $maintenanceRequest)
     {
-        \Gate::authorize('view', $req);
+        \Gate::authorize('view', $maintenanceRequest);
 
-        // โหลดความสัมพันธ์ที่ต้องใช้ในใบงาน
-        $req->loadMissing([
+        $maintenanceRequest->loadMissing([
             'asset',
             'reporter:id,name,email',
             'technician:id,name',
@@ -968,30 +1252,25 @@ class MaintenanceRequestController extends Controller
             'rating.rater:id,name',
         ]);
 
-        // ข้อมูลหัวกระดาษสำหรับ Maintenance Work Order
         $hospital = [
-            'name_th' => 'โรงพยาบาลพระปกเกล้า',
-            'name_en' => 'PHRAPOKKLAO HOSPITAL',
+            'name_th'  => 'โรงพยาบาลพระปกเกล้า',
+            'name_en'  => 'PHRAPOKKLAO HOSPITAL',
             'subtitle' => 'Maintenance Work Order',
-            // ใช้ public_path เพื่อให้ DomPDF หาไฟล์เจอแน่นอน
             'logo'     => public_path('images/logoppk1.png'),
         ];
 
-        // ตั้งชื่อไฟล์
         $fileName = sprintf(
             'maintenance-work-order-%s.pdf',
-            $req->request_no ?? $req->id
+            $maintenanceRequest->request_no ?? $maintenanceRequest->id
         );
 
         $pdf = Pdf::loadView('maintenance.requests.print', [
-                'req'      => $req,
+                'req'      => $maintenanceRequest,
                 'hospital' => $hospital,
             ])
             ->setPaper('A4', 'portrait');
 
-        // เปิดในแท็บใหม่
         return $pdf->stream($fileName);
-        // หรือถ้าอยากโหลดเลย: return $pdf->download($fileName);
     }
 
     protected function resolveSort(Request $request): array
@@ -1034,15 +1313,24 @@ class MaintenanceRequestController extends Controller
             default              => MaintenanceAssignment::STATUS_IN_PROGRESS,
         };
 
-        MaintenanceAssignment::updateOrCreate(
+        $workerRole = \App\Models\User::query()->whereKey($userId)->value('role') ?? 'technician';
+
+        $as = MaintenanceAssignment::updateOrCreate(
             ['maintenance_request_id' => $req->id, 'user_id' => $userId],
             [
-                'role'    => $req->technician?->role ?? 'technician',
+                'role'    => $workerRole,
                 'is_lead' => $isLead,
                 'status'  => $status,
             ]
-        )->fill([
-            'assigned_at' => now(),
-        ])->save();
+        );
+
+        // ไม่รีเซ็ต assigned_at ทุกครั้ง (ตั้งครั้งแรกเท่านั้น)
+        if (empty($as->assigned_at)) {
+            $as->assigned_at = now();
+        }
+
+        $as->save();
     }
+
+
 }

@@ -15,310 +15,277 @@
       $user->isSupervisor() ||
       $user->isTechnician()
   );
+
+  // ===== UI tokens (โทนเดียวกับ show) =====
+  $line = 'border-slate-200';
+
+  $input = "mt-2 w-full h-11 rounded-md border $line bg-white px-3 py-2 text-sm
+            focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
+
+  $textarea = "mt-2 w-full rounded-md border $line bg-white px-3 py-2 text-sm
+              focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
+
+  $headCls   = "flex items-start gap-3 pb-3 min-h-[56px]";
+  $noCls     = "w-8 h-8 shrink-0 rounded-full border border-emerald-600 bg-emerald-600
+                flex items-center justify-center text-sm font-bold text-white leading-none";
+  $titleCls  = "text-base font-semibold text-slate-900 leading-tight";
+  $subCls    = "text-sm text-slate-500 leading-snug";
+  $accentWrap= "min-w-0 relative pl-3 pt-[1px]";
+  $accentBar = "absolute left-0 top-[2px] w-[3px] h-9 rounded-full bg-emerald-600/90";
+
+  // ===== team (read-only) =====
+  $assignments = $mr->assignments ?? collect();
+  $workers = $assignments->map(fn($a) => $a->user)->filter()->unique('id')->values();
 @endphp
 
 @section('title','Edit Maintenance #'.$mr->id)
 
 @section('page-header')
-  <div class="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-5">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-            <svg class="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Edit Maintenance
-          </h1>
+  <div class="w-full bg-slate-50 border-b {{ $line }}">
+    <div class="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-5">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 
-          <p class="mt-1 text-sm text-slate-600">
-            แก้ไขคำขอซ่อม — ปรับข้อมูลให้ถูกต้อง
-          </p>
+        {{-- LEFT --}}
+        <div class="min-w-0">
+          <div class="flex items-start gap-3">
+            <span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-emerald-700">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5Z"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
 
-          <p class="mt-0.5 text-xs text-slate-500">
-            คำขอซ่อม #{{ $mr->id }}
-            @if ($mr->updated_at)
-              · แก้ไขล่าสุด {{ $mr->updated_at->format('Y-m-d H:i') }}
-            @endif
-          </p>
+            <div class="min-w-0">
+              <h1 class="text-[20px] sm:text-[22px] font-semibold text-slate-900 leading-tight">
+                Edit Maintenance
+                <span class="ml-2 text-slate-500 text-[13px] sm:text-[14px] font-semibold">#{{ $mr->id }}</span>
+              </h1>
+
+              <div class="mt-1 text-xs sm:text-[13px] text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+                <span>แก้ไขข้อมูลคำขอซ่อม</span>
+                @if($mr->updated_at)
+                  <span>อัปเดต: <span class="font-medium text-slate-900">{{ $mr->updated_at->format('Y-m-d H:i') }}</span></span>
+                @endif
+                <span>ผู้รับผิดชอบหลัก:
+                  <span class="font-semibold text-slate-900">{{ $mr->technician?->name ?? 'ยังไม่มีช่างรับงาน' }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <a href="{{ route('maintenance.requests.index') }}"
-           class="maint-btn maint-btn-outline">
-          ← กลับ
-        </a>
+        {{-- RIGHT --}}
+        <div class="flex flex-wrap items-center justify-start sm:justify-end gap-2">
+          <a href="{{ route('maintenance.requests.index') }}"
+             class="inline-flex items-center gap-2 rounded-lg border {{ $line }} bg-white px-4 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Back
+          </a>
+        </div>
+
       </div>
     </div>
   </div>
 @endsection
 
 @section('content')
-  <div class="pt-4"></div>
+  <div class="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 pb-8 pt-6">
 
-  {{-- ===== Guard UX ===== --}}
-  @cannot('update', $mr)
-    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+    @cannot('update', $mr)
       <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
         คุณไม่มีสิทธิ์แก้ไขใบงานนี้
       </div>
-    </div>
-    @return
-  @endcannot
+      @return
+    @endcannot
 
-  {{-- ===== Error ===== --}}
-  @if ($errors->any())
-    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 mb-4">
-      <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+    @if ($errors->any())
+      <div class="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
         <ul class="list-disc pl-5 text-sm space-y-1">
           @foreach ($errors->all() as $error)
             <li>{{ $error }}</li>
           @endforeach
         </ul>
       </div>
-    </div>
-  @endif
+    @endif
 
-  <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 space-y-6">
+    {{-- ===== FORM หลัก (แก้ข้อมูลคำขอ: 1-4) ===== --}}
+    <form method="POST"
+          action="{{ route('maintenance.requests.update', $mr) }}"
+          enctype="multipart/form-data"
+          class="space-y-8"
+          novalidate>
+      @csrf
+      @method('PUT')
 
-    {{-- =========================
-         กล่อง 1: ข้อมูลใบงาน
-    ========================= --}}
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <form method="POST"
-            action="{{ route('maintenance.requests.update', $mr) }}"
-            class="maint-form space-y-6"
-            enctype="multipart/form-data"
-            novalidate>
-        @csrf
-        @method('PUT')
+      @include('maintenance.requests._form', [
+        'req'         => $mr,
+        'assets'      => $assets      ?? collect(),
+        'depts'       => $depts       ?? collect(),
+        'attachments' => $attachments ?? [],
+      ])
 
-        @include('maintenance.requests._form', [
-          'req'         => $mr,
-          'assets'      => $assets      ?? collect(),
-          'depts'       => $depts       ?? collect(),
-          'attachments' => $attachments ?? [],
-        ])
+      <div class="flex justify-end gap-2 pt-4 border-t {{ $line }}">
+        <a href="{{ route('maintenance.requests.index') }}"
+           class="inline-flex items-center justify-center h-11 px-5 rounded-xl border {{ $line }} bg-white
+                  text-sm font-medium text-slate-700 hover:bg-slate-50">
+          ยกเลิก
+        </a>
+        <button type="submit"
+                class="inline-flex items-center justify-center h-11 px-5 rounded-xl bg-emerald-700
+                       text-sm font-medium text-white hover:bg-emerald-800 focus:ring-2 focus:ring-emerald-200">
+          บันทึกการแก้ไข
+        </button>
+      </div>
+    </form>
 
-        <div class="flex justify-end gap-2 border-t pt-4">
-          <a href="{{ route('maintenance.requests.index') }}"
-             class="maint-btn maint-btn-outline">
-            ยกเลิก
-          </a>
-          <button type="submit" class="maint-btn maint-btn-primary">
-            บันทึกการแก้ไข
-          </button>
-        </div>
-      </form>
-    </div>
-
-    {{-- =========================
-         กล่อง 2: Operation Log (เหมือน show)
-         (เฉพาะ Team)
-    ========================= --}}
+    {{-- ===== งานช่าง: 5 ซ้าย | 6 ขวา ===== --}}
     @if($isTeam)
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <header class="mb-3 border-b border-slate-200 pb-2">
-          <h2 class="text-sm font-semibold text-slate-900">
-            รายงานการปฏิบัติงานและค่าใช้จ่าย
-          </h2>
-          <p class="mt-0.5 text-xs text-slate-500">
-            สำหรับทีมช่าง: ระบุใบเบิก/ค่าแรง/อื่น ๆ, เลข รพจ. และรายละเอียดประกอบ
-          </p>
-        </header>
+      <div class="mt-10 border-t {{ $line }}"></div>
 
-        <form method="POST"
-              action="{{ route('maintenance.requests.operation-log', ['maintenanceRequest' => $mr]) }}"
-              class="space-y-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4"
-              novalidate>
-          @csrf
+      <div class="mt-10 relative grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div class="hidden lg:block absolute inset-y-0 left-1/2 w-px bg-slate-200"></div>
 
-          {{-- วันที่รายการซ่อม --}}
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1">
-              รายการซ่อมสำหรับวันที่
-            </label>
-            <input type="date"
-                   name="operation_date"
-                   value="{{ old('operation_date', optional($opLog?->operation_date)->format('Y-m-d')) }}"
-                   class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2">
-            @if(!$opLog)
-              <p class="mt-1 text-[11px] text-slate-400">ยังไม่ได้บันทึก จะเริ่มบันทึกจากฟิลด์นี้</p>
-            @endif
-          </div>
-
-          {{-- วิธีการปฏิบัติงาน --}}
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1">
-              วิธีการปฏิบัติ / การคิดค่าใช้จ่าย
-            </label>
-            @php $method = old('operation_method', $opLog->operation_method ?? null); @endphp
-            <div class="space-y-1 text-sm">
-              <label class="inline-flex items-center gap-2">
-                <input type="radio" name="operation_method" value="requisition" @checked($method==='requisition')>
-                ตามใบเบิกครุภัณฑ์ / วัสดุ
-              </label>
-              <label class="inline-flex items-center gap-2">
-                <input type="radio" name="operation_method" value="service_fee" @checked($method==='service_fee')>
-                ค่าบริการ / ค่าแรงช่าง
-              </label>
-              <label class="inline-flex items-center gap-2">
-                <input type="radio" name="operation_method" value="other" @checked($method==='other')>
-                อื่น ๆ
-              </label>
+        {{-- LEFT: SECTION 5 --}}
+        <section>
+          <div class="{{ $headCls }}">
+            <div class="{{ $noCls }}">5</div>
+            <div class="{{ $accentWrap }}">
+              <span class="{{ $accentBar }}"></span>
+              <div class="{{ $titleCls }}">รายงานการปฏิบัติงานและค่าใช้จ่าย</div>
+              <div class="{{ $subCls }}">สำหรับทีมช่าง: ระบุวิธีคิดค่าใช้จ่าย, รพจ. และรายละเอียดประกอบ</div>
             </div>
           </div>
 
-          {{-- รพจ --}}
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1">
-              ระบุรพจ. (รหัสครุภัณฑ์)
-            </label>
-            <input type="text"
-                   name="property_code"
-                   value="{{ old('property_code', $opLog->property_code ?? ($mr->asset->code ?? $mr->asset->asset_code ?? '')) }}"
-                   placeholder="เช่น 68101068718"
-                   class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2">
-          </div>
+          <form method="POST"
+                action="{{ route('maintenance.requests.operation-log', ['maintenanceRequest' => $mr]) }}"
+                class="space-y-4"
+                novalidate>
+            @csrf
 
-          {{-- require_precheck --}}
-          <div class="pt-1">
-            <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+            <div>
+              <label class="block text-sm font-medium text-slate-700">รายการซ่อมสำหรับวันที่</label>
+              <input type="date" name="operation_date"
+                     value="{{ old('operation_date', optional($opLog?->operation_date)->format('Y-m-d')) }}"
+                     class="{{ $input }}">
+            </div>
+
+            <div>
+              <div class="block text-sm font-medium text-slate-700">วิธีการปฏิบัติ / การคิดค่าใช้จ่าย</div>
+              @php $method = old('operation_method', $opLog->operation_method ?? null); @endphp
+              <div class="mt-2 space-y-2 text-sm">
+                <label class="inline-flex items-center gap-2">
+                  <input type="radio" name="operation_method" value="requisition" @checked($method==='requisition')
+                         class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                  <span>ตามใบเบิกครุภัณฑ์ / วัสดุ</span>
+                </label>
+                <label class="inline-flex items-center gap-2">
+                  <input type="radio" name="operation_method" value="service_fee" @checked($method==='service_fee')
+                         class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                  <span>ค่าบริการ / ค่าแรงช่าง</span>
+                </label>
+                <label class="inline-flex items-center gap-2">
+                  <input type="radio" name="operation_method" value="other" @checked($method==='other')
+                         class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                  <span>อื่น ๆ</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-700">ระบุรพจ. (รหัสครุภัณฑ์)</label>
+              <input type="text" name="property_code"
+                     value="{{ old('property_code', $opLog->property_code ?? ($mr->asset?->asset_code ?? '')) }}"
+                     class="{{ $input }}"
+                     placeholder="เช่น 68101068718">
+            </div>
+
+            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
               <input type="checkbox" name="require_precheck" value="1"
-                     @checked(old('require_precheck', $opLog->require_precheck ?? false))>
+                     @checked(old('require_precheck', $opLog->require_precheck ?? false))
+                     class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
               ยืนยันว่าได้แจ้งผู้ใช้งาน / หน่วยงาน และขออนุญาตก่อนปฏิบัติงาน/ปิดเครื่อง
             </label>
-          </div>
 
-          {{-- issue type --}}
-          <div>
-            <div class="mb-1 text-xs font-medium text-slate-700">ประเภทงานที่ปฏิบัติ</div>
-            <div class="space-y-1 text-sm">
-              <label class="inline-flex items-center gap-2">
-                <input type="checkbox" name="issue_software" value="1"
-                       @checked(old('issue_software', $opLog->issue_software ?? false))>
-                Software
-              </label>
-              <label class="inline-flex items-center gap-2">
-                <input type="checkbox" name="issue_hardware" value="1"
-                       @checked(old('issue_hardware', $opLog->issue_hardware ?? false))>
-                Hardware
-              </label>
+            <div>
+              <div class="text-sm font-medium text-slate-700">ประเภทงานที่ปฏิบัติ</div>
+              <div class="mt-2 flex items-center gap-6 text-sm text-slate-700">
+                <label class="inline-flex items-center gap-2">
+                  <input type="checkbox" name="issue_software" value="1"
+                         @checked(old('issue_software', $opLog->issue_software ?? false))
+                         class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                  Software
+                </label>
+                <label class="inline-flex items-center gap-2">
+                  <input type="checkbox" name="issue_hardware" value="1"
+                         @checked(old('issue_hardware', $opLog->issue_hardware ?? false))
+                         class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                  Hardware
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-700">หมายเหตุ / รายละเอียดประกอบ</label>
+              <textarea name="remark" rows="4" class="{{ $textarea }}"
+                        placeholder="เช่น ตรวจเช็คแล้วพบว่า..., ผู้ใช้ทดสอบแล้วเรียบร้อย">{{ old('remark', $opLog->remark ?? '') }}</textarea>
+            </div>
+
+            <div class="flex justify-end">
+              <button type="submit"
+                      class="inline-flex items-center rounded-lg bg-emerald-700 px-4 py-2 text-xs sm:text-[13px] font-semibold text-white
+                             hover:bg-emerald-800 focus:ring-2 focus:ring-emerald-200">
+                บันทึกรายงานการปฏิบัติงาน
+              </button>
+            </div>
+
+            @if($opLog)
+              <p class="text-xs text-slate-500">
+                บันทึกล่าสุดโดย {{ $opLog->user?->name ?? '-' }} · {{ $opLog->updated_at?->format('Y-m-d H:i') }}
+              </p>
+            @endif
+          </form>
+        </section>
+
+        {{-- RIGHT: SECTION 6 --}}
+        <section>
+          <div class="{{ $headCls }}">
+            <div class="{{ $noCls }}">6</div>
+            <div class="{{ $accentWrap }}">
+              <span class="{{ $accentBar }}"></span>
+              <div class="{{ $titleCls }}">ทีมช่างที่รับผิดชอบ</div>
+              <div class="{{ $subCls }}">ผู้ปฏิบัติงาน</div>
             </div>
           </div>
 
-          {{-- หมายเหตุ --}}
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1">
-              หมายเหตุ / รายละเอียดประกอบ
-            </label>
-            <textarea name="remark"
-                      rows="3"
-                      placeholder="เช่น ตรวจเช็คแล้วพบว่า..., ผู้ใช้ทดสอบแล้วเรียบร้อย"
-                      class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2">{{ old('remark', $opLog->remark ?? '') }}</textarea>
-          </div>
+          <div class="rounded-md border {{ $line }} bg-white px-4 py-4 text-sm text-slate-700 space-y-2">
+            <div>
+              <span class="text-slate-500">ช่างหลัก:</span>
+              <span class="font-semibold text-slate-900">{{ $mr->technician?->name ?? 'ยังไม่มีช่างรับงาน' }}</span>
+            </div>
 
-          <div class="flex justify-end">
-            <button type="submit" class="maint-btn maint-btn-primary">
-              บันทึกรายงานการปฏิบัติงาน
-            </button>
-          </div>
-        </form>
+            <div class="text-slate-500">ทีมช่าง:</div>
+            @if($workers->isEmpty())
+              <div class="text-slate-500">— ยังไม่ได้มอบหมายทีมช่าง —</div>
+            @else
+              <ul class="list-disc pl-5">
+                @foreach($workers as $w)
+                  <li class="text-slate-800">{{ $w->name }}</li>
+                @endforeach
+              </ul>
+            @endif
 
-        @if($opLog)
-          <p class="mt-2 text-xs text-slate-500">
-            แก้ไขล่าสุดโดย {{ $opLog->user->name ?? '-' }}
-            · {{ $opLog->updated_at?->format('Y-m-d H:i') }}
-          </p>
-        @endif
-      </div>
-    @else
-      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-        เฉพาะทีมช่างหรือผู้ดูแลระบบเท่านั้นที่สามารถบันทึกรายงานการปฏิบัติงานได้
+            {{-- ✅ ปุ่มมอบหมาย: เว้นว่างไว้ก่อน --}}
+            <div class="pt-2">
+              {{-- (เว้นไว้) --}}
+            </div>
+          </div>
+        </section>
+
       </div>
     @endif
 
   </div>
 @endsection
-
-@push('styles')
-<style>
-  /* ====== Scope ทั้งหมดให้เฉพาะหน้า Edit/Create Maintenance ====== */
-  .maint-form input[type="text"],
-  .maint-form input[type="date"],
-  .maint-form input[type="number"],
-  .maint-form select:not([multiple]) {
-    height: 44px;
-    border-radius: 0.75rem;
-    box-sizing: border-box;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-
-  .maint-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 1rem;
-    height: 44px;
-    border-radius: 0.75rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    font-weight: 500;
-    border: 1px solid rgb(148,163,184);
-    background-color: #ffffff;
-    color: rgb(51,65,85);
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-    text-decoration: none;
-    gap: 0.25rem;
-  }
-
-  .maint-btn:hover { background-color: rgb(248,250,252); }
-
-  .maint-btn-primary {ฟ
-    border-color: rgb(5,150,105);
-    background-color: rgb(5,150,105);
-    color: #ffffff;
-  }
-  .maint-btn-primary:hover {
-    background-color: rgb(4,120,87);
-    border-color: rgb(4,120,87);
-  }
-
-  /* TomSelect UI (ทำเฉพาะหน้าด้วย class maint-form) */
-  .maint-form .ts-wrapper.ts-basic {
-    border: none !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    background: transparent;
-  }
-  .maint-form .ts-wrapper.ts-basic .ts-control {
-    border-radius: 0.75rem;
-    border: 1px solid rgb(226,232,240);
-    padding: 0 0.75rem;
-    box-shadow: none;
-    min-height: 44px;
-    background-color: #fff;
-    display: flex;
-    align-items: center;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-  .maint-form .ts-wrapper.ts-basic .ts-control.focus {
-    border-color: rgb(5,150,105);
-    box-shadow: none;
-  }
-  .maint-form .ts-wrapper.ts-basic .ts-dropdown {
-    border-radius: 0.5rem;
-    border-color: rgb(226,232,240);
-    box-shadow: 0 10px 15px -3px rgba(15,23,42,0.15);
-    z-index: 50;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-  .maint-form .ts-wrapper.ts-basic.ts-error .ts-control {
-    border-color: rgb(248,113,113) !important;
-  }
-</style>
-@endpush

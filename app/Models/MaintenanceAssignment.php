@@ -10,8 +10,6 @@ class MaintenanceAssignment extends Model
 {
     protected $table = 'maintenance_assignments';
 
-    // === Status constants ===
-    public const STATUS_PENDING     = 'pending';
     public const STATUS_IN_PROGRESS = 'in_progress';
     public const STATUS_DONE        = 'done';
     public const STATUS_CANCELLED   = 'cancelled';
@@ -28,11 +26,12 @@ class MaintenanceAssignment extends Model
     protected $casts = [
         'assigned_at' => 'datetime',
         'is_lead'     => 'boolean',
+        'status'      => 'string',
     ];
 
     public function maintenanceRequest(): BelongsTo
     {
-        return $this->belongsTo(MaintenanceRequest::class);
+        return $this->belongsTo(MaintenanceRequest::class, 'maintenance_request_id');
     }
 
     public function user(): BelongsTo
@@ -40,7 +39,6 @@ class MaintenanceAssignment extends Model
         return $this->belongsTo(User::class);
     }
 
-    // scopes
     public function scopeForUser(Builder $q, int $userId): Builder
     {
         return $q->where('user_id', $userId);

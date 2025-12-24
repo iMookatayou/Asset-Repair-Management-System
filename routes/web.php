@@ -9,37 +9,29 @@ use App\Http\Controllers\Auth\PasswordController;
 
 // App Modules (Web)
 use App\Http\Controllers\MaintenanceRequestController;
-use App\Http\Controllers\MaintenanceLogController;
 use App\Http\Controllers\Repair\DashboardController as RepairDashboardController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\MaintenanceOperationLogController;
-use App\Http\Controllers\MaintenanceAssignmentController; // ✅ เพิ่ม
+use App\Http\Controllers\MaintenanceAssignmentController;
 use App\Http\Controllers\MaintenanceRatingController;
-
-// Admin User Controller
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Auth;
 
-use App\Http\Controllers\Api\ChatController as ApiChatController;
-
-// หน้าแรก → login
+// login
 Route::redirect('/', '/login');
 
-// ---------------------
 // Guest-only
-// ---------------------
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store']);
 });
 
-// ---------------------
 // Auth-only
-// ---------------------
 Route::middleware(['auth'])->group(function () {
 
     // Debug
@@ -63,72 +55,62 @@ Route::middleware(['auth'])->group(function () {
     // Maintenance
     Route::prefix('maintenance')->name('maintenance.')->group(function () {
 
-        // ---------- กลุ่มคำขอซ่อม ----------
         Route::prefix('requests')->name('requests.')->group(function () {
 
-            Route::get('/',              [MaintenanceRequestController::class, 'indexPage'])->name('index');
-            Route::get('/create',        [MaintenanceRequestController::class, 'createPage'])->name('create');
+            Route::get('/', [MaintenanceRequestController::class, 'indexPage'])->name('index');
+            Route::get('/create', [MaintenanceRequestController::class, 'createPage'])->name('create');
+            Route::post('/', [MaintenanceRequestController::class, 'store'])->name('store');
 
-            // ---------- กลุ่ม Rating (ไม่มี id ใบงาน) ----------
+            Route::get('/{maintenanceRequest}', [MaintenanceRequestController::class, 'showPage'])->name('show');
+            Route::get('/{maintenanceRequest}/edit', [MaintenanceRequestController::class, 'edit'])->name('edit');
+            Route::put('/{maintenanceRequest}', [MaintenanceRequestController::class, 'update'])->name('update');
+
+            Route::post('/{req}/accept', [MaintenanceRequestController::class, 'acceptJobQuick'])
+                ->name('accept');
+
+            // Work Order
+            Route::get('/{maintenanceRequest}/work-order', [MaintenanceRequestController::class, 'printWorkOrder'])
+                ->name('work-order');
+
+            // Operation Log
+            Route::post('/{maintenanceRequest}/operation-log', [MaintenanceOperationLogController::class, 'upsert'])
+                ->name('operation-log');
+
+            // Attachments
+            Route::post('/{maintenanceRequest}/attachments', [MaintenanceRequestController::class, 'uploadAttachmentFromBlade'])
+                ->name('attachments');
+
+            Route::delete('/{maintenanceRequest}/attachments/{attachment}', [MaintenanceRequestController::class, 'destroyAttachment'])
+                ->name('attachments.destroy');
+
+            // Assignments
+            Route::post('/{maintenanceRequest}/assignments', [MaintenanceAssignmentController::class, 'store'])
+                ->name('assignments.store');
+
+            Route::delete('/assignments/{assignment}', [MaintenanceAssignmentController::class, 'destroy'])
+                ->name('assignments.destroy');
+
             Route::prefix('rating')->name('rating.')->group(function () {
-                Route::get('/evaluate', [MaintenanceRatingController::class, 'evaluateList'])
-                    ->name('evaluate');
-
-                Route::get('/technicians', [MaintenanceRatingController::class, 'technicianDashboard'])
-                    ->name('technicians');
+                Route::get('/evaluate', [MaintenanceRatingController::class, 'evaluateList'])->name('evaluate');
+                Route::get('/technicians', [MaintenanceRatingController::class, 'technicianDashboard'])->name('technicians');
             });
-
-            // ---------- ให้คะแนนใบงานทีละใบ ----------
-            Route::get(
-                '/{maintenanceRequest}/rating',
-                [MaintenanceRatingController::class, 'create']
-            )->name('rating.create');
-
-            Route::post(
-                '/{maintenanceRequest}/rating',
-                [MaintenanceRatingController::class, 'store']
-            )->name('rating.store');
-
-            // ---------- เส้นอื่น ๆ ของใบงาน ----------
-            Route::get('/{req}/edit',    [MaintenanceRequestController::class, 'edit'])->name('edit');
-            Route::get('/{req}',         [MaintenanceRequestController::class, 'showPage'])->name('show');
-            Route::post('/',             [MaintenanceRequestController::class, 'store'])->name('store');
-            Route::put('/{req}',         [MaintenanceRequestController::class, 'update'])->name('update');
-
-            Route::post('/{req}/transition',  [MaintenanceRequestController::class, 'transitionFromBlade'])->name('transition');
-
-            Route::post(
-                '/{req}/attachments',
-                [MaintenanceRequestController::class, 'uploadAttachmentFromBlade']
-            )->name('attachments');
-
-            Route::delete(
-                '/{req}/attachments/{attachment}',
-                [MaintenanceRequestController::class, 'destroyAttachment']
-            )->name('attachments.destroy');
-
-            Route::get('/{req}/logs', [MaintenanceLogController::class, 'index'])->name('logs');
-
-            Route::post(
-                '/{maintenanceRequest}/operation-log',
-                [MaintenanceOperationLogController::class, 'upsert']
-            )->name('operation-log');
-
-            Route::get(
-                '/{req}/work-order',
-                [MaintenanceRequestController::class, 'printWorkOrder']
-            )->name('work-order');
         });
-
-        Route::post('requests/{req}/assignments', [MaintenanceAssignmentController::class, 'store'])
-            ->name('assignments.store');
-
-        Route::post('maintenance/requests/{req}/assignments', [MaintenanceAssignmentController::class, 'store'])
-            ->name('maintenance.assignments.store');
-
     });
 
-    // ===== Attachments (serve private files after auth) =====
+    // Repair views
+    Route::get('/repair/my-jobs', [MaintenanceRequestController::class, 'myJobsPage'])->name('repairs.my_jobs');
+    Route::get('/repair/queue',   [MaintenanceRequestController::class, 'queuePage'])->name('repairs.queue');
+
+    Route::post('/repair/accept/{req}', [MaintenanceRequestController::class, 'acceptCase'])
+        ->name('repairs.accept');
+
+    Route::post('/repair/reject/{req}', [MaintenanceRequestController::class, 'rejectCase'])
+        ->name('repairs.reject');
+
+    Route::post('/repair/cancel/{req}', [MaintenanceRequestController::class, 'cancelCase'])
+        ->name('repairs.cancel');
+
+    // Attachments (serve private files after auth)
     Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');
 
     // Chat
@@ -164,18 +146,13 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // Repair views
-    Route::get('/repair/my-jobs', [MaintenanceRequestController::class, 'myJobsPage'])->name('repairs.my_jobs');
-    Route::post('/repair/accept/{req}', [MaintenanceRequestController::class, 'acceptJobQuick'])->name('repairs.accept');
-    Route::get('/repair/queue',   [MaintenanceRequestController::class, 'queuePage'])->name('repairs.queue');
-
     // Profile
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',    [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile',   [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // เปลี่ยนรหัสผ่าน (ให้ทุกคนทำเองได้)
+    // เปลี่ยนรหัสผ่าน (ให้ทุกคนทำเองได้) ต้องแก้
     Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
 });
 
