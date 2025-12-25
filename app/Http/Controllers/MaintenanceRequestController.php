@@ -476,11 +476,74 @@ class MaintenanceRequestController extends Controller
 
     public function acceptJobQuick(Request $request, MR $req)
     {
-        // ไม่ทำ logic ซ้ำ ให้ acceptCase เป็นตัวเดียวที่ทำ business logic
-        // acceptCase มี authorize/transaction/lock/check/status/transition ครบแล้ว
-        return $this->acceptCase($request, $req);
-    }
+        // โหมดที่รองรับ:
+        // - accepted (รับเรื่อง) -> ใช้ acceptCase เดิม
+        // - in_progress (กำลังดำเนินการ + เลือกช่าง)
 
+        $decision = strtolower((string) $request->input('decision', 'accepted'));
+
+        // 1) รับเรื่องแบบเดิม: ส่งต่อให้ acceptCase (คง behavior เดิมทั้งหมด)
+        if ($decision === 'accepted' || $decision === '') {
+            return $this->acceptCase($request, $req);
+        }
+
+        // 2) กำลังดำเนินการ: ต้องเลือกช่าง
+        if ($decision !== 'in_progress') {
+            return back()->with('toast', \App\Support\Toast::warning('รูปแบบการดำเนินการไม่ถูกต้อง', 2200));
+        }
+
+        // 권한: รับเรื่อง + มอบหมาย (ถ้า policy คุณแยก)
+        \Gate::authorize('accept', $req);
+        \Gate::authorize('assign', $req);
+
+        $data = $request->validate([
+            'technician_id' => ['required', 'integer', 'exists:users,id'],
+            // 'position' => ['nullable', 'string', 'max:255'], // ถ้าคุณจะเก็บตำแหน่งจริง ค่อยเปิดใช้
+        ]);
+
+        $actorId = Auth::id();
+        $technicianId = (int) $data['technician_id'];
+
+        try {
+            DB::transaction(function () use ($req, $actorId, $technicianId) {
+
+                $locked = MR::query()
+                    ->whereKey($req->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                // ✅ ต้องเป็นงานว่างจริงเท่านั้น
+                if ($locked->status !== MR::STATUS_PENDING) {
+                    abort(409, 'งานนี้ไม่อยู่ในสถานะที่รับได้');
+                }
+
+                // ✅ กัน race condition: มีคนอื่นรับไปก่อน
+                if (!empty($locked->technician_id) && (int) $locked->technician_id !== (int) $actorId) {
+                    abort(409, 'งานนี้ถูกรับไปแล้ว');
+                }
+
+                // ✅ เริ่มดำเนินการทันที + ระบุช่างหลัก
+                $this->applyTransition(
+                    $locked,
+                    [
+                        'status' => MR::STATUS_IN_PROGRESS,
+                        'technician_id' => $technicianId,
+                        // 'position' => ... (ถ้าคุณมี field นี้จริง ค่อยใส่)
+                    ],
+                    $actorId
+                );
+            });
+        } catch (\Throwable $e) {
+
+            $msg = ((int) $e->getCode() === 409)
+                ? ($e->getMessage() ?: 'งานนี้ไม่อยู่ในสถานะที่รับได้')
+                : 'เกิดข้อผิดพลาดในการรับเรื่อง';
+
+            return back()->with('toast', \App\Support\Toast::warning($msg, 2200));
+        }
+
+        return back()->with('toast', \App\Support\Toast::success('เริ่มดำเนินการและมอบหมายช่างเรียบร้อย', 1800));
+    }
 
     public function showPage(MR $maintenanceRequest)
     {
