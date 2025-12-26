@@ -61,6 +61,7 @@
 
   $activeTech = isset($tech) && isset($team) ? $team->firstWhere('id', (int)$tech) : null;
 
+  // Stats numbers
   $statPending    = (int)($stats['pending'] ?? 0);
   $statInProgress = (int)($stats['in_progress'] ?? 0);
   $statCompleted  = (int)($stats['completed'] ?? 0);
@@ -80,69 +81,71 @@
   $teamUsers = $team ?? collect();
 @endphp
 
-<div class="w-full min-h-screen bg-white text-slate-900 font-sans pb-14">
+{{-- SPACER --}}
+<div class="pt-6 md:pt-8 lg:pt-10"></div>
 
-  {{-- HEADER (Sticky) --}}
-  <div id="stickyHeaderMJ"
-       class="sticky top-[4rem] md:top-[5rem] lg:top-[6rem] z-40 bg-white border-b border-slate-200 transition-all duration-200">
-    <div class="w-full px-4 md:px-6 lg:px-8 py-4">
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div class="min-w-0">
-          <h1 class="text-[20px] font-bold text-slate-900">My Jobs</h1>
-          <p class="mt-1 text-[13px] text-slate-600">
-            จัดการและติดตามงานซ่อมบำรุง
+<div class="w-full flex flex-col pb-14 font-sans text-slate-900">
+
+  {{-- STICKY HEADER --}}
+  <div class="sticky top-[6rem] z-20 bg-white/90 backdrop-blur border-b border-slate-200 transition-all">
+    <div class="px-4 md:px-6 lg:px-8 py-4">
+
+      {{-- Row 1: Title & Stats --}}
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 class="text-[17px] font-semibold text-slate-900">My Jobs</h1>
+          <p class="text-[13px] text-slate-600">
+            รายการงานซ่อมบำรุงที่ต้องจัดการ
             @if($activeTech)
               <span class="text-slate-500">• ของ {{ $activeTech->name }}</span>
             @endif
           </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
-          <span class="font-bold text-amber-700 flex items-center gap-2">
-            <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
-            รอรับเรื่อง <span id="stat-pending" class="text-amber-900">{{ $statPending }}</span>
-          </span>
+        {{-- [EDIT] Stats Area: ลบพื้นหลังออก และเพิ่มกราฟวงกลมกลับมา --}}
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">
+           <div class="flex items-center gap-2">
+             <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+             <span class="text-slate-600">รอรับ:</span>
+             <span id="stat-pending" class="font-bold text-slate-900">{{ $statPending }}</span>
+           </div>
+           <div class="flex items-center gap-2">
+             <span class="h-2.5 w-2.5 rounded-full bg-sky-500"></span>
+             <span class="text-slate-600">กำลังทำ:</span>
+             <span id="stat-in-progress" class="font-bold text-slate-900">{{ $statInProgress }}</span>
+           </div>
+           <div class="flex items-center gap-2">
+             <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+             <span class="text-slate-600">เสร็จ:</span>
+             <span id="stat-completed" class="font-bold text-slate-900">{{ $statCompleted }}</span>
+           </div>
 
-          <span class="font-bold text-sky-700 flex items-center gap-2">
-            <span class="h-2.5 w-2.5 rounded-full bg-sky-500"></span>
-            กำลังดำเนินการ <span id="stat-in-progress" class="text-slate-900">{{ $statInProgress }}</span>
-          </span>
-
-          <span class="font-bold text-emerald-700 flex items-center gap-2">
-            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-            เสร็จสิ้น <span id="stat-completed" class="text-slate-900">{{ $statCompleted }}</span>
-          </span>
-
-          <span class="font-bold text-slate-700 flex items-center gap-2">
-            <span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
-            งานของฉัน <span id="stat-my-active" class="text-slate-900">{{ $statMyActive }}</span>
-          </span>
-
-          <div class="flex items-center gap-2 ml-2 border-l border-slate-200 pl-3">
-            <div class="relative">
-              <div id="donut" class="h-9 w-9 rounded-full"
-                   style="background: conic-gradient(#e2e8f0 0deg 360deg);"></div>
-              <div class="absolute inset-0 m-auto h-5 w-5 rounded-full bg-white"></div>
-            </div>
-            <span id="donutPct" class="font-bold text-slate-700 text-xs">0%</span>
-          </div>
+           {{-- [RESTORED] Donut Chart --}}
+           <div class="flex items-center gap-2 pl-3 border-l border-slate-200 ml-1">
+             <div class="relative w-8 h-8">
+               <div id="donut" class="w-full h-full rounded-full" style="background: conic-gradient(#e2e8f0 0deg 360deg);"></div>
+               <div class="absolute inset-0 m-auto w-5 h-5 rounded-full bg-white"></div>
+             </div>
+             <span id="donutPct" class="font-bold text-[11px] text-slate-700">0%</span>
+           </div>
         </div>
       </div>
 
-      {{-- FILTERS --}}
+      {{-- Row 2: Filters Form --}}
       <form method="GET"
             action="{{ route('repairs.my_jobs') }}"
             class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end"
             onsubmit="showLoader()">
 
-        <div class="md:col-span-7 min-w-0">
+        {{-- Search Input --}}
+        <div class="md:col-span-5 min-w-0">
           <label for="q" class="mb-1 block text-[12px] text-slate-600">คำค้นหา</label>
-          <div class="relative group">
+          <div class="relative">
             <input id="q" type="text" name="q" value="{{ $q }}"
-                   placeholder="เช่น เลขแจ้งซ่อม, เลขใบงาน, เรื่อง, ทรัพย์สิน, หน่วยงาน, ผู้แจ้ง..."
+                   placeholder="ค้นหาเลขใบงาน, เรื่อง, หรือสถานที่..."
                    class="w-full rounded-md border border-slate-200 bg-white pl-10 pr-3 py-2 text-[13px] placeholder:text-slate-400
-                          focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/25 focus:border-[#0F2D5C]/25 transition-all">
-            <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-slate-400 group-focus-within:text-[#0F2D5C]">
+                          focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/35 focus:border-[#0F2D5C]/35">
+            <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-slate-400">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
@@ -150,22 +153,24 @@
           </div>
         </div>
 
+        {{-- Filter Select --}}
         <div class="md:col-span-2">
           <label for="filter" class="mb-1 block text-[12px] text-slate-600">ช่วงงาน</label>
           <select id="filter" name="filter"
                   class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-800
-                         focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/25 focus:border-[#0F2D5C]/25 cursor-pointer">
+                         focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/35 focus:border-[#0F2D5C]/35 cursor-pointer">
             @foreach($filterLabels as $key => $label)
               <option value="{{ $key }}" @selected($filter===$key)>{{ $label }}</option>
             @endforeach
           </select>
         </div>
 
-        <div class="md:col-span-2">
+        {{-- Status Select --}}
+        <div class="md:col-span-3">
           <label for="status" class="mb-1 block text-[12px] text-slate-600">สถานะ</label>
           <select id="status" name="status"
                   class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-800
-                         focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/25 focus:border-[#0F2D5C]/25 cursor-pointer">
+                         focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/35 focus:border-[#0F2D5C]/35 cursor-pointer">
             <option value="">ทุกสถานะ</option>
             @foreach(['pending','accepted','in_progress','on_hold','resolved','closed','cancelled'] as $s)
               <option value="{{ $s }}" @selected($status===$s)>{{ $statusLabel($s) }}</option>
@@ -173,12 +178,13 @@
           </select>
         </div>
 
-        <div class="md:col-span-1 flex items-end justify-end gap-2">
+        {{-- Buttons --}}
+        <div class="md:col-span-2 flex items-end justify-end gap-2">
           @if($hasActiveFilter)
             <a href="{{ route('repairs.my_jobs') }}"
                onclick="showLoader()"
-               class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600
-                      hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/20 focus:ring-offset-1 transition-transform hover:scale-105"
+               class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600
+                      hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/30 focus:ring-offset-1 transition-transform hover:scale-105"
                title="ล้างตัวกรอง" aria-label="ล้างตัวกรอง">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -187,8 +193,8 @@
           @endif
 
           <button type="submit"
-                  class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#0F2D5C] text-white
-                         hover:bg-[#0F2D5C]/90 focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/30 focus:ring-offset-1 transition-transform hover:scale-105 active:scale-95"
+                  class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#0F2D5C] text-white
+                         hover:bg-[#0F2D5C]/90 focus:outline-none focus:ring-2 focus:ring-[#0F2D5C]/45 focus:ring-offset-1 transition-transform hover:scale-105 active:scale-95"
                   title="ค้นหา" aria-label="ค้นหา">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -203,270 +209,225 @@
     </div>
   </div>
 
-  {{-- LIST --}}
-  <div id="mjListWrap" class="w-full px-4 md:px-6 lg:px-8 relative z-0">
-    <div class="mj-container mx-auto">
-      <div id="myJobsTbody" class="space-y-4">
+  {{-- INFO ROW --}}
+  <div class="px-4 md:px-6 lg:px-8 py-2 border-b border-slate-200 bg-slate-50/30">
+    <div class="flex items-center justify-between">
+      <div class="text-[13px] font-semibold text-slate-800">
+        รายการงาน
+      </div>
+      <div class="text-[12px] text-slate-500">
+        ทั้งหมด {{ $list->total() }} รายการ
+      </div>
+    </div>
+  </div>
 
-        @forelse($list as $r)
-          @php
-            $isOpen   = empty($r->technician_id) && (($r->status ?? '') === 'pending');
-            $ticketNo = $r->request_no ?? $r->job_no ?? $r->id;
-            $workOrderNo = $getWorkOrderNo($r);
-            $assetName = $r->asset->name ?? null;
-            $assetCode = $r->asset->asset_code ?? null;
-            $deptName = $getDept($r);
-            $location = $r->location_text ?? null;
-            $reporterName  = $r->reporter_name ?? $r->reporter?->name ?? '-';
-            $reporterPhone = $r->reporter_phone ?? null;
-            $ip = $getIp($r);
-            $createdAtText = optional($r->created_at)->format('d/m/Y H:i');
-            $statusText   = $statusLabel($r->status ?? null);
-            $priorityText = $priorityLabel($r->priority ?? null);
-          @endphp
+  {{-- LIST CONTENT --}}
+  <div class="w-full px-4 md:px-6 lg:px-8 relative z-0 mt-6">
+    <div class="mj-container mx-auto space-y-4">
 
-          <div class="mj-card group">
-            <div class="mj-card__header gap-5 md:gap-6">
-              <div class="flex items-center gap-3 overflow-hidden min-w-0">
-                <span class="mj-ticket-plain">#{{ $ticketNo }}</span>
-                @if($workOrderNo)
-                  <span class="mj-wo">WO# {{ $workOrderNo }}</span>
-                @endif
-                <h3 class="mj-title truncate" title="{{ $r->title }}">
-                  {{ $r->title }}
-                </h3>
+      @forelse($list as $r)
+        @php
+          $isOpen   = empty($r->technician_id) && (($r->status ?? '') === 'pending');
+          $ticketNo = $r->request_no ?? $r->job_no ?? $r->id;
+          $workOrderNo = $getWorkOrderNo($r);
+          $assetName = $r->asset->name ?? null;
+          $assetCode = $r->asset->asset_code ?? null;
+          $deptName = $getDept($r);
+          $location = $r->location_text ?? null;
+          $reporterName  = $r->reporter_name ?? $r->reporter?->name ?? '-';
+          $reporterPhone = $r->reporter_phone ?? null;
+          $ip = $getIp($r);
+          $createdAtText = optional($r->created_at)->format('d/m/Y H:i');
+          $statusText   = $statusLabel($r->status ?? null);
+          $priorityText = $priorityLabel($r->priority ?? null);
+        @endphp
+
+        <div class="mj-card group">
+          {{-- Card Header --}}
+          <div class="mj-card__header">
+            <div class="flex items-center gap-3 overflow-hidden min-w-0">
+              <span class="mj-ticket-plain">#{{ $ticketNo }}</span>
+              @if($workOrderNo)
+                <span class="mj-wo">WO# {{ $workOrderNo }}</span>
+              @endif
+              <h3 class="mj-title truncate" title="{{ $r->title }}">
+                {{ $r->title }}
+              </h3>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="mj-pill">
+                <span class="relative inline-flex h-3 w-3">
+                  @if(strtolower((string)$r->status) === 'pending')
+                    <span class="mj-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-60"></span>
+                  @endif
+                  <span class="relative inline-flex h-3 w-3 rounded-full {{ $statusDot($r->status) }}"></span>
+                </span>
+                {{ $statusText }}
+              </span>
+              <span class="mj-pill border {{ $priorityClass($r->priority) }} font-bold uppercase">
+                {{ $priorityText }}
+              </span>
+            </div>
+          </div>
+
+          {{-- Sub Info --}}
+          <div class="mj-card__sub">
+            <div class="mj-sub-item">
+              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span class="font-bold">วันแจ้ง:</span> {{ $createdAtText }}
+            </div>
+            <div class="mj-sub-item border-l border-slate-200 pl-4">
+              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+              <span class="font-bold">หน่วยงาน:</span> {{ $deptName ?? '-' }}
+            </div>
+          </div>
+
+          {{-- Problem Detail --}}
+          <div class="mj-problem-wrap">
+            <h4 class="mj-cell__head mj-problem-head text-rose-700">รายละเอียดปัญหา</h4>
+            @if($r->description)
+              <div class="mj-problem" title="{{ $r->description }}">
+                {{ $r->description }}
               </div>
+            @else
+              <div class="mj-problem mj-problem--empty">- ไม่มีรายละเอียด -</div>
+            @endif
+          </div>
 
-              <div class="flex items-center gap-2 shrink-0">
-                <span class="mj-pill">
-                  <span class="relative inline-flex h-3 w-3">
-                    @if(strtolower((string)$r->status) === 'pending')
-                      <span class="mj-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-60"></span>
+          {{-- Grid Info --}}
+          <div class="mj-card__grid">
+            <div class="mj-cell">
+              <h4 class="mj-cell__head text-slate-400">สถานที่ / ทรัพย์สิน</h4>
+              <div class="mj-kv">
+                <div class="truncate"><span class="mj-k">สถานที่:</span> <span class="mj-v" title="{{ $location }}">{{ $location ?? '-' }}</span></div>
+                <div class="truncate mt-1">
+                  <span class="mj-k">ทรัพย์สิน:</span>
+                  <span class="mj-v">
+                    @if($assetCode)
+                      <span class="font-mono text-xs font-bold text-[#0F2D5C]">{{ $assetCode }}</span> <span class="text-slate-300">—</span>
                     @endif
-                    <span class="relative inline-flex h-3 w-3 rounded-full {{ $statusDot($r->status) }}"></span>
+                    {{ $assetName ?? '-' }}
                   </span>
-                  {{ $statusText }}
-                </span>
-                <span class="mj-pill border {{ $priorityClass($r->priority) }} font-bold uppercase">
-                  {{ $priorityText }}
-                </span>
-              </div>
-            </div>
-
-            <div class="mj-card__sub">
-              <div class="mj-sub-item">
-                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <span class="font-bold">วันแจ้ง:</span> {{ $createdAtText }}
-              </div>
-              <div class="mj-sub-item border-l border-slate-200 pl-4">
-                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                </svg>
-                <span class="font-bold">หน่วยงาน:</span> {{ $deptName ?? '-' }}
-              </div>
-            </div>
-
-            <div class="mj-problem-wrap">
-              <h4 class="mj-cell__head mj-problem-head text-rose-700">รายละเอียดปัญหา</h4>
-              @if($r->description)
-                <div class="mj-problem" title="{{ $r->description }}">
-                  {{ $r->description }}
                 </div>
+              </div>
+            </div>
+            <div class="mj-cell">
+              <h4 class="mj-cell__head text-slate-400">ผู้แจ้ง / ติดต่อ</h4>
+              <div class="mj-kv">
+                <div class="truncate"><span class="mj-k">ชื่อ:</span> <span class="mj-v">{{ $reporterName }}</span></div>
+                <div class="truncate mt-1"><span class="mj-k">โทร:</span> <span class="mj-v">{{ $reporterPhone ?? '-' }}</span></div>
+                <div class="truncate mt-2 text-[10px] text-slate-400 font-mono">IP: {{ $ip ?? '-' }}</div>
+              </div>
+            </div>
+          </div>
+
+          {{-- Footer --}}
+          <div class="mj-card__footer">
+            <div class="mj-footer-left">
+              @if($isOpen)
+                @can('accept', $r)
+                  <button type="button" class="mj-accept-btn"
+                          onclick="openAcceptModal('{{ $r->id }}', '{{ $ticketNo }}')"
+                          title="รับเรื่อง">
+                    <span class="mj-accept-ic" aria-hidden="true">
+                      {{-- Check Circle Icon --}}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    <span class="mj-accept-text">รับเรื่อง</span>
+                  </button>
+                @endcan
               @else
-                <div class="mj-problem mj-problem--empty">
-                  - ไม่มีรายละเอียด -
+                <div class="mj-footer-status" title="{{ $statusText }}">
+                  <span class="h-2.5 w-2.5 rounded-full {{ $statusDot($r->status) }}"></span>
+                  <span class="font-bold text-slate-700 text-[13px]">{{ $statusText }}</span>
                 </div>
               @endif
             </div>
-
-            <div class="mj-card__grid">
-              <div class="mj-cell">
-                <h4 class="mj-cell__head text-slate-400">สถานที่ / ทรัพย์สิน</h4>
-                <div class="mj-kv">
-                  <div class="truncate"><span class="mj-k">สถานที่:</span> <span class="mj-v" title="{{ $location }}">{{ $location ?? '-' }}</span></div>
-                  <div class="truncate mt-1">
-                    <span class="mj-k">ทรัพย์สิน:</span>
-                    <span class="mj-v">
-                      @if($assetCode)
-                        <span class="font-mono text-xs font-bold text-[#0F2D5C]">{{ $assetCode }}</span>
-                        <span class="text-slate-300">—</span>
-                      @endif
-                      {{ $assetName ?? '-' }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div class="mj-cell">
-                <h4 class="mj-cell__head text-slate-400">ผู้แจ้ง / ติดต่อ</h4>
-                <div class="mj-kv">
-                  <div class="truncate"><span class="mj-k">ชื่อผู้แจ้ง:</span> <span class="mj-v">{{ $reporterName }}</span></div>
-                  <div class="truncate mt-1"><span class="mj-k">เบอร์โทร:</span> <span class="mj-v">{{ $reporterPhone ?? '-' }}</span></div>
-                  <div class="truncate mt-2 text-[10px] text-slate-400 font-mono">IP Addr: {{ $ip ?? '-' }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="mj-card__footer">
-              <div class="mj-footer-left">
-                @if($isOpen)
-                  @can('accept', $r)
-                    <button type="button"
-                            class="mj-accept-btn group/btn"
-                            onclick="openAcceptModal('{{ $r->id }}', '{{ $ticketNo }}')"
-                            title="รับเรื่อง" aria-label="รับเรื่อง">
-                      {{-- [EDIT 1] เปลี่ยนไอคอนเป็นเครื่องหมายถูกในวงกลม (Check Circle) --}}
-                      <span class="mj-accept-ic" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </span>
-                      <span class="mj-accept-text">รับเรื่อง</span>
-                    </button>
-                  @endcan
-                @else
-                  <div class="mj-footer-status" title="{{ $statusText }}">
-                    <span class="h-2.5 w-2.5 rounded-full {{ $statusDot($r->status) }}"></span>
-                    <span class="font-bold text-slate-700 text-[13px]">{{ $statusText }}</span>
-                  </div>
-                @endif
-              </div>
-
-              <div class="mj-footer-right">
-                <a href="{{ route('maintenance.requests.show', $r) }}"
-                   onclick="showLoader()"
-                   class="mj-detail-btn"
-                   title="ดูรายละเอียด">
-                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                  </svg>
-                  <span class="hidden md:inline">รายละเอียด</span>
-                </a>
-              </div>
+            <div class="mj-footer-right">
+              <a href="{{ route('maintenance.requests.show', $r) }}" onclick="showLoader()" class="mj-detail-btn" title="ดูรายละเอียด">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span class="hidden md:inline">รายละเอียด</span>
+              </a>
             </div>
           </div>
-        @empty
-          <div class="bg-white border border-slate-200 rounded-md p-12 text-center shadow-sm">
-            <svg class="mx-auto h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <p class="mt-4 text-sm text-slate-500">ไม่พบรายการงานตามเงื่อนไขที่เลือก</p>
-          </div>
-        @endforelse
-
-      </div>
-
-      @if($list->hasPages())
-        <div class="mt-8 mb-10">
-          {{ $list->withQueryString()->links() }}
         </div>
-      @endif
+      @empty
+        {{-- Empty State --}}
+        <div class="bg-white border border-slate-200 rounded-md p-12 text-center">
+          <svg class="mx-auto h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <p class="mt-4 text-sm text-slate-500">ไม่พบรายการงานตามเงื่อนไขที่เลือก</p>
+        </div>
+      @endforelse
+
     </div>
+
+    {{-- Pagination --}}
+    @if($list->hasPages())
+      <div class="mt-8 mb-10">
+        {{ $list->withQueryString()->links() }}
+      </div>
+    @endif
   </div>
 </div>
 
 {{-- MODAL --}}
-<div id="acceptModal" class="fixed inset-0 z-[60] hidden bg-slate-900/60 flex items-center justify-center backdrop-blur-sm px-4 transition-all">
+<div id="acceptModal" class="fixed inset-0 z-[60] hidden bg-slate-900/60 flex items-center justify-center backdrop-blur-sm px-4">
   <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-emerald-600 animate-in fade-in zoom-in-95 duration-200">
     <div class="bg-white border-b border-slate-100 px-6 py-4 flex justify-between items-center">
       <h3 class="text-lg font-bold text-emerald-700 flex items-center gap-2">
-        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span id="acceptModalTitle">รับเรื่อง</span>
       </h3>
-      <button type="button" onclick="closeAcceptModal()" class="text-slate-400 hover:text-slate-600 transition-colors rounded-full p-1 hover:bg-slate-100">
+      <button type="button" onclick="closeAcceptModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
-
     <form id="acceptForm" method="POST" action="">
       @csrf
       <input type="hidden" name="decision" id="acceptDecision" value="accepted">
-
-      <div class="p-6 space-y-5">
-        <p id="acceptModalDesc" class="text-sm text-slate-600 leading-relaxed">
-          เลือก “รับเรื่อง” เพื่อนำงานเข้าคิว หรือ “กำลังดำเนินการ” หากต้องการเริ่มงานและมอบหมายช่างทันที
-        </p>
-
-        <div class="space-y-3">
-          <label class="block text-sm font-bold text-slate-700">การดำเนินการ</label>
-          <div class="flex flex-col gap-2">
-            <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-md cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
-              <input type="radio" name="decision_radio" value="accepted" checked onchange="handleDecisionChange(this.value)"
-                     class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300">
-              <div class="text-sm">
-                <span class="font-bold text-slate-900">รับเรื่อง (รับเข้าคิว)</span>
-                <p class="text-xs text-slate-500 mt-0.5">รับทราบงานและนำเข้าสู่รายการงานของฉัน</p>
-              </div>
-            </label>
-
-            <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-md cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50/50">
-              <input type="radio" name="decision_radio" value="in_progress" onchange="handleDecisionChange(this.value)"
-                     class="h-4 w-4 text-sky-600 focus:ring-sky-500 border-slate-300">
-              <div class="text-sm">
-                <span class="font-bold text-slate-900">กำลังดำเนินการ (เริ่มงานทันที)</span>
-                <p class="text-xs text-slate-500 mt-0.5">เปลี่ยนสถานะเป็นกำลังทำและระบุช่างผู้รับผิดชอบ</p>
-              </div>
-            </label>
-          </div>
+      <div class="p-6 space-y-4">
+        <p class="text-sm text-slate-600 leading-relaxed">เลือก “รับเรื่อง” เพื่อนำงานเข้าคิว หรือ “กำลังดำเนินการ” หากต้องการเริ่มงานทันที</p>
+        <div class="flex flex-col gap-2">
+           <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-md cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
+             <input type="radio" name="decision_radio" value="accepted" checked onchange="handleDecisionChange(this.value)" class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300">
+             <div class="text-sm"><span class="font-bold text-slate-900">รับเรื่อง</span> <span class="text-xs text-slate-500 block">รับเข้าคิวงานของฉัน</span></div>
+           </label>
+           <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-md cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50/50">
+             <input type="radio" name="decision_radio" value="in_progress" onchange="handleDecisionChange(this.value)" class="h-4 w-4 text-sky-600 focus:ring-sky-500 border-slate-300">
+             <div class="text-sm"><span class="font-bold text-slate-900">กำลังดำเนินการ</span> <span class="text-xs text-slate-500 block">เริ่มงานและระบุช่าง</span></div>
+           </label>
         </div>
-
-        <div id="assignBox" class="border border-slate-200 rounded-md p-4 bg-slate-50 hidden animate-in slide-in-from-top-2 duration-200">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div id="assignBox" class="border border-slate-200 rounded-md p-4 bg-slate-50 hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label for="positionSelect" class="block text-sm font-bold text-slate-700 mb-1">กรองตามตำแหน่ง</label>
-              <select id="positionSelect"
-                      class="w-full border-slate-300 rounded-md focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 p-2 bg-white text-sm">
-                <option value="">-- ทั้งหมด --</option>
-                <option value="IT Support">IT Support</option>
-                <option value="Network">Network</option>
-                <option value="นักพัฒนา">นักพัฒนา</option>
-                <option value="ช่างทั่วไป">ช่างทั่วไป</option>
-              </select>
+              <label class="block text-sm font-bold text-slate-700 mb-1">ตำแหน่ง</label>
+              <select id="positionSelect" class="w-full border-slate-300 rounded-md p-2 bg-white text-sm"><option value="">-- เลือก --</option><option value="IT Support">IT Support</option><option value="Network">Network</option><option value="ช่างทั่วไป">ช่างทั่วไป</option></select>
             </div>
-
             <div>
-              <label for="techSelect" class="block text-sm font-bold text-slate-700 mb-1">
-                ช่างผู้รับผิดชอบ <span class="text-rose-500">*</span>
-              </label>
-              <select name="technician_id" id="techSelect"
-                      class="w-full border-slate-300 rounded-md focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 p-2 bg-white text-sm">
-                <option value="">-- เลือกช่าง --</option>
-                @foreach($teamUsers as $u)
-                  <option value="{{ $u->id }}" data-role="{{ $u->role ?? '' }}">
-                    {{ $u->name }}
-                  </option>
-                @endforeach
-              </select>
+              <label class="block text-sm font-bold text-slate-700 mb-1">ช่าง <span class="text-rose-500">*</span></label>
+              <select name="technician_id" id="techSelect" class="w-full border-slate-300 rounded-md p-2 bg-white text-sm"><option value="">-- เลือกช่าง --</option>@foreach($teamUsers as $u)<option value="{{ $u->id }}" data-role="{{ $u->role ?? '' }}">{{ $u->name }}</option>@endforeach</select>
             </div>
           </div>
         </div>
       </div>
-
       <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-        <button type="button" onclick="closeAcceptModal()"
-                class="px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-bold rounded-md hover:bg-slate-100 shadow-sm transition-all active:scale-95">
-          ยกเลิก
-        </button>
-        <button type="submit"
-                class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-md hover:bg-emerald-700 shadow-md transition-all hover:shadow-lg active:scale-95 flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          บันทึก
-        </button>
+        <button type="button" onclick="closeAcceptModal()" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-bold rounded-md hover:bg-slate-100">ยกเลิก</button>
+        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-md hover:bg-emerald-700">บันทึก</button>
       </div>
     </form>
   </div>
 </div>
 
-{{-- LOADER --}}
-<div id="loaderOverlay" class="loader-overlay">
-  <div class="loader-spinner"></div>
-</div>
+{{-- Loader --}}
+<div id="loaderOverlay" class="loader-overlay"><div class="loader-spinner"></div></div>
+@endsection
+
+@section('after-content')
 @endsection
 
 @push('styles')
@@ -479,11 +440,10 @@
   .mj-container{max-width: 1200px;}
   @media (max-width:1280px){.mj-container{max-width: 1080px;}}
   @media (max-width:1024px){.mj-container{max-width: 100%;}}
-  #mjListWrap{ padding-top: var(--mj-top, 18px); }
 
-  .mj-card{background:#fff; border:1px solid #e2e8f0; border-radius: 12px; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: box-shadow .2s ease, transform .2s ease;}
+  .mj-card{background:#fff; border:1px solid #e2e8f0; border-radius: 12px; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: box-shadow .15s ease, transform .15s ease;}
   .mj-card:hover{box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08); transform: translateY(-2px);}
-  .mj-card__header{padding: 10px 14px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; background: #ffffff;}
+  .mj-card__header{padding: 10px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:1px solid #f1f5f9;}
   .mj-card__sub{padding: 8px 14px; display:flex; flex-wrap:wrap; gap: 12px; border-bottom:1px solid #f8fafc; color:#475569; font-size: 13px; background: #fcfcfd;}
   .mj-sub-item{display:flex;align-items:center;gap:6px}
   .mj-title{font-weight:800;font-size:15px;color:#1e293b}
@@ -492,56 +452,30 @@
   .mj-pill{height: 28px; padding: 0 10px; border-radius: 9999px; display:inline-flex; align-items:center; gap:6px; border:1px solid #e2e8f0; background:#fff; font-size: 12px; font-weight: 800; color:#334155; box-shadow: 0 2px 4px rgba(0,0,0,.03); white-space: nowrap;}
   @keyframes mjPing {0%{transform:scale(1);opacity:.6}80%{transform:scale(2.5);opacity:0}100%{transform:scale(2.5);opacity:0}}
   .mj-ping{animation:mjPing 1.5s cubic-bezier(0, 0, 0.2, 1) infinite}
-
   .mj-detail-btn{height: 34px; padding: 0 12px; border-radius: 8px; display:inline-flex; align-items:center; gap: 6px; border: 1px solid #cbd5e1; background:#fff; color:#475569; font-weight: 700; font-size: 13px; transition: all .15s ease; box-shadow: 0 2px 4px rgba(0,0,0,.03); text-decoration:none;}
   .mj-detail-btn:hover{background: #f8fafc; border-color:#94a3b8; color:#1e293b; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,.05);}
   .mj-detail-btn:active{transform: translateY(0); box-shadow: none; background: #f1f5f9;}
-
   .mj-problem-wrap{ padding: 10px 14px 8px 14px; }
-  .mj-problem-head{ margin-bottom:4px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; }
+  .mj-problem-head{ margin-bottom:4px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#64748b; }
   .mj-problem{border:1px solid #fda4af; border-left: 4px solid #e11d48; background: #fff1f2; padding: 8px 10px; border-radius:8px; color:#9f1239; font-size:13px; line-height:1.4; display:-webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow:hidden;}
   .mj-problem--empty{color:#9f1239;font-style: italic;background: #fff1f2; padding: 6px 10px; border-radius:8px; font-size:12px;}
-
-  .mj-card__grid{ display:grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #f1f5f9; }
+  .mj-card__grid{display:grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #f1f5f9;}
   @media (max-width:1024px){.mj-card__grid{grid-template-columns:1fr}}
   .mj-cell{padding: 10px 14px; border-right:1px solid #f1f5f9}
   .mj-cell:last-child{border-right:none}
   @media (max-width:1024px){.mj-cell{border-right:none;border-top:1px solid #f1f5f9}.mj-cell:first-child{border-top:none}}
   .mj-cell__head{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px; color:#64748b;}
-  .mj-kv{font-size:13px;color:#1e293b}
-  .mj-k{color:#64748b;font-size:12px;font-weight:700;margin-right:4px}
-  .mj-v{font-weight:700}
-
+  .mj-kv{font-size:13px;color:#1e293b}.mj-k{color:#64748b;font-size:12px;font-weight:700;margin-right:4px}.mj-v{font-weight:700}
   .mj-card__footer{padding: 10px 14px; border-top: 1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; gap: 10px; background: #fcfcfd;}
   .mj-footer-left{display:flex;align-items:center;gap:10px;min-width:0}
   .mj-footer-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
   .mj-footer-status{display:inline-flex;align-items:center;gap:6px; padding: 4px 10px; background: #f1f5f9; border-radius: 9999px;}
-
-  /* Accept Button - Updated */
-  .mj-accept-btn{
-    height: 34px; padding: 0 12px; border-radius: 8px;
-    display:inline-flex; align-items:center; gap: 8px;
-    font-weight: 800; font-size: 13px; color: #ffffff;
-    background: #16a34a; border: 1px solid #15803d;
-    box-shadow: 0 2px 4px rgba(0,0,0,.05);
-    transition: all .2s ease;
-  }
-  .mj-accept-btn:hover{
-    background: #15803d; border-color:#14532d;
-    box-shadow: 0 4px 8px rgba(22, 163, 74, 0.25);
-  }
+  .mj-accept-btn{height: 34px; padding: 0 12px; border-radius: 8px; display:inline-flex; align-items:center; gap: 8px; font-weight: 800; font-size: 13px; color: #ffffff; background: #16a34a; border: 1px solid #15803d; box-shadow: 0 2px 4px rgba(0,0,0,.05); transition: all .2s ease;}
+  .mj-accept-btn:hover{background: #15803d; border-color:#14532d; box-shadow: 0 4px 8px rgba(22, 163, 74, 0.25); transform: translateY(-1px);}
   .mj-accept-btn:active{ transform: translateY(0); background: #14532d; box-shadow: none;}
-
-  .mj-accept-ic{
-    width: 20px; height: 20px; display:flex; align-items:center; justify-content:center;
-    transition: transform .2s ease;
-  }
+  .mj-accept-ic{width: 20px; height: 20px; display:inline-flex; align-items:center; justify-content:center; transition: transform .2s ease;}
   .mj-accept-ic svg{ width:18px; height:18px; stroke-width: 2.5; }
-
-  /* [EDIT 2] Reduced Animation: Just slight scale up */
-  .mj-accept-btn:hover .mj-accept-ic{
-    transform: scale(1.15); /* ขยายขึ้นเล็กน้อยพองาม */
-  }
+  .mj-accept-btn:hover .mj-accept-ic{transform: scale(1.15);}
 </style>
 @endpush
 
@@ -549,18 +483,6 @@
 <script>
   function showLoader(){ document.getElementById('loaderOverlay')?.classList.add('show') }
   function hideLoader(){ document.getElementById('loaderOverlay')?.classList.remove('show') }
-
-  function applyListTopOffset(){
-    const header = document.getElementById('stickyHeaderMJ');
-    const wrap   = document.getElementById('mjListWrap');
-    if(!header || !wrap) return;
-    const minGap = 16;
-    const headerBottom = header.getBoundingClientRect().bottom;
-    const wrapTopRelativeToViewport = wrap.getBoundingClientRect().top;
-    let overlap = Math.max(0, headerBottom - wrapTopRelativeToViewport);
-    const finalTop = overlap + minGap;
-    wrap.style.setProperty('--mj-top', finalTop + 'px');
-  }
 
   function openAcceptModal(id, ticketNo) {
     const modal = document.getElementById('acceptModal');
@@ -573,53 +495,39 @@
     const pos = document.getElementById('positionSelect');
     const tech = document.getElementById('techSelect');
     if (pos) pos.value = '';
-    if (tech) {
-      tech.value = '';
-      Array.from(tech.options).forEach(opt => opt.hidden = false);
-    }
+    if (tech) { tech.value = ''; Array.from(tech.options).forEach(opt => opt.hidden = false); }
     handleDecisionChange('accepted');
     modal.classList.remove('hidden');
   }
 
-  function closeAcceptModal() {
-    document.getElementById('acceptModal')?.classList.add('hidden');
-  }
-
-  document.getElementById('acceptModal')?.addEventListener('click', function(e) {
-    if (e.target === this) closeAcceptModal();
-  });
+  function closeAcceptModal() { document.getElementById('acceptModal')?.classList.add('hidden'); }
+  document.getElementById('acceptModal')?.addEventListener('click', function(e) { if (e.target === this) closeAcceptModal(); });
 
   function handleDecisionChange(value) {
     const assignBox = document.getElementById('assignBox');
     const decision  = document.getElementById('acceptDecision');
     const tech      = document.getElementById('techSelect');
-    if (!decision) return;
-    decision.value = value;
-    if (value === 'in_progress') {
-      assignBox?.classList.remove('hidden');
-      tech?.setAttribute('required', 'required');
-    } else {
-      assignBox?.classList.add('hidden');
-      tech?.removeAttribute('required');
-    }
+    if (!decision) return; decision.value = value;
+    if (value === 'in_progress') { assignBox?.classList.remove('hidden'); tech?.setAttribute('required', 'required'); }
+    else { assignBox?.classList.add('hidden'); tech?.removeAttribute('required'); }
   }
 
   document.getElementById('positionSelect')?.addEventListener('change', function() {
     const role = (this.value || '').trim();
     const tech = document.getElementById('techSelect');
     if (!tech) return;
-    tech.value = '';
     Array.from(tech.options).forEach(opt => {
       if (!opt.value) return;
       const r = (opt.getAttribute('data-role') || '').trim();
-      opt.hidden = (role && r) ? (r !== role) : false;
+      opt.hidden = (r && role) ? (r !== role) : false;
     });
+    if (tech.selectedOptions[0]?.hidden) tech.value = '';
   });
 
   function renderDonut(){
-    const pending = parseInt((document.getElementById('stat-pending')?.textContent||'0').replace(/,/g,''), 10) || 0;
-    const inprog  = parseInt((document.getElementById('stat-in-progress')?.textContent||'0').replace(/,/g,''), 10) || 0;
-    const comp    = parseInt((document.getElementById('stat-completed')?.textContent||'0').replace(/,/g,''), 10) || 0;
+    const pending = parseInt((document.getElementById('stat-pending')?.textContent||'0').trim(), 10) || 0;
+    const inprog  = parseInt((document.getElementById('stat-in-progress')?.textContent||'0').trim(), 10) || 0;
+    const comp    = parseInt((document.getElementById('stat-completed')?.textContent||'0').trim(), 10) || 0;
     const total = pending + inprog + comp;
     const donut = document.getElementById('donut');
     const pctEl = document.getElementById('donutPct');
@@ -633,24 +541,8 @@
     const a1 = a0 + degPending;
     const a2 = a1 + degInprog;
     const a3 = a2 + degComp;
-    donut.style.background = `conic-gradient(
-      #f59e0b ${a0}deg ${a1}deg,
-      #0ea5e9 ${a1}deg ${a2}deg,
-      #10b981 ${a2}deg ${a3}deg,
-      #e2e8f0 ${a3}deg 360deg
-    )`;
+    donut.style.background = `conic-gradient(#f59e0b ${a0}deg ${a1}deg,#0ea5e9 ${a1}deg ${a2}deg,#10b981 ${a2}deg ${a3}deg,#e2e8f0 ${a3}deg 360deg)`;
   }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    hideLoader();
-    renderDonut();
-    requestAnimationFrame(() => applyListTopOffset());
-    window.addEventListener('resize', applyListTopOffset, { passive: true });
-    window.addEventListener('scroll', applyListTopOffset, { passive: true });
-    const header = document.getElementById('stickyHeaderMJ');
-    if (window.ResizeObserver && header){
-      new ResizeObserver(applyListTopOffset).observe(header);
-    }
-  });
+  document.addEventListener('DOMContentLoaded', () => { hideLoader(); renderDonut(); });
 </script>
 @endpush
