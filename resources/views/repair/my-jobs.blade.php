@@ -17,7 +17,6 @@
     'all'       => 'ทั้งหมด',
   ];
 
-  // Helpers สำหรับแปลงสถานะเป็นภาษาไทยและสี
   $statusLabel = fn(?string $s) => [
     'pending'     => 'รอรับเรื่อง',
     'accepted'    => 'รับเรื่องแล้ว',
@@ -54,23 +53,19 @@
     default  => 'text-gray-500 bg-gray-50 border-gray-200',
   };
 
-  // เช็คว่ามีการ filter อยู่หรือไม่
   $hasActiveFilter =
     (($q ?? '') !== '') ||
     (($status ?? '') !== '') ||
     (($tech ?? '') !== '') ||
     (($filter ?? 'all') !== 'all');
 
-  // ดึงข้อมูลช่างที่ถูกเลือก (ถ้ามี)
   $activeTech = isset($tech) && isset($team) ? $team->firstWhere('id', (int)$tech) : null;
 
-  // Stats numbers
   $statPending    = (int)($stats['pending'] ?? 0);
   $statInProgress = (int)($stats['in_progress'] ?? 0);
   $statCompleted  = (int)($stats['completed'] ?? 0);
   $statMyActive   = (int)($stats['my_active'] ?? 0);
 
-  // Helpers เล็กๆน้อยๆ
   $getIp = fn($r) => $r->client_ip ?? $r->ip_address ?? $r->ip ?? null;
   $getDept = fn($r) => $r->department->name ?? ($r->department->name_th ?? ($r->department->title ?? null));
 
@@ -92,7 +87,6 @@
        class="sticky top-[4rem] md:top-[5rem] lg:top-[6rem] z-40 bg-white border-b border-slate-200 transition-all duration-200">
     <div class="w-full px-4 md:px-6 lg:px-8 py-4">
       <div class="flex flex-wrap items-start justify-between gap-3">
-        {{-- Title --}}
         <div class="min-w-0">
           <h1 class="text-[20px] font-bold text-slate-900">My Jobs</h1>
           <p class="mt-1 text-[13px] text-slate-600">
@@ -103,7 +97,6 @@
           </p>
         </div>
 
-        {{-- Stats Bar & Donut --}}
         <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
           <span class="font-bold text-amber-700 flex items-center gap-2">
             <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
@@ -125,10 +118,8 @@
             งานของฉัน <span id="stat-my-active" class="text-slate-900">{{ $statMyActive }}</span>
           </span>
 
-          {{-- Donut Chart --}}
           <div class="flex items-center gap-2 ml-2 border-l border-slate-200 pl-3">
             <div class="relative">
-              {{-- CSS Conic Gradient จะถูก inject โดย JS --}}
               <div id="donut" class="h-9 w-9 rounded-full"
                    style="background: conic-gradient(#e2e8f0 0deg 360deg);"></div>
               <div class="absolute inset-0 m-auto h-5 w-5 rounded-full bg-white"></div>
@@ -138,13 +129,12 @@
         </div>
       </div>
 
-      {{-- FILTERS FORM --}}
+      {{-- FILTERS --}}
       <form method="GET"
             action="{{ route('repairs.my_jobs') }}"
             class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end"
             onsubmit="showLoader()">
 
-        {{-- Search Input --}}
         <div class="md:col-span-7 min-w-0">
           <label for="q" class="mb-1 block text-[12px] text-slate-600">คำค้นหา</label>
           <div class="relative group">
@@ -160,7 +150,6 @@
           </div>
         </div>
 
-        {{-- Filter Select --}}
         <div class="md:col-span-2">
           <label for="filter" class="mb-1 block text-[12px] text-slate-600">ช่วงงาน</label>
           <select id="filter" name="filter"
@@ -172,7 +161,6 @@
           </select>
         </div>
 
-        {{-- Status Select --}}
         <div class="md:col-span-2">
           <label for="status" class="mb-1 block text-[12px] text-slate-600">สถานะ</label>
           <select id="status" name="status"
@@ -185,7 +173,6 @@
           </select>
         </div>
 
-        {{-- Buttons --}}
         <div class="md:col-span-1 flex items-end justify-end gap-2">
           @if($hasActiveFilter)
             <a href="{{ route('repairs.my_jobs') }}"
@@ -216,39 +203,29 @@
     </div>
   </div>
 
-  {{-- LIST WRAPPER --}}
+  {{-- LIST --}}
   <div id="mjListWrap" class="w-full px-4 md:px-6 lg:px-8 relative z-0">
     <div class="mj-container mx-auto">
       <div id="myJobsTbody" class="space-y-4">
 
         @forelse($list as $r)
           @php
-            // เงื่อนไขปุ่มรับงาน: ยังไม่มีช่าง + สถานะ pending
             $isOpen   = empty($r->technician_id) && (($r->status ?? '') === 'pending');
-
             $ticketNo = $r->request_no ?? $r->job_no ?? $r->id;
             $workOrderNo = $getWorkOrderNo($r);
-
             $assetName = $r->asset->name ?? null;
             $assetCode = $r->asset->asset_code ?? null;
-
             $deptName = $getDept($r);
             $location = $r->location_text ?? null;
-
             $reporterName  = $r->reporter_name ?? $r->reporter?->name ?? '-';
             $reporterPhone = $r->reporter_phone ?? null;
             $ip = $getIp($r);
-
             $createdAtText = optional($r->created_at)->format('d/m/Y H:i');
             $statusText   = $statusLabel($r->status ?? null);
             $priorityText = $priorityLabel($r->priority ?? null);
           @endphp
 
-          {{-- JOB CARD --}}
           <div class="mj-card group">
-
-            {{-- Card Header --}}
-            {{-- [EDIT 1] เพิ่ม gap-5 md:gap-6 เพื่อเว้นระยะห่างข้อมูลชุดแรก --}}
             <div class="mj-card__header gap-5 md:gap-6">
               <div class="flex items-center gap-3 overflow-hidden min-w-0">
                 <span class="mj-ticket-plain">#{{ $ticketNo }}</span>
@@ -261,7 +238,6 @@
               </div>
 
               <div class="flex items-center gap-2 shrink-0">
-                {{-- Status Pill with Ping animation if pending --}}
                 <span class="mj-pill">
                   <span class="relative inline-flex h-3 w-3">
                     @if(strtolower((string)$r->status) === 'pending')
@@ -271,14 +247,12 @@
                   </span>
                   {{ $statusText }}
                 </span>
-                {{-- Priority Pill --}}
                 <span class="mj-pill border {{ $priorityClass($r->priority) }} font-bold uppercase">
                   {{ $priorityText }}
                 </span>
               </div>
             </div>
 
-            {{-- Sub Info (Date & Dept) --}}
             <div class="mj-card__sub">
               <div class="mj-sub-item">
                 <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -296,7 +270,6 @@
               </div>
             </div>
 
-            {{-- Problem Detail --}}
             <div class="mj-problem-wrap">
               <h4 class="mj-cell__head mj-problem-head text-rose-700">รายละเอียดปัญหา</h4>
               @if($r->description)
@@ -310,7 +283,6 @@
               @endif
             </div>
 
-            {{-- Info Grid (Location/Asset & Reporter) --}}
             <div class="mj-card__grid">
               <div class="mj-cell">
                 <h4 class="mj-cell__head text-slate-400">สถานที่ / ทรัพย์สิน</h4>
@@ -338,7 +310,6 @@
               </div>
             </div>
 
-            {{-- Card Footer (Actions) --}}
             <div class="mj-card__footer">
               <div class="mj-footer-left">
                 @if($isOpen)
@@ -347,13 +318,10 @@
                             class="mj-accept-btn group/btn"
                             onclick="openAcceptModal('{{ $r->id }}', '{{ $ticketNo }}')"
                             title="รับเรื่อง" aria-label="รับเรื่อง">
-                      {{-- [EDIT 2] เปลี่ยนไอคอนเป็น Inbox In เพื่อสื่อความหมายการ "รับเข้า" --}}
+                      {{-- [EDIT 1] เปลี่ยนไอคอนเป็นเครื่องหมายถูกในวงกลม (Check Circle) --}}
                       <span class="mj-accept-ic" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M4 12V7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                          <path d="M12 8v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                          <path d="M9.8 12.2 12 14.4l2.2-2.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M4 12l2.3 6.3A2 2 0 0 0 8.2 20h7.6a2 2 0 0 0 1.9-1.7L20 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                       </span>
                       <span class="mj-accept-text">รับเรื่อง</span>
@@ -382,12 +350,8 @@
                 </a>
               </div>
             </div>
-
           </div>
-          {{-- END JOB CARD --}}
-
         @empty
-          {{-- Empty State --}}
           <div class="bg-white border border-slate-200 rounded-md p-12 text-center shadow-sm">
             <svg class="mx-auto h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -398,7 +362,6 @@
 
       </div>
 
-      {{-- Pagination --}}
       @if($list->hasPages())
         <div class="mt-8 mb-10">
           {{ $list->withQueryString()->links() }}
@@ -408,7 +371,7 @@
   </div>
 </div>
 
-{{-- Accept Modal (Popup) --}}
+{{-- MODAL --}}
 <div id="acceptModal" class="fixed inset-0 z-[60] hidden bg-slate-900/60 flex items-center justify-center backdrop-blur-sm px-4 transition-all">
   <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-emerald-600 animate-in fade-in zoom-in-95 duration-200">
     <div class="bg-white border-b border-slate-100 px-6 py-4 flex justify-between items-center">
@@ -432,7 +395,6 @@
 
         <div class="space-y-3">
           <label class="block text-sm font-bold text-slate-700">การดำเนินการ</label>
-
           <div class="flex flex-col gap-2">
             <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-md cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
               <input type="radio" name="decision_radio" value="accepted" checked onchange="handleDecisionChange(this.value)"
@@ -501,7 +463,7 @@
   </div>
 </div>
 
-{{-- Fullscreen Loader --}}
+{{-- LOADER --}}
 <div id="loaderOverlay" class="loader-overlay">
   <div class="loader-spinner"></div>
 </div>
@@ -509,84 +471,35 @@
 
 @push('styles')
 <style>
-  /* Loader Styles */
   .loader-overlay{position:fixed;inset:0;background:rgba(255,255,255,.65);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:99999;visibility:hidden;opacity:0;transition:opacity .2s,visibility .2s}
   .loader-overlay.show{visibility:visible;opacity:1}
   .loader-spinner{width:48px;height:48px;border:5px solid #0F2D5C;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  /* Container & Layout */
   .mj-container{max-width: 1200px;}
   @media (max-width:1280px){.mj-container{max-width: 1080px;}}
   @media (max-width:1024px){.mj-container{max-width: 100%;}}
   #mjListWrap{ padding-top: var(--mj-top, 18px); }
 
-  /* Card Styles */
-  .mj-card{
-    background:#fff;
-    border:1px solid #e2e8f0;
-    border-radius: 12px;
-    overflow:hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    transition: box-shadow .2s ease, transform .2s ease;
-  }
-  .mj-card:hover{box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04); transform: translateY(-2px);}
-
-  .mj-card__header{
-    padding: 10px 14px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    /* gap จะถูกกำหนดโดย Tailwind classes ใน HTML */
-    border-bottom:1px solid #f1f5f9;
-    background: #ffffff;
-  }
-
-  .mj-card__sub{
-    padding: 8px 14px;
-    display:flex;
-    flex-wrap:wrap;
-    gap: 12px;
-    border-bottom:1px solid #f8fafc;
-    color:#475569;
-    font-size: 13px;
-    background: #fcfcfd;
-  }
+  .mj-card{background:#fff; border:1px solid #e2e8f0; border-radius: 12px; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: box-shadow .2s ease, transform .2s ease;}
+  .mj-card:hover{box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08); transform: translateY(-2px);}
+  .mj-card__header{padding: 10px 14px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; background: #ffffff;}
+  .mj-card__sub{padding: 8px 14px; display:flex; flex-wrap:wrap; gap: 12px; border-bottom:1px solid #f8fafc; color:#475569; font-size: 13px; background: #fcfcfd;}
   .mj-sub-item{display:flex;align-items:center;gap:6px}
   .mj-title{font-weight:800;font-size:15px;color:#1e293b}
-
-  .mj-ticket-plain{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 900; font-size: 13px; color:#334155; white-space: nowrap;}
+  .mj-ticket-plain{font-family: ui-monospace, SFMono-Regular, monospace; font-weight: 900; font-size: 13px; color:#334155; white-space: nowrap;}
   .mj-wo{background:#f1f5f9; border:1px solid #e2e8f0; color:#475569; padding:1px 8px; font-size:11px; font-family: ui-monospace, monospace; font-weight:700; border-radius:6px; white-space:nowrap;}
-
-  .mj-pill{
-    height: 28px; padding: 0 10px; border-radius: 9999px;
-    display:inline-flex; align-items:center; gap:6px;
-    border:1px solid #e2e8f0; background:#fff;
-    font-size: 12px; font-weight: 800; color:#334155;
-    box-shadow: 0 2px 4px rgba(0,0,0,.03); white-space: nowrap;
-  }
+  .mj-pill{height: 28px; padding: 0 10px; border-radius: 9999px; display:inline-flex; align-items:center; gap:6px; border:1px solid #e2e8f0; background:#fff; font-size: 12px; font-weight: 800; color:#334155; box-shadow: 0 2px 4px rgba(0,0,0,.03); white-space: nowrap;}
   @keyframes mjPing {0%{transform:scale(1);opacity:.6}80%{transform:scale(2.5);opacity:0}100%{transform:scale(2.5);opacity:0}}
   .mj-ping{animation:mjPing 1.5s cubic-bezier(0, 0, 0.2, 1) infinite}
 
-  .mj-detail-btn{
-    height: 34px; padding: 0 12px; border-radius: 8px;
-    display:inline-flex; align-items:center; gap: 6px;
-    border: 1px solid #cbd5e1; background:#fff; color:#475569;
-    font-weight: 700; font-size: 13px;
-    transition: all .15s ease; box-shadow: 0 2px 4px rgba(0,0,0,.03);
-    text-decoration:none;
-  }
+  .mj-detail-btn{height: 34px; padding: 0 12px; border-radius: 8px; display:inline-flex; align-items:center; gap: 6px; border: 1px solid #cbd5e1; background:#fff; color:#475569; font-weight: 700; font-size: 13px; transition: all .15s ease; box-shadow: 0 2px 4px rgba(0,0,0,.03); text-decoration:none;}
   .mj-detail-btn:hover{background: #f8fafc; border-color:#94a3b8; color:#1e293b; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,.05);}
   .mj-detail-btn:active{transform: translateY(0); box-shadow: none; background: #f1f5f9;}
 
   .mj-problem-wrap{ padding: 10px 14px 8px 14px; }
   .mj-problem-head{ margin-bottom:4px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; }
-  .mj-problem{
-    border:1px solid #fda4af; border-left: 4px solid #e11d48;
-    background: #fff1f2; padding: 8px 10px; border-radius:8px;
-    color:#9f1239; font-size:13px; line-height:1.4;
-    display:-webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow:hidden;
-  }
+  .mj-problem{border:1px solid #fda4af; border-left: 4px solid #e11d48; background: #fff1f2; padding: 8px 10px; border-radius:8px; color:#9f1239; font-size:13px; line-height:1.4; display:-webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow:hidden;}
   .mj-problem--empty{color:#9f1239;font-style: italic;background: #fff1f2; padding: 6px 10px; border-radius:8px; font-size:12px;}
 
   .mj-card__grid{ display:grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #f1f5f9; }
@@ -599,28 +512,22 @@
   .mj-k{color:#64748b;font-size:12px;font-weight:700;margin-right:4px}
   .mj-v{font-weight:700}
 
-  .mj-card__footer{
-    padding: 10px 14px; border-top: 1px solid #f1f5f9;
-    display:flex; align-items:center; justify-content:space-between; gap: 10px;
-    background: #fcfcfd;
-  }
+  .mj-card__footer{padding: 10px 14px; border-top: 1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; gap: 10px; background: #fcfcfd;}
   .mj-footer-left{display:flex;align-items:center;gap:10px;min-width:0}
   .mj-footer-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
   .mj-footer-status{display:inline-flex;align-items:center;gap:6px; padding: 4px 10px; background: #f1f5f9; border-radius: 9999px;}
 
-  /* Accept Button Styles */
+  /* Accept Button - Updated */
   .mj-accept-btn{
     height: 34px; padding: 0 12px; border-radius: 8px;
     display:inline-flex; align-items:center; gap: 8px;
     font-weight: 800; font-size: 13px; color: #ffffff;
     background: #16a34a; border: 1px solid #15803d;
     box-shadow: 0 2px 4px rgba(0,0,0,.05);
-    transition: all .15s ease;
-    overflow: hidden; /* Important for the new animation */
+    transition: all .2s ease;
   }
   .mj-accept-btn:hover{
     background: #15803d; border-color:#14532d;
-    transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(22, 163, 74, 0.25);
   }
   .mj-accept-btn:active{ transform: translateY(0); background: #14532d; box-shadow: none;}
@@ -631,18 +538,9 @@
   }
   .mj-accept-ic svg{ width:18px; height:18px; stroke-width: 2.5; }
 
-  /* [EDIT 3] New Hover Animation: Bounce In (เด้งลงหลุม) */
+  /* [EDIT 2] Reduced Animation: Just slight scale up */
   .mj-accept-btn:hover .mj-accept-ic{
-    /* ยกเลิกการหมุนเดิม แล้วใช้อนิเมชั่นใหม่ */
-    transform: translateY(0);
-    animation: mjBounceIn .5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 1 forwards;
-  }
-
-  @keyframes mjBounceIn {
-    0% { transform: translateY(-3px); opacity: 0.7; }
-    40% { transform: translateY(4px); opacity: 1; } /* ลงลึก */
-    70% { transform: translateY(-2px); } /* เด้งกลับนิดหน่อย */
-    100% { transform: translateY(0); } /* เข้าที่ */
+    transform: scale(1.15); /* ขยายขึ้นเล็กน้อยพองาม */
   }
 </style>
 @endpush
@@ -652,84 +550,51 @@
   function showLoader(){ document.getElementById('loaderOverlay')?.classList.add('show') }
   function hideLoader(){ document.getElementById('loaderOverlay')?.classList.remove('show') }
 
-  // คำนวณ padding-top เพื่อหลบ Header
   function applyListTopOffset(){
     const header = document.getElementById('stickyHeaderMJ');
     const wrap   = document.getElementById('mjListWrap');
     if(!header || !wrap) return;
-
-    // gap ขั้นต่ำระหว่าง header กับการ์ดใบแรก
     const minGap = 16;
-
-    // คำนวณหาจุดที่ header สิ้นสุด และจุดที่ wrap เริ่มต้น
     const headerBottom = header.getBoundingClientRect().bottom;
-    // ใช้ offsetTop ของ wrap เทียบกับ viewport
     const wrapTopRelativeToViewport = wrap.getBoundingClientRect().top;
-
-    // คำนวณส่วนต่าง ถ้า header ทับ wrap ค่านี้จะเป็นบวก
-    let overlap = headerBottom - wrapTopRelativeToViewport;
-
-    // ถ้า overlap ติดลบ แปลว่ายังไม่ชน ให้เป็น 0
-    overlap = Math.max(0, overlap);
-
-    // ค่า padding-top สุดท้ายคือ ส่วนที่ทับ + gap ที่ต้องการ
+    let overlap = Math.max(0, headerBottom - wrapTopRelativeToViewport);
     const finalTop = overlap + minGap;
-
     wrap.style.setProperty('--mj-top', finalTop + 'px');
   }
 
-  // --- Modal Functions ---
   function openAcceptModal(id, ticketNo) {
     const modal = document.getElementById('acceptModal');
     const form  = document.getElementById('acceptForm');
-
-    // Set Action URL
     form.action = `{{ $acceptBaseUrl }}/${id}/accept`;
-
-    // Set Title & Desc
     document.getElementById('acceptModalTitle').textContent = `รับเรื่อง #${ticketNo}`;
-
-    // Reset Form States
     document.getElementById('acceptDecision').value = 'accepted';
     const radioAccepted = document.querySelector('input[name="decision_radio"][value="accepted"]');
     if (radioAccepted) radioAccepted.checked = true;
-
-    // Reset Selects
     const pos = document.getElementById('positionSelect');
     const tech = document.getElementById('techSelect');
     if (pos) pos.value = '';
     if (tech) {
       tech.value = '';
-      // Reset disabled/hidden options
       Array.from(tech.options).forEach(opt => opt.hidden = false);
     }
-
-    // Apply initial UI state based on 'accepted'
     handleDecisionChange('accepted');
-
-    // Show Modal
     modal.classList.remove('hidden');
   }
 
   function closeAcceptModal() {
-    const modal = document.getElementById('acceptModal');
-    modal.classList.add('hidden');
+    document.getElementById('acceptModal')?.classList.add('hidden');
   }
 
-  // Close modal when clicking outside the box
   document.getElementById('acceptModal')?.addEventListener('click', function(e) {
     if (e.target === this) closeAcceptModal();
   });
 
-  // Handle Radio Button Change (Accepted vs In Progress)
   function handleDecisionChange(value) {
     const assignBox = document.getElementById('assignBox');
     const decision  = document.getElementById('acceptDecision');
     const tech      = document.getElementById('techSelect');
-
     if (!decision) return;
     decision.value = value;
-
     if (value === 'in_progress') {
       assignBox?.classList.remove('hidden');
       tech?.setAttribute('required', 'required');
@@ -739,47 +604,35 @@
     }
   }
 
-  // Filter Technician by Position role
   document.getElementById('positionSelect')?.addEventListener('change', function() {
     const role = (this.value || '').trim();
     const tech = document.getElementById('techSelect');
     if (!tech) return;
-
-    // Reset selection first
     tech.value = '';
-
     Array.from(tech.options).forEach(opt => {
-      if (!opt.value) return; // Skip placeholder
+      if (!opt.value) return;
       const r = (opt.getAttribute('data-role') || '').trim();
-      // ถ้ามี role ที่เลือก และ role ของช่างไม่ตรง ให้ซ่อน
       opt.hidden = (role && r) ? (r !== role) : false;
     });
   });
 
-  // --- Donut Chart Renderer ---
   function renderDonut(){
     const pending = parseInt((document.getElementById('stat-pending')?.textContent||'0').replace(/,/g,''), 10) || 0;
     const inprog  = parseInt((document.getElementById('stat-in-progress')?.textContent||'0').replace(/,/g,''), 10) || 0;
     const comp    = parseInt((document.getElementById('stat-completed')?.textContent||'0').replace(/,/g,''), 10) || 0;
-
     const total = pending + inprog + comp;
     const donut = document.getElementById('donut');
     const pctEl = document.getElementById('donutPct');
     if(!donut || !pctEl) return;
-
     const completedPct = total > 0 ? Math.round((comp / total) * 100) : 0;
     pctEl.textContent = `${completedPct}%`;
-
     const degPending = total > 0 ? (pending / total) * 360 : 0;
     const degInprog  = total > 0 ? (inprog  / total) * 360 : 0;
     const degComp    = total > 0 ? (comp    / total) * 360 : 0;
-
     const a0 = 0;
     const a1 = a0 + degPending;
     const a2 = a1 + degInprog;
     const a3 = a2 + degComp;
-
-    // Colors matches tailwind classes: amber-500, sky-500, emerald-500
     donut.style.background = `conic-gradient(
       #f59e0b ${a0}deg ${a1}deg,
       #0ea5e9 ${a1}deg ${a2}deg,
@@ -788,19 +641,12 @@
     )`;
   }
 
-  // --- Init ---
   document.addEventListener('DOMContentLoaded', () => {
     hideLoader();
     renderDonut();
-
-    // คำนวณ offset ครั้งแรก
     requestAnimationFrame(() => applyListTopOffset());
-
-    // คำนวณใหม่เมื่อจอ resize
     window.addEventListener('resize', applyListTopOffset, { passive: true });
     window.addEventListener('scroll', applyListTopOffset, { passive: true });
-
-    // ใช้ ResizeObserver เฝ้าดู Header เผื่อความสูงเปลี่ยน
     const header = document.getElementById('stickyHeaderMJ');
     if (window.ResizeObserver && header){
       new ResizeObserver(applyListTopOffset).observe(header);
