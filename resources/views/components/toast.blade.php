@@ -168,7 +168,6 @@
   .toast--warning{ background:#e3a23a; }
   .toast--info   { background:#5a9db5; }
 
-  /* sizes */
   .toast--sm{
     --toast-max-w: min(92vw, 420px);
     --toast-min-w: 320px;
@@ -381,10 +380,19 @@
       timeout: @json($timeout),
       size: @json($size ?? 'xl'),
     };
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => window.showToast(payload), { once:true });
-    } else {
+
+    function fire() {
       window.showToast(payload);
+    }
+
+    const needWait =
+      document.documentElement.classList.contains('intro-pending') ||
+      document.documentElement.classList.contains('intro-reveal');
+
+    if (needWait) {
+      window.addEventListener('introReveal:done', fire, { once: true });
+    } else {
+      fire();
     }
   })();
   @endif
