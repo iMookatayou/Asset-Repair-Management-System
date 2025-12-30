@@ -6,6 +6,16 @@
   <meta name="csrf-token" content="{{ csrf_token() }}" />
   <meta name="theme-color" content="#0E2B51">
 
+  <script>
+  (function () {
+    try {
+      if (sessionStorage.getItem('ui.sidebarIntro.next') === '1') {
+        document.documentElement.classList.add('intro-pending');
+      }
+    } catch (e) {}
+  })();
+  </script>
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
@@ -345,6 +355,26 @@
     background:#ecfdf5 !important;
     color:#047857 !important;
     }
+
+    /* ✅ Intro Lock + Fade-In (เพิ่มใหม่) */
+    html.intro-pending body { overflow: hidden; }
+
+    html.intro-pending #layout,
+    html.intro-pending .app-navbar,
+    html.intro-pending .navbar-hero,
+    html.intro-pending footer,
+    html.intro-pending #teamTab,
+    html.intro-pending #loaderOverlay {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #layout,
+    .app-navbar,
+    .navbar-hero,
+    footer {
+      transition: opacity .55s ease;
+    }
   </style>
 </head>
 
@@ -496,6 +526,16 @@
       if (form instanceof HTMLFormElement && !form.hasAttribute('data-no-loader')) Loader.show();
     });
     window.addEventListener('beforeunload', () => Loader.show());
+
+    // ✅ กัน Loader โผล่ระหว่าง intro
+    (function(){
+      if (!window.Loader) return;
+      const _show = window.Loader.show.bind(window.Loader);
+      window.Loader.show = function(){
+        if (document.documentElement.classList.contains('intro-pending')) return;
+        _show();
+      };
+    })();
   </script>
 
   <script>
@@ -744,6 +784,8 @@
   </div>
 
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" defer></script>
+
+  <!-- ✅ Toast จะถูก “หน่วง” ด้วย logic ใน component ที่ให้ด้านล่าง -->
   <x-toast />
 
   @includeWhen(Auth::check(), 'partials.chat-fab')
