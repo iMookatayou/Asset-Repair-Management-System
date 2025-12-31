@@ -92,6 +92,11 @@
       color-scheme: light;
       --nav-h: 80px;
       --topbar-h: calc(var(--nav-h) + 8px);
+
+      /* ✅ sidebar widths */
+      --side-w: 260px;
+      --side-w-compact: 180px;
+      --side-w-collapsed: 76px;
     }
 
     @media (max-width: 992px){
@@ -111,21 +116,35 @@
 
     #main .sticky-under-topbar + * { margin-top: 6rem; }
 
+    /* =========================
+       ✅ LAYOUT (เปลี่ยนจาก grid → main ขยับตาม sidebar fixed)
+       ========================= */
     .layout{
-        display: grid;
-        grid-template-columns: 260px 1fr;
         flex: 1 0 auto;
         min-height: 0 !important;
-        transition: grid-template-columns .2s ease;
         background: #ffffff;
         color: hsl(var(--bc));
+        position: relative;
     }
 
+    /* ✅ main ขยับกัน sidebar ทับ (desktop) */
+    @media (min-width:1024px){
+      #main{
+        margin-left: var(--side-w);
+      }
+      .layout.with-compact #main{ margin-left: var(--side-w-compact); }
+      .layout.with-collapsed #main{ margin-left: var(--side-w-collapsed); }
+      .layout.with-expanded #main{ margin-left: var(--side-w); }
+    }
+
+    /* =========================
+       ✅ SIDEBAR (Desktop fixed + Mobile drawer)
+       ========================= */
     .sidebar{
         background:#ffffff;
         border-right:1px solid hsl(var(--b2));
-        width:260px;
-        transition:width .2s ease;
+        width:var(--side-w);
+        transition:width .2s ease, transform .2s ease;
     }
 
     .sidebar-logo {
@@ -134,31 +153,41 @@
         align-items: center;
     }
 
+    /* ✅ Desktop: fixed sidebar ใต้ navbar + สูงเต็มจอ */
     @media (min-width:1024px){
+
         .sidebar{
-          position: static;
-          top: auto;
-          align-self: stretch;
-          height: auto;
-          overflow-y: visible;
+        position: fixed;
+        left: 0;
+        top: 0;              /* ✅ ชิดบนจอ */
+        bottom: 0;
+        height: 100vh;       /* ✅ เต็มจอ */
+        overflow: hidden;
+        z-index: 2001;       /* ✅ ให้อยู่เหนือ navbar ถ้าต้องการ */
         }
 
-        .sidebar.compact{ width:180px !important; }
-        .layout.with-compact{ grid-template-columns:180px 1fr !important; }
 
-        .sidebar.collapsed{ width:76px !important; }
-        .layout.with-collapsed{ grid-template-columns:76px 1fr !important; }
-        .layout.with-expanded{ grid-template-columns:260px 1fr !important; }
+        /* ✅ FIX: ห้ามให้ wrapper นี้ scroll (เดิม overflow-y:auto ทำให้โลโก้เลื่อนตาม) */
+        .sidebar-scroll{
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;          /* ✅ สำคัญ */
+          -webkit-overflow-scrolling: touch;
+        }
 
-        .sidebar.collapsed.hover-expand{ width:260px !important; }
+        .sidebar.compact{ width:var(--side-w-compact) !important; }
+        .sidebar.collapsed{ width:var(--side-w-collapsed) !important; }
+
+        .sidebar.collapsed.hover-expand{ width:var(--side-w) !important; }
         .sidebar.collapsed.hover-expand .menu-text{ display:inline !important; }
         .sidebar.collapsed.hover-expand .menu-item{ justify-content:flex-start; gap:.75rem; }
+
         .sidebar.hover-expand{ box-shadow: 4px 0 12px rgba(0,0,0,.06); }
     }
 
+    /* ✅ Mobile: drawer เหมือนเดิม */
     @media (max-width:1024px){
-        .layout{ grid-template-columns:1fr; }
-
         .sidebar{
           position:fixed;
           inset:var(--nav-h) auto 0 0;
@@ -168,9 +197,17 @@
           z-index:50;
           box-shadow: 4px 0 24px rgba(0,0,0,.06);
           max-height: calc(100vh - var(--nav-h));
-          overflow-y: auto;
+          overflow: hidden;          /* ✅ FIX: เดิม overflow-y:auto ทำให้เลื่อนทั้งก้อน */
         }
         .sidebar.open{ transform:translateX(0); }
+
+        /* ✅ ให้ wrapper เป็น flex/hidden เหมือน desktop */
+        .sidebar-scroll{
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
 
         .backdrop{
           position:fixed;
@@ -356,7 +393,7 @@
     color:#047857 !important;
     }
 
-    /* ✅ Intro Lock + Fade-In (เพิ่มใหม่) */
+    /* ✅ Intro Lock + Fade-In */
     html.intro-pending body { overflow: hidden; }
 
     html.intro-pending #layout,
@@ -392,11 +429,13 @@
 
   <div id="layout" class="layout" role="presentation">
     <aside id="side" class="sidebar" aria-label="Sidebar navigation">
-      @hasSection('sidebar')
-        @yield('sidebar')
-      @else
-        <x-sidebar />
-      @endif
+      <div class="sidebar-scroll">
+        @hasSection('sidebar')
+          @yield('sidebar')
+        @else
+          <x-sidebar />
+        @endif
+      </div>
     </aside>
 
     <div id="backdrop" class="backdrop lg:hidden" aria-hidden="true"></div>
@@ -424,6 +463,7 @@
     const btn = document.getElementById('btnSidebar');
     const side = document.getElementById('side');
     const bd   = document.getElementById('backdrop');
+    const layout = document.getElementById('layout');
 
     function closeSide(){
       side.classList.remove('open');
@@ -439,25 +479,39 @@
     btn && btn.addEventListener('click', ()=> side.classList.contains('open') ? closeSide() : openSide());
     bd && bd.addEventListener('click', closeSide);
 
+    // ✅ Collapsed state
     const KEY = 'app.sidebar.collapsed';
-    const layout = document.getElementById('layout');
 
-    localStorage.setItem(KEY, '0');
-    side.classList.remove('collapsed', 'hover-expand');
-    layout.classList.remove('with-collapsed', 'with-expanded');
+    function applyCollapsedState(collapsed){
+      if (!side || !layout) return;
 
-    function applyCollapsedState(collapsed)
+      if (collapsed){
+        side.classList.add('collapsed');
+        side.classList.remove('compact');
+        layout.classList.add('with-collapsed');
+        layout.classList.remove('with-compact','with-expanded');
+      } else {
+        side.classList.remove('collapsed');
+        // ค่า default = expanded
+        layout.classList.remove('with-collapsed','with-compact');
+        layout.classList.add('with-expanded');
+      }
+    }
 
+    // ✅ อย่า force set KEY = 0 ทุกครั้ง (เดิมทำให้จำสถานะไม่ได้)
     const saved = localStorage.getItem(KEY);
     if (saved === null) {
       const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+      // ค่าเริ่มต้น: desktop = collapsed (ตามแนวทางเดิมคุณ) / mobile = expanded
       applyCollapsedState(isDesktop);
       localStorage.setItem(KEY, isDesktop ? '1' : '0');
     } else {
       applyCollapsedState(saved === '1');
     }
 
+    // ✅ Hover expand (desktop)
     let hoverBound = false, hoverTimeout;
+
     function onEnter(){
       if (side.classList.contains('collapsed')) {
         clearTimeout(hoverTimeout);
@@ -495,7 +549,7 @@
       if (e.matches){
         unbindHover();
         side.classList.remove('hover-expand');
-        layout.classList.remove('with-expanded');
+        layout.classList.remove('with-expanded','with-collapsed','with-compact');
       } else {
         bindHover();
         const s = localStorage.getItem(KEY);
@@ -505,6 +559,7 @@
     handleResize(mql);
     mql.addEventListener?.('change', handleResize);
 
+    // loader
     window.Loader = {
       show(){ document.getElementById('loaderOverlay')?.classList.add('show') },
       hide(){ document.getElementById('loaderOverlay')?.classList.remove('show') }
@@ -549,6 +604,7 @@
     })();
   </script>
 
+  {{-- ======= ส่วน Team Drawer เดิมของคุณ (คงไว้) ======= --}}
   @if(Auth::check())
     @php
       $globalTeam = \App\Models\User::query()
@@ -764,7 +820,6 @@
         initTomSelect(document);
       });
 
-      // เผื่อ turbo/livewire
       document.addEventListener('turbo:load', function () {
         initTomSelect(document);
       });
@@ -785,7 +840,6 @@
 
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" defer></script>
 
-  <!-- ✅ Toast จะถูก “หน่วง” ด้วย logic ใน component ที่ให้ด้านล่าง -->
   <x-toast />
 
   @includeWhen(Auth::check(), 'partials.chat-fab')
@@ -799,11 +853,10 @@
   }
 
   document.addEventListener('DOMContentLoaded', forceHideLoader);
-  window.addEventListener('pageshow', forceHideLoader); // back/forward cache
+  window.addEventListener('pageshow', forceHideLoader);
   document.addEventListener('turbo:load', forceHideLoader);
   document.addEventListener('livewire:navigated', forceHideLoader);
 
-  // safety net กันค้าง 100%
   setTimeout(forceHideLoader, 600);
 })();
 </script>
