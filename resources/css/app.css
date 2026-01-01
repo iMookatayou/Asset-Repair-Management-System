@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* @import "./intro-frame-reveal.css"; */
+
 /* Hide elements until Alpine initializes to prevent flash/always-open panels */
 [x-cloak] { display: none !important; }
 @plugin "daisyui";
@@ -53,3 +55,4 @@ body.sidebar-intro .sidebar-logo-img {
   82%  { transform: rotate(-5deg); }
   100% { transform: rotate(0deg); }
 }
+
