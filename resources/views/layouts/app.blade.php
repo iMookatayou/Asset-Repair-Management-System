@@ -93,7 +93,6 @@
       --nav-h: 80px;
       --topbar-h: calc(var(--nav-h) + 8px);
 
-      /* ✅ sidebar widths */
       --side-w: 260px;
       --side-w-compact: 180px;
       --side-w-collapsed: 76px;
@@ -116,9 +115,6 @@
 
     #main .sticky-under-topbar + * { margin-top: 6rem; }
 
-    /* =========================
-       ✅ LAYOUT (เปลี่ยนจาก grid → main ขยับตาม sidebar fixed)
-       ========================= */
     .layout{
         flex: 1 0 auto;
         min-height: 0 !important;
@@ -127,7 +123,6 @@
         position: relative;
     }
 
-    /* ✅ main ขยับกัน sidebar ทับ (desktop) */
     @media (min-width:1024px){
       #main{
         margin-left: var(--side-w);
@@ -137,9 +132,6 @@
       .layout.with-expanded #main{ margin-left: var(--side-w); }
     }
 
-    /* =========================
-       ✅ SIDEBAR (Desktop fixed + Mobile drawer)
-       ========================= */
     .sidebar{
         background:#ffffff;
         border-right:1px solid hsl(var(--b2));
@@ -153,26 +145,24 @@
         align-items: center;
     }
 
-    /* ✅ Desktop: fixed sidebar ใต้ navbar + สูงเต็มจอ */
     @media (min-width:1024px){
 
         .sidebar{
+        border-right:1px solid rgba(15,45,92,0.12);
         position: fixed;
         left: 0;
-        top: 0;              /* ✅ ชิดบนจอ */
+        top: 0;
         bottom: 0;
-        height: 100vh;       /* ✅ เต็มจอ */
+        height: 100vh;
         overflow: hidden;
-        z-index: 2001;       /* ✅ ให้อยู่เหนือ navbar ถ้าต้องการ */
+        z-index: 2001;
         }
 
-
-        /* ✅ FIX: ห้ามให้ wrapper นี้ scroll (เดิม overflow-y:auto ทำให้โลโก้เลื่อนตาม) */
         .sidebar-scroll{
           height: 100%;
           display: flex;
           flex-direction: column;
-          overflow: hidden;          /* ✅ สำคัญ */
+          overflow: hidden;
           -webkit-overflow-scrolling: touch;
         }
 
@@ -186,7 +176,6 @@
         .sidebar.hover-expand{ box-shadow: 4px 0 12px rgba(0,0,0,.06); }
     }
 
-    /* ✅ Mobile: drawer เหมือนเดิม */
     @media (max-width:1024px){
         .sidebar{
           position:fixed;
@@ -197,11 +186,10 @@
           z-index:50;
           box-shadow: 4px 0 24px rgba(0,0,0,.06);
           max-height: calc(100vh - var(--nav-h));
-          overflow: hidden;          /* ✅ FIX: เดิม overflow-y:auto ทำให้เลื่อนทั้งก้อน */
+          overflow: hidden;
         }
         .sidebar.open{ transform:translateX(0); }
 
-        /* ✅ ให้ wrapper เป็น flex/hidden เหมือน desktop */
         .sidebar-scroll{
           height: 100%;
           display: flex;
@@ -289,6 +277,17 @@
       box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
       border-top: 1px solid rgba(255,255,255,.12);
       margin: 0;
+      position: static;
+      width: 100%;
+    }
+
+    @media (min-width:1024px){
+      #layout.with-expanded  + footer .footer-inner{ padding-left: var(--side-w); }
+      #layout.with-compact   + footer .footer-inner{ padding-left: var(--side-w-compact); }
+      #layout.with-collapsed + footer .footer-inner{ padding-left: var(--side-w-collapsed); }
+    }
+    @media (max-width:1023px){
+      footer .footer-inner{ padding-left: 0; }
     }
 
     .loader-overlay{
@@ -393,7 +392,6 @@
     color:#047857 !important;
     }
 
-    /* ✅ Intro Lock + Fade-In */
     html.intro-pending body { overflow: hidden; }
 
     html.intro-pending #layout,
@@ -412,6 +410,7 @@
     footer {
       transition: opacity .55s ease;
     }
+
   </style>
 </head>
 
@@ -452,6 +451,7 @@
       @endif
 
       @yield('content')
+
     </main>
   </div>
 
@@ -479,7 +479,6 @@
     btn && btn.addEventListener('click', ()=> side.classList.contains('open') ? closeSide() : openSide());
     bd && bd.addEventListener('click', closeSide);
 
-    // ✅ Collapsed state
     const KEY = 'app.sidebar.collapsed';
 
     function applyCollapsedState(collapsed){
@@ -492,24 +491,21 @@
         layout.classList.remove('with-compact','with-expanded');
       } else {
         side.classList.remove('collapsed');
-        // ค่า default = expanded
         layout.classList.remove('with-collapsed','with-compact');
         layout.classList.add('with-expanded');
       }
     }
 
-    // ✅ อย่า force set KEY = 0 ทุกครั้ง (เดิมทำให้จำสถานะไม่ได้)
     const saved = localStorage.getItem(KEY);
     if (saved === null) {
       const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
-      // ค่าเริ่มต้น: desktop = collapsed (ตามแนวทางเดิมคุณ) / mobile = expanded
       applyCollapsedState(isDesktop);
       localStorage.setItem(KEY, isDesktop ? '1' : '0');
     } else {
       applyCollapsedState(saved === '1');
     }
 
-    // ✅ Hover expand (desktop)
+    // Hover expand (desktop)
     let hoverBound = false, hoverTimeout;
 
     function onEnter(){
@@ -582,7 +578,7 @@
     });
     window.addEventListener('beforeunload', () => Loader.show());
 
-    // ✅ กัน Loader โผล่ระหว่าง intro
+    // กัน Loader โผล่ระหว่าง intro
     (function(){
       if (!window.Loader) return;
       const _show = window.Loader.show.bind(window.Loader);
@@ -604,7 +600,6 @@
     })();
   </script>
 
-  {{-- ======= ส่วน Team Drawer เดิมของคุณ (คงไว้) ======= --}}
   @if(Auth::check())
     @php
       $globalTeam = \App\Models\User::query()
