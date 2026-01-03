@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('maintenance_assignments', function (Blueprint $table) {
@@ -29,20 +26,55 @@ return new class extends Migration
 
             $table->dateTime('assigned_at')->nullable();
 
-            $table->enum('status', ['in_progress', 'done', 'cancelled'])->default('in_progress');
+            // การตอบรับงานของช่าง (MyJob ใช้อันนี้เป็นหลัก)
+            $table->enum('response_status', [
+                'pending',
+                'accepted',
+                'rejected',
+                'acknowledged',
+            ])->default('pending');
+
+            $table->dateTime('responded_at')->nullable();
+
+            // สถานะความคืบหน้างาน
+            $table->enum('status', [
+                'in_progress',
+                'done',
+                'cancelled',
+            ])->default('in_progress');
 
             $table->timestamps();
 
-            $table->unique(['maintenance_request_id', 'user_id'], 'uniq_request_user');
+            // unique
+            $table->unique(
+                ['maintenance_request_id', 'user_id'],
+                'ma_req_user_uniq'
+            );
 
-            $table->index(['user_id', 'status']);
-            $table->index(['maintenance_request_id', 'status']);
+            // index สำหรับงาน
+            $table->index(
+                ['user_id', 'status'],
+                'ma_user_status_idx'
+            );
+
+            $table->index(
+                ['maintenance_request_id', 'status'],
+                'ma_req_status_idx'
+            );
+
+            // index สำหรับ MyJob (response)
+            $table->index(
+                ['user_id', 'response_status'],
+                'ma_user_resp_idx'
+            );
+
+            $table->index(
+                ['maintenance_request_id', 'response_status'],
+                'ma_req_resp_idx'
+            );
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('maintenance_assignments');
