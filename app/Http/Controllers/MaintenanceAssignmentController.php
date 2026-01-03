@@ -61,7 +61,7 @@ class MaintenanceAssignmentController extends Controller
         DB::transaction(function () use ($req, $workers, $userIds, &$leadId) {
             $now = now();
 
-            // ✅ lock ใบงานกัน race (assign พร้อมกัน)
+            // lock ใบงานกัน race (assign พร้อมกัน)
             $lockedReq = MaintenanceRequest::query()
                 ->whereKey($req->id)
                 ->lockForUpdate()
@@ -71,7 +71,6 @@ class MaintenanceAssignmentController extends Controller
                 ->get()
                 ->keyBy('user_id');
 
-            // ✅ เลือก lead ให้ predictable:
             // 1) ถ้า leadId ไม่ใช่ worker -> ทิ้ง
             if ($leadId && !$workers->has($leadId)) {
                 $leadId = null;
@@ -106,10 +105,19 @@ class MaintenanceAssignmentController extends Controller
                     // ถ้าเคย cancelled แล้วถูก assign กลับมา
                     if ($assignment->status === MaintenanceAssignment::STATUS_CANCELLED) {
                         $assignment->status = MaintenanceAssignment::STATUS_IN_PROGRESS;
+
+                        $assignment->response_status = MaintenanceAssignment::RESP_PENDING;
+                        $assignment->responded_at = null;
                     }
 
                     // ให้มี assigned_at เสมอเมื่ออยู่ในทีม
                     $assignment->assigned_at = $assignment->assigned_at ?? $now;
+
+                    // ถ้าไม่เคยมี response_status (ข้อมูลเก่า) ให้ตั้งค่าเริ่มต้น
+                    if (empty($assignment->response_status)) {
+                        $assignment->response_status = MaintenanceAssignment::RESP_PENDING;
+                        $assignment->responded_at = null;
+                    }
 
                     $assignment->save();
                 } else {
@@ -119,6 +127,12 @@ class MaintenanceAssignmentController extends Controller
                         'role'                   => $worker->role,
                         'is_lead'                => $isLead,
                         'assigned_at'            => $now,
+
+                        // ใหม่ (MyJob ใช้ตรงนี้)
+                        'response_status'        => MaintenanceAssignment::RESP_PENDING,
+                        'responded_at'           => null,
+
+                        // ของเดิม
                         'status'                 => MaintenanceAssignment::STATUS_IN_PROGRESS,
                     ]);
                 }
@@ -136,9 +150,13 @@ class MaintenanceAssignmentController extends Controller
                 $lockedReq->assignments()
                     ->whereIn('user_id', $toCancel)
                     ->update([
-                        'status'     => MaintenanceAssignment::STATUS_CANCELLED,
-                        'is_lead'    => false,
-                        'updated_at' => $now,
+                        'status'          => MaintenanceAssignment::STATUS_CANCELLED,
+                        'is_lead'         => false,
+
+                        'response_status' => MaintenanceAssignment::RESP_PENDING,
+                        'responded_at'    => null,
+
+                        'updated_at'      => $now,
                     ]);
             }
 
@@ -199,8 +217,11 @@ class MaintenanceAssignmentController extends Controller
         }
 
         $assignment->update([
-            'status'  => MaintenanceAssignment::STATUS_CANCELLED,
-            'is_lead' => false,
+            'status'          => MaintenanceAssignment::STATUS_CANCELLED,
+            'is_lead'         => false,
+
+            'response_status' => MaintenanceAssignment::RESP_PENDING,
+            'responded_at'    => null,
         ]);
 
         return back()->with('toast', [
